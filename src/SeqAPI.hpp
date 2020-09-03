@@ -11,9 +11,6 @@
 #include <algorithm>
 #include <regex>
 
-//for testing
-#include <iostream>
-
 #define SEQ_MIN_OPCODE 1
 #define SEQ_MAX_OPCODE 16
 #define SEQ_MIN_DATA_TYPE 1
