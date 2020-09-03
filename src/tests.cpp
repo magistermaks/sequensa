@@ -809,5 +809,36 @@ TEST( ce_expression_complex, {
 
 } );
 
+TEST( ce_arg, {
+
+	try{
+
+		seq::string code = (byte*) (
+				"#{\n"
+				"	#exit << #{\n"
+				"		#return << (@ + @@) \n"
+				"	} << 20\n"
+				"} << 10\n");
+
+		auto buf = seq::Compiler::compile( code );
+		seq::ByteBuffer bb( buf.data(), buf.size() );
+
+		seq::Stream args;
+		args.push_back( new seq::type::Null( false ) );
+
+		seq::Executor exe;
+		exe.execute( bb, args );
+
+		CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Number );
+		CHECK( ((seq::type::Number*) exe.getResult())->getLong(), 30l );
+
+	}catch( seq::CompilerError& err ) {
+		FAIL( err.what() );
+	}catch( seq::InternalError& err ) {
+		FAIL( err.what() );
+	}
+
+} );
+
 
 BEGIN

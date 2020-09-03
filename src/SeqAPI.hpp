@@ -1,6 +1,4 @@
 
-//test 2
-
 #include <inttypes.h>
 #include <exception>
 #include <string>
@@ -3079,7 +3077,96 @@ std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::To
 	bw.putFunc(anchor, arr);
 
 	return ret;
+}
 
+seq::type::Generic* _math_system_test( seq::ExprOperator op, seq::type::Generic* left, seq::type::Generic* right ) {
+
+	typedef seq::type::Generic* G;
+	//auto str = [] ( G g ) -> seq::type::String* { return (seq::type::String*) g; };
+	//auto num = [] ( G g ) -> seq::type::Number* { return (seq::type::Number*) g; };
+
+	static const std::array<std::array<std::function<seq::type::Generic*(seq::type::Generic*,seq::type::Generic*)>,2>,SEQ_MAX_OPERATOR> lambdas = {{
+			{
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+					[] ( G a, G b ) { return new seq::type::Null(false); },
+			}
+	}};
+
+	//lambdas.at( ((byte) op) - 1 ).at( /* type */ );
+
+	return nullptr;
 }
 
 //#undef SEQUENSA_IMPLEMENT
