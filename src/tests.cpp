@@ -870,7 +870,7 @@ TEST( ce_string_escape_codes, {
 } );
 
 
-TEST( ce_flowc_simple, {
+TEST( ce_flowc_1, {
 
 	try{
 
@@ -888,6 +888,60 @@ TEST( ce_flowc_simple, {
 
 		CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Bool );
 		CHECK( ((seq::type::Bool*) exe.getResult())->getBool(), true );
+
+	}catch( seq::CompilerError& err ) {
+		FAIL( err.what() );
+	}catch( seq::InternalError& err ) {
+		FAIL( err.what() );
+	}
+
+} );
+
+TEST( ce_flowc_2, {
+
+	try{
+
+		seq::string code = (byte*) (
+				"#exit << #[true] << false << true");
+
+		auto buf = seq::Compiler::compile( code );
+		seq::ByteBuffer bb( buf.data(), buf.size() );
+
+		seq::Stream args;
+		args.push_back( new seq::type::Null( false ) );
+
+		seq::Executor exe;
+		exe.execute( bb, args );
+
+		CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Bool );
+		CHECK( ((seq::type::Bool*) exe.getResult())->getBool(), true );
+
+	}catch( seq::CompilerError& err ) {
+		FAIL( err.what() );
+	}catch( seq::InternalError& err ) {
+		FAIL( err.what() );
+	}
+
+} );
+
+TEST( ce_flowc_3, {
+
+	try{
+
+		seq::string code = (byte*) (
+				"#exit << #[number] << true << null << \"Hello\" << 2");
+
+		auto buf = seq::Compiler::compile( code );
+		seq::ByteBuffer bb( buf.data(), buf.size() );
+
+		seq::Stream args;
+		args.push_back( new seq::type::Null( false ) );
+
+		seq::Executor exe;
+		exe.execute( bb, args );
+
+		CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Number );
+		CHECK( ((seq::type::Number*) exe.getResult())->getLong(), 2l );
 
 	}catch( seq::CompilerError& err ) {
 		FAIL( err.what() );
