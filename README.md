@@ -1,8 +1,9 @@
 ## Sequensa API
 Single file embeddable Sequensa API 
+
 Read more about Sequensa programming language [here](http://darktree.net/projects/sequensa/)
 
-```
+```C++
 #define SEQ_IMPLEMENT
 #include "SeqAPI.hpp"
 
@@ -19,5 +20,6 @@ int main() {
 	exe.execute( bb, args );
 	
 	std::cout << std::toStdString( ((seq::type::String*) exe.getResult())->getString() );
+	
 }
 ```
