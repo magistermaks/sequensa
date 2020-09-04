@@ -1509,7 +1509,7 @@ seq::type::Flowc* seq::TokenReader::loadFlowc() {
 seq::type::Stream* seq::TokenReader::loadStream() {
     byte tags = this->reader.nextByte();
     long length = this->reader.nextInt();
-    if( !length ) throw seq::InternalError( "Invalid function size!" );
+    if( !length ) throw seq::InternalError( "Invalid stream size!" );
     return new seq::type::Stream( this->anchor, tags, this->reader.nextBlock( length ) );
 }
 
@@ -2709,7 +2709,7 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 
 			case State::Flowc: {
 					int j = findClosing( tokens, i - 1, seq::Compiler::Token::Category::FlowBracket ) - 1;
-					auto acc = assembleFunction( tokens, j, j, tokens.at(i - 1).getAnchor() );
+					auto acc = assembleFlowc( tokens, i, j, tokens.at(i - 1).getAnchor() );
 					arr.insert( arr.end(), acc.begin(), acc.end() );
 					i = j;
 					state = State::Stream;
@@ -2793,13 +2793,13 @@ std::vector<byte> seq::Compiler::assembleFlowc( std::vector<seq::Compiler::Token
 	std::vector<std::vector<byte>> arr;
 
 	bool expectSeparator = false;
-	int i = 0;
+	int i = start;
 
 	for( ; i < end; i ++ ) {
 
 		seq::Compiler::Token& token = tokens.at( i );
 
-		if( token.getRaw().at(0) == '#'_b ) {
+		if( token.getAnchor() ) {
 			throw seq::CompilerError( "anchor", "", "flow controller", token.getLine() );
 		}
 

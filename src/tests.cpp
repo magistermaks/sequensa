@@ -840,4 +840,61 @@ TEST( ce_arg, {
 } );
 
 
+TEST( ce_string_escape_codes, {
+
+	try{
+
+		seq::string code = (byte*) (
+				"#exit << \"\\\\\\n\\t\\\"\"");
+
+		auto buf = seq::Compiler::compile( code );
+		seq::ByteBuffer bb( buf.data(), buf.size() );
+
+		seq::Stream args;
+		args.push_back( new seq::type::Null( false ) );
+
+		seq::Executor exe;
+		exe.execute( bb, args );
+
+		CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::String );
+		CHECK_ELSE( ((seq::type::String*) exe.getResult())->getString(), seq::string( (byte*) "\\\n\t\"" ) ) {
+			FAIL( "Invalid String!" );
+		}
+
+	}catch( seq::CompilerError& err ) {
+		FAIL( err.what() );
+	}catch( seq::InternalError& err ) {
+		FAIL( err.what() );
+	}
+
+} );
+
+
+TEST( ce_flowc_simple, {
+
+	try{
+
+		seq::string code = (byte*) (
+				"#exit << #[true] << true");
+
+		auto buf = seq::Compiler::compile( code );
+		seq::ByteBuffer bb( buf.data(), buf.size() );
+
+		seq::Stream args;
+		args.push_back( new seq::type::Null( false ) );
+
+		seq::Executor exe;
+		exe.execute( bb, args );
+
+		CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Bool );
+		CHECK( ((seq::type::Bool*) exe.getResult())->getBool(), true );
+
+	}catch( seq::CompilerError& err ) {
+		FAIL( err.what() );
+	}catch( seq::InternalError& err ) {
+		FAIL( err.what() );
+	}
+
+} );
+
 BEGIN
