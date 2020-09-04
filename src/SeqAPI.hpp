@@ -1573,15 +1573,43 @@ seq::FlowCondition::~FlowCondition() {
 }
 
 bool seq::FlowCondition::validate( seq::type::Generic* arg ) {
+
+	if( arg->getDataType() != ((seq::type::Type*) this->a)->getType() ) {
+		return false;
+	}
+
     switch( this->type ) {
-        case seq::FlowCondition::Type::Value:
-            return false; // TODO
+        case seq::FlowCondition::Type::Value: {
+        		auto type = arg->getDataType();
+        		if( type == this->a->getDataType() ) {
+        			switch( type ) {
+        				case seq::DataType::Null:
+        					return true;
+
+        				case seq::DataType::Bool:
+        					return ((seq::type::Bool*) this->a)->getBool() == ((seq::type::Bool*) arg)->getBool();
+
+        				case seq::DataType::Number:
+        					return ((seq::type::Number*) this->a)->getDouble() == ((seq::type::Number*) arg)->getDouble();
+
+        				default:
+        					return false;
+        			}
+        		}
+        	}
+            return false;
 
         case seq::FlowCondition::Type::Type:
-            return ( arg->getDataType() == ((seq::type::Type*) this->a)->getType() );
+            return (arg->getDataType() == ((seq::type::Type*) this->a)->getType());
 
         case seq::FlowCondition::Type::Range:
-            return false; // TODO
+        	if( arg->getDataType() == seq::DataType::Number ) {
+        		double av = ((seq::type::Number*) this->a)->getDouble();
+        		double bv = ((seq::type::Number*) this->b)->getDouble();
+        		double val = ((seq::type::Number*) arg)->getDouble();
+        		return val < bv && val > av;
+        	}
+        	return false;
     }
 
     return false;
@@ -1741,7 +1769,7 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream gs ) {
     // iterate over stream entities
     for( long i = gs.size() - 1; i >= 0; i -- ) {
 
-        seq::type::Generic* g = gs[i];
+        seq::type::Generic* g = gs.at( i );
         seq::DataType t = g->getDataType();
 
         // if type is unsolid compute real value
