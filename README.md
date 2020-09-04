@@ -1,1 +1,1 @@
-## Sequensa Programming Language embedable sigle-file API
+## Sequensa programming language embeddable single-file API
