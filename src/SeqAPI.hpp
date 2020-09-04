@@ -12,7 +12,7 @@
 #include <regex>
 
 #define SEQ_MIN_OPCODE 1
-#define SEQ_MAX_OPCODE 16
+#define SEQ_MAX_OPCODE 15
 #define SEQ_MIN_DATA_TYPE 1
 #define SEQ_MAX_DATA_TYPE 12
 #define SEQ_MIN_CALL_TYPE 1
@@ -90,8 +90,7 @@ namespace seq {
         VAR = 12, // VAR [ASCI...] [NULL] ;
         DEF = 13, // DEF [ASCI...] [NULL] ;
         FLC = 14, // FLC [SIZE] [[SIZE] [BODY...]...] ;
-        SSL = 15, // SSL [TAGS] [HEAD] [TAIL...] [BODY...] ;
-        SSR = 16, // SSR [TAGS] [HEAD] [TAIL...] [BODY...] ;
+        SSL = 15 // SSL [TAGS] [HEAD] [TAIL...] [BODY...] ;
     };
 
     /// Sequensa data types
@@ -107,7 +106,7 @@ namespace seq {
         Expr   = 9, // maps to: EXP
         Name  = 10, // maps to: VAR DEF
         Flowc = 11, // maps to: FLC
-        Stream = 12 // maps to: SSL SSR
+        Stream = 12 // maps to: SSL
     };
 
     enum struct ExprOperator: byte {
@@ -299,16 +298,14 @@ namespace seq {
         class Stream: public Generic {
 
             public:
-                Stream( bool anchor, bool inverted, byte tags, BufferReader* reader );
+                Stream( bool anchor, byte tags, BufferReader* reader );
                 Stream( const Stream& stream );
                 ~Stream();
                 const bool machesTags( byte tags );
                 BufferReader& getReader();
-                const bool isInverted();
 
             private:
                 const byte tags;
-                const bool inverted;
                 BufferReader* reader;
         };
 
@@ -486,7 +483,7 @@ namespace seq {
             void putFunc( bool anchor, std::vector<byte>& buffer );
             void putExpr( bool anchor, ExprOperator op, std::vector<byte>& left, std::vector<byte>& right );
             void putFlowc( bool anchor, std::vector<std::vector<byte>>& buffers );
-            void putStream( bool anchor, bool inverted, byte tags, std::vector<byte>& buf );
+            void putStream( bool anchor, byte tags, std::vector<byte>& buf );
             void putFileHeader( byte seq_major, byte seq_minor, byte seq_patch, const std::map<seq::string, seq::string>& data );
 
         private:
@@ -565,8 +562,8 @@ namespace seq {
             void exit( seq::Stream stream, byte code );
             Stream executeFunction( BufferReader br, seq::Stream stream );
             CommandResult executeCommand( TokenReader* br, byte tags );
-            CommandResult executeStream( Stream stream, bool rtl );
-            Stream executeAnchor( type::Generic* entity, seq::Stream input_stream, bool rtl );
+            CommandResult executeStream( Stream stream );
+            Stream executeAnchor( type::Generic* entity, seq::Stream input_stream );
             type::Generic* executeExprPair( type::Generic* left, type::Generic* right, ExprOperator op );
             type::Generic* executeExpr( type::Generic* entity );
             Stream resolveName( string& name, bool anchor );
@@ -919,8 +916,8 @@ void seq::BufferWriter::putFlowc( bool anchor, std::vector<std::vector<byte>>& b
     }
 }
 
-void seq::BufferWriter::putStream( bool anchor, bool inverted, byte tags, std::vector<byte>& buf ) {
-    this->putOpcode( anchor, inverted ? seq::Opcode::SSR : seq::Opcode::SSL );
+void seq::BufferWriter::putStream( bool anchor, byte tags, std::vector<byte>& buf ) {
+    this->putOpcode( anchor, seq::Opcode::SSL );
     this->putByte( tags );
     long buffer_size = buf.size();
     byte h = seq::type::Number::sizeOf( buffer_size );
@@ -1100,9 +1097,9 @@ seq::BufferReader& seq::type::Expression::getRightReader() {
     return *(this->right);
 }
 
-seq::type::Stream::Stream( bool _anchor, bool _inverted, byte _tags, BufferReader* _reader ): seq::type::Generic( seq::DataType::Stream, _anchor ), tags( _tags ), inverted( _inverted ), reader( _reader ) {}
+seq::type::Stream::Stream( bool _anchor, byte _tags, BufferReader* _reader ): seq::type::Generic( seq::DataType::Stream, _anchor ), tags( _tags ), reader( _reader ) {}
 
-seq::type::Stream::Stream( const seq::type::Stream& stream ): seq::type::Generic( seq::DataType::Stream, stream.anchor ), tags( stream.tags ), inverted( stream.inverted ), reader( new seq::BufferReader( *(stream.reader) ) ) {}
+seq::type::Stream::Stream( const seq::type::Stream& stream ): seq::type::Generic( seq::DataType::Stream, stream.anchor ), tags( stream.tags ), reader( new seq::BufferReader( *(stream.reader) ) ) {}
 
 seq::type::Stream::~Stream() {
     delete this->reader;
@@ -1125,10 +1122,6 @@ const bool seq::type::Stream::machesTags( byte _tags ) {
 
 seq::BufferReader& seq::type::Stream::getReader() {
     return *(this->reader);
-}
-
-const bool seq::type::Stream::isInverted() {
-    return this->inverted;
 }
 
 seq::type::Null::Null( bool _anchor ): seq::type::Generic( seq::DataType::Null, _anchor ) {}
@@ -1360,9 +1353,6 @@ seq::DataType seq::TokenReader::getDataType( byte header ) {
                 id --;
                 if( header > 12 ) { // VAR DEF
                     id--;
-                    if( header > 15 ) { // SSL SSR
-                        id --;
-                    }
                 }
             }
         }
@@ -1520,7 +1510,7 @@ seq::type::Stream* seq::TokenReader::loadStream() {
     byte tags = this->reader.nextByte();
     long length = this->reader.nextInt();
     if( !length ) throw seq::InternalError( "Invalid function size!" );
-    return new seq::type::Stream( this->anchor, (this->header == (byte) seq::Opcode::SSR), tags, this->reader.nextBlock( length ) );
+    return new seq::type::Stream( this->anchor, tags, this->reader.nextBlock( length ) );
 }
 
 seq::StackLevel::StackLevel( seq::type::Generic* arg ) {
@@ -1734,7 +1724,7 @@ seq::CommandResult seq::Executor::executeCommand( seq::TokenReader* tr, byte tag
     	// execute stream if stream tags match current state
         seq::type::Stream* stream = ( seq::type::Stream* ) tr->getGeneric();
         if( stream->machesTags( tags ) ) {
-            return this->executeStream( stream->getReader().readAll(), stream->getAnchor() );
+            return this->executeStream( stream->getReader().readAll() );
         }else{
             return CommandResult( seq::CommandResult::ResultType::None, seq::Stream() );
         }
@@ -1744,10 +1734,7 @@ seq::CommandResult seq::Executor::executeCommand( seq::TokenReader* tr, byte tag
     throw seq::InternalError( "Invalid command in function!" );
 }
 
-seq::CommandResult seq::Executor::executeStream( seq::Stream gs, bool rtl ) {
-
-    // reverse right stream
-    if( rtl ) std::reverse(gs.begin(), gs.end());
+seq::CommandResult seq::Executor::executeStream( seq::Stream gs ) {
 
     seq::Stream acc;
 
@@ -1796,7 +1783,7 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream gs, bool rtl ) {
             }else{
 
             	// execute anchor and save result in acc
-                auto tmp = this->executeAnchor( g, acc, rtl );
+                auto tmp = this->executeAnchor( g, acc );
                 acc = tmp;
                 delete g;
                 continue;
@@ -1807,11 +1794,6 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream gs, bool rtl ) {
         // if entity is a variable
         if( t == seq::DataType::Name ) {
             seq::type::Name* name = ( seq::type::Name* ) g;
-
-            // reverse acc
-            if( rtl ) {
-                std::reverse(acc.begin(), acc.end());
-            }
 
             if( name->getDefine() ) { // define variable (set)
 
@@ -1838,7 +1820,7 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream gs, bool rtl ) {
     return CommandResult( seq::CommandResult::ResultType::None, acc );
 }
 
-seq::Stream seq::Executor::executeAnchor( seq::type::Generic* entity, seq::Stream input_stream, bool rtl ) {
+seq::Stream seq::Executor::executeAnchor( seq::type::Generic* entity, seq::Stream input_stream ) {
 
     seq::DataType type = entity->getDataType();
 
@@ -1854,14 +1836,8 @@ seq::Stream seq::Executor::executeAnchor( seq::type::Generic* entity, seq::Strea
 
 			// if it isn't native, try finding it on the stack
 			seq::Stream s = this->resolveName( name->getName(), true );
-
-			if( rtl ) {
-				input_stream.insert( input_stream.end(), s.begin(), s.end() );
-			} else {
-				s.insert( s.end(), input_stream.begin(), input_stream.end() );
-			}
-
-			return this->executeStream( rtl ? input_stream : s, rtl ).acc;
+			s.insert( s.end(), input_stream.begin(), input_stream.end() );
+			return this->executeStream( s ).acc;
 
 		}
 
@@ -1887,8 +1863,6 @@ seq::Stream seq::Executor::executeAnchor( seq::type::Generic* entity, seq::Strea
     return output_stream;
 
 }
-
-/// BAD CODE BEGINS HERE ///
 
 seq::type::Generic* seq::Executor::executeExprPair( seq::type::Generic* left, seq::type::Generic* right, seq::ExprOperator op ) {
 
@@ -2138,8 +2112,6 @@ seq::type::Generic* seq::Executor::executeCast( seq::type::Generic* cast, seq::t
     }
 
 }
-
-/// TERRIBLE CODE BEGINS HERE ///
 
 seq::Compiler::Token::Token( unsigned int _line, long _data, bool _anchor, Category _category, seq::string& _raw, seq::string& _clean ): line( _line ), data( _data ), anchor( _anchor ),  category( _category ), raw( _raw ), clean( _clean ) {}
 
@@ -2500,7 +2472,6 @@ seq::Compiler::Token seq::Compiler::construct( seq::string raw, unsigned int lin
 		if( clean == "number"_b || clean == "bool"_b || clean == "string"_b || clean == "type"_b ) return make( seq::Compiler::Token::Category::Type, dataTypeFromString( clean ) );
 		if( std::regex_search( seq::util::toStdString(clean), regex_name) ) return make( seq::Compiler::Token::Category::Name, 0 );
 		if( std::regex_search( seq::util::toStdString(clean), regex_number_1) || std::regex_search(seq::util::toStdString(clean), regex_number_2) ) return make( seq::Compiler::Token::Category::Number, 0 );
-		if( raw == ">>"_b ) return make( seq::Compiler::Token::Category::Stream, 1 );
 		if( raw == "<<"_b ) return make( seq::Compiler::Token::Category::Stream, 0 );
 		if( clean == "{"_b || raw == "}"_b ) return make( seq::Compiler::Token::Category::FuncBracket, clean == "{"_b ? 1 : -1 );
 		if( clean == "["_b || raw == "]"_b ) return make( seq::Compiler::Token::Category::FlowBracket, clean == "["_b ? 1 : -1 );
@@ -2615,23 +2586,9 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 	seq::BufferWriter bw( arr );
 	bool inverted = false;
 
-	for( int j = start; j <= end; j ++ ) {
-		auto& token = tokens.at(j);
-		if( token.getCategory() == seq::Compiler::Token::Category::Stream ) {
-			// stream token data field contains 'inverted' flag
-			inverted = token.getData();
-	    	break;
-	    }
-	}
-
-	const int e =  inverted ? start : end;
-	const int s = !inverted ? start : end;
-	const int l = !inverted ? 1 : -1;
-	const seq::string op = inverted ? ">>"_b : "<<"_b;
-
 	State state = State::Start;
 
-	for( int i = s; (!inverted && i <= e) || (inverted && i >= e); i += l ) {
+	for( int i = start; i <= end /*(!inverted && i <= e) || (inverted && i >= e)*/; i ++ ) {
 
 		auto& token = tokens.at(i);
 
@@ -2722,8 +2679,8 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 
 
 			case State::Stream:
-				if( token.getCategory() != seq::Compiler::Token::Category::Stream || ( token.getRaw() != op ) ) {
-					throw seq::CompilerError( seq::util::toStdString( "token '"_b + tokens[i].getRaw() + "'"_b ), "'" + seq::util::toStdString( op ) + "'", "stream", token.getLine() );
+				if( token.getCategory() != seq::Compiler::Token::Category::Stream ) {
+					throw seq::CompilerError( seq::util::toStdString( "token '"_b + tokens.at(i).getRaw() + "'"_b ), "'<<'", "stream", token.getLine() );
 				}else{
 					state = State::Continue;
 				}
@@ -2735,7 +2692,7 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 
 	std::vector<byte> ret;
 	seq::BufferWriter bw2( ret );
-	bw2.putStream( false, inverted, tags, arr );
+	bw2.putStream( false, tags, arr );
 
 	return ret;
 

@@ -284,7 +284,7 @@ TEST( buffer_writer_stream, {
     std::vector<byte> arr;
     seq::BufferWriter bw( arr );
 
-    bw.putStream( true, true, 0b00000011, stream_arr );
+    bw.putStream( true, 0b00000011, stream_arr );
     bw.putNull( false );
 
     seq::ByteBuffer bb( arr.data(), arr.size() );
@@ -295,7 +295,6 @@ TEST( buffer_writer_stream, {
         CHECK( (byte) tr.getDataType(), (byte) seq::DataType::Stream );
         CHECK( tr.isAnchored(), true );
         seq::type::Stream* s = ((seq::type::Stream*) tr.getGeneric());
-        CHECK( s->isInverted(), true );
 
         seq::BufferReader sbr = s->getReader();
         CHECK( sbr.nextByte(), (byte) 'A' );
@@ -360,7 +359,7 @@ TEST( executor_hello_world, {
 
 	std::vector<byte> arr_2;
 	seq::BufferWriter bw_2( arr_2 );
-	bw_2.putStream( false, false, 0, arr_1 );
+	bw_2.putStream( false, 0, arr_1 );
 
 	seq::ByteBuffer bb( arr_2.data(), arr_2.size() );
 
@@ -394,8 +393,8 @@ TEST( executor_hello_world_var, {
 
 		std::vector<byte> arr_3;
 		seq::BufferWriter bw_3( arr_3 );
-		bw_3.putStream( false, false, 0, arr_1 );
-		bw_3.putStream( false, false, 0, arr_2 );
+		bw_3.putStream( false, 0, arr_1 );
+		bw_3.putStream( false, 0, arr_2 );
 
 		seq::ByteBuffer bb( arr_3.data(), arr_3.size() );
 
@@ -425,7 +424,7 @@ TEST( execute_hello_world_func, {
 
 	std::vector<byte> arr_2;
 	seq::BufferWriter bw_2( arr_2 );
-	bw_2.putStream( false, false, 0, arr_1 );
+	bw_2.putStream( false, 0, arr_1 );
 
 	std::vector<byte> arr_3;
 	seq::BufferWriter bw_3( arr_3 );
@@ -440,8 +439,8 @@ TEST( execute_hello_world_func, {
 
 	std::vector<byte> arr_5;
 	seq::BufferWriter bw_5( arr_5 );
-	bw_5.putStream( false, false, 0, arr_3 );
-	bw_5.putStream( false, false, 0, arr_4 );
+	bw_5.putStream( false, 0, arr_3 );
+	bw_5.putStream( false, 0, arr_4 );
 
 	seq::ByteBuffer bb( arr_5.data(), arr_5.size() );
 
@@ -486,7 +485,7 @@ TEST( executor_native, {
 
 	std::vector<byte> arr_2;
 	seq::BufferWriter bw_2( arr_2 );
-	bw_2.putStream( false, false, 0, arr_1 );
+	bw_2.putStream( false, 0, arr_1 );
 
 	seq::ByteBuffer bb( arr_2.data(), arr_2.size() );
 
@@ -517,7 +516,7 @@ TEST( expression_simple, {
 
 	std::vector<byte> arr_4;
 	seq::BufferWriter bw_4( arr_4 );
-	bw_4.putStream( false, false, 0, arr_3 );
+	bw_4.putStream( false, 0, arr_3 );
 
 	seq::ByteBuffer bb( arr_4.data(), arr_4.size() );
 
