@@ -1435,7 +1435,7 @@ seq::type::Name* seq::TokenReader::loadName() {
     seq::string str;
     for( byte i = 0; true; i ++ ) {
         byte b = this->reader.nextByte();
-        if( !(std::isalnum((int) b) || (b == '_') || (b == '\0')) ) throw seq::InternalError( "Invalid char in name! code: " + std::to_string( (int) b ) );
+        if( !(std::isalnum((int) b) || (b == '_'_b) || (b == ':'_b) || (b == '\0'_b)) ) throw seq::InternalError( "Invalid char in name! code: " + std::to_string( (int) b ) );
         if( i > 128 ) throw seq::InternalError( "Too long name!" );
         if( b ) str.push_back( b ); else break;
     }
@@ -2197,6 +2197,7 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 		String,
 		Escape,
 		Name,
+		Name2,
 		Number,
 		Number2,
 		Arg
@@ -2333,10 +2334,24 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 					break;
 
 				case State::Name: // or Tag
-					if( isLetter( c ) || c == ';'_b ) token += c; else {
+					if( isLetter( c ) ) token += c; else {
+
+						if( c == ';'_b ) token += c;
+
 						state = State::Start;
 						flag = true;
 						next();
+					}
+					break;
+
+				case State::Name2:
+					if( c == ':'_b ) {
+						state = State::Start;
+						flag = true;
+						next();
+					}else{
+						state = State::Name;
+						flag = true;
 					}
 					break;
 
@@ -2390,7 +2405,7 @@ seq::Compiler::Token seq::Compiler::construct( seq::string raw, unsigned int lin
 	const static std::vector<std::string> operators = { "+", "-", "/", "*", "**", "%", ">", "<", "=", "!=", ">=", "!>", "<=", "!<", "&&", "||", "^^", "&", "|", "^", "!" };
 	const static std::vector<byte> operator_weights = {   3,   3,   4,   4,    5,   4,   2,   2,   2,    2,    2,    2,    2,    2,    1,    1,    1,   0,   0,   0,   6 };
 	const static std::regex regex_arg("^@+$");
-	const static std::regex regex_name("^#?[a-z]+;?$");
+	const static std::regex regex_name("^[a-zA-Z_]{1}[a-zA-Z_0-9]*(:[a-zA-Z_0-9]+)*$");
 	const static std::regex regex_number_1("^\\d+.\\d+$");
 	const static std::regex regex_number_2("^\\d+$");
 
@@ -2890,7 +2905,7 @@ std::vector<byte> seq::Compiler::assembleExpression( std::vector<seq::Compiler::
 
 		if( h == -1 ) {
 			if( f != 0 ) {
-				throw seq::CompilerError( "Ha!", "operator", "expression", tokens.at(end - 1).getLine() );
+				throw seq::CompilerError( "end of expression", "operator", "expression", tokens.at(end - 1).getLine() );
 			}
 
 			l = 0;
