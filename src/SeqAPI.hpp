@@ -2584,11 +2584,10 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 
 	std::vector<byte> arr;
 	seq::BufferWriter bw( arr );
-	bool inverted = false;
 
 	State state = State::Start;
 
-	for( int i = start; i <= end /*(!inverted && i <= e) || (inverted && i >= e)*/; i ++ ) {
+	for( int i = start; i <= end; i ++ ) {
 
 		auto& token = tokens.at(i);
 
@@ -2646,9 +2645,8 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 				throw seq::CompilerError( seq::util::toStdString( "token: '"_b + token.getRaw() + "'"_b ), "name", "stream", token.getLine() );
 
 			case State::Function: {
-					int j = inverted ? findOpening( tokens, i + 1, seq::Compiler::Token::Category::FuncBracket ) + 1 : findClosing( tokens, i - 1, seq::Compiler::Token::Category::FuncBracket ) - 1;
-					int c[] = { inverted ? j + 1 : i, inverted ? i + 1 : j };
-					auto acc = assembleFunction( tokens, c[0], c[1], tokens.at(inverted ? j : i - 1).getAnchor() );
+					int j = findClosing( tokens, i - 1, seq::Compiler::Token::Category::FuncBracket ) - 1;
+					auto acc = assembleFunction( tokens, i, j, tokens.at(i - 1).getAnchor() );
 					arr.insert( arr.end(), acc.begin(), acc.end() );
 					i = j;
 					state = State::Stream;
@@ -2657,9 +2655,8 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 
 
 			case State::Expression: {
-					int j = inverted ? findOpening( tokens, i + 1, seq::Compiler::Token::Category::MathBracket ) + 1 : findClosing( tokens, i - 1, seq::Compiler::Token::Category::MathBracket ) - 1;
-					int c[] = { inverted ? j + 1 : i, inverted ? i + 1 : j };
-					auto acc = assembleExpression( tokens, c[0], c[1], tokens.at(inverted ? j : i - 1).getAnchor() );
+					int j = findClosing( tokens, i - 1, seq::Compiler::Token::Category::MathBracket ) - 1;
+					auto acc = assembleExpression( tokens, i, j, tokens.at(i - 1).getAnchor() );
 					arr.insert( arr.end(), acc.begin(), acc.end() );
 					i = j;
 					state = State::Stream;
@@ -2668,9 +2665,8 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 
 
 			case State::Flowc: {
-					int j = inverted ? findOpening( tokens, i + 1, seq::Compiler::Token::Category::FlowBracket ) + 1 : findClosing( tokens, i - 1, seq::Compiler::Token::Category::FlowBracket ) - 1;
-					int c[] = { inverted ? j + 1 : i, inverted ? i + 1 : j };
-					auto acc = assembleFunction( tokens, c[0], c[1], tokens.at(inverted ? j : i - 1).getAnchor() );
+					int j = findClosing( tokens, i - 1, seq::Compiler::Token::Category::FlowBracket ) - 1;
+					auto acc = assembleFunction( tokens, j, j, tokens.at(i - 1).getAnchor() );
 					arr.insert( arr.end(), acc.begin(), acc.end() );
 					i = j;
 					state = State::Stream;
