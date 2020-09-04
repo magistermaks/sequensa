@@ -1895,231 +1895,138 @@ seq::type::Generic* seq::Executor::executeExprPair( seq::type::Generic* left, se
 	if( left->getDataType() == seq::DataType::Expr || left->getDataType() == seq::DataType::Arg ) left = this->executeExpr(left);
 	if( right->getDataType() == seq::DataType::Expr || right->getDataType() == seq::DataType::Arg ) right = this->executeExpr(right);
 
-    seq::DataType type = left->getDataType();
-    seq::DataType type_right = right->getDataType();
+	// not and binary not use only one argument (right)
+	if( op != seq::ExprOperator::Not || op != seq::ExprOperator::BinaryNot ) {
+		if( left->getDataType() != right->getDataType() ) {
+			delete left;
+			delete right;
+			return new seq::type::Null(false);
+		}
+	}
 
-    // Discard invalid expressions - return null
-    if( type != type_right || type == seq::DataType::Null ) {
-        delete left;
-        delete right;
-        return new seq::type::Null( false );
-    }
+	seq::DataType type = right->getDataType();
 
-    bool lb = type == seq::DataType::Bool ? ((seq::type::Bool*) left)->getBool() : false;
-    bool rb = type == seq::DataType::Bool ? ((seq::type::Bool*) right)->getBool() : false;
-    double ld = type == seq::DataType::Number ? ((seq::type::Number*) left)->getDouble() : 0;
-    double rd = type == seq::DataType::Number ? ((seq::type::Number*) right)->getDouble() : 0;
-    seq::string ls = type == seq::DataType::String ? ((seq::type::String*) left)->getString() : (byte*) "";
-    seq::string rs = type == seq::DataType::String ? ((seq::type::String*) right)->getString() : (byte*) "";
+	typedef seq::type::Generic* G;
+	auto str = [] ( G g ) -> seq::type::String* { return (seq::type::String*) g; };
+	auto num = [] ( G g ) -> seq::type::Number* { return (seq::type::Number*) g; };
 
-    delete left;
-    delete right;
+	static const std::array<std::array<std::function<seq::type::Generic*(seq::type::Generic*,seq::type::Generic*)>,2>,SEQ_MAX_OPERATOR> lambdas = {{
+			{ // Less
+					[&] ( G a, G b ) { return new seq::type::Bool(false, num(a)->getDouble() < num(b)->getDouble()); },
+					[&] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{ // Greater
+					[&] ( G a, G b ) { return new seq::type::Bool(false, num(a)->getDouble() > num(b)->getDouble()); },
+					[&] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{ // Equal
+					[&] ( G a, G b ) { return new seq::type::Bool(false, num(a)->getDouble() == num(b)->getDouble()); },
+					[&] ( G a, G b ) { return new seq::type::Bool(false, str(a)->getString() == str(b)->getString()); },
+			},
+			{ // NotEqual
+					[&] ( G a, G b ) { return new seq::type::Bool(false, num(a)->getDouble() != num(b)->getDouble()); },
+					[&] ( G a, G b ) { return new seq::type::Bool(false, str(a)->getString() != str(b)->getString()); },
+			},
+			{ // NotGreater
+					[&] ( G a, G b ) { return new seq::type::Bool(false, num(a)->getDouble() <= num(b)->getDouble()); },
+					[&] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{ // NotLess
+					[&] ( G a, G b ) { return new seq::type::Bool(false, num(a)->getDouble() >= num(b)->getDouble()); },
+					[&] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{ // And
+					[&] ( G a, G b ) { return new seq::type::Bool(false, num(a)->getLong() != 0 && num(b)->getLong() != 0); },
+					[&] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{ // Or
+					[&] ( G a, G b ) { return new seq::type::Bool(false, num(a)->getLong() != 0 || num(b)->getLong() != 0); },
+					[&] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{ // Xor
+					[&] ( G a, G b ) { return new seq::type::Bool(false, (num(a)->getLong() != 0) != (num(b)->getLong() != 0)); },
+					[&] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{ // Not
+					[&] ( G a, G b ) { return new seq::type::Bool(false, num(b)->getLong() == 0); },
+					[&] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{ // Multiplication
+					[&] ( G a, G b ) { return new seq::type::Number(false, num(a)->getDouble() * num(b)->getDouble()); },
+					[&] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{ // Division
+					[&] ( G a, G b ) { return new seq::type::Number(false, num(a)->getDouble() / num(b)->getDouble()); },
+					[&] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{ // Addition
+					[&] ( G a, G b ) { return new seq::type::Number(false, num(a)->getDouble() + num(b)->getDouble()); },
+					[&] ( G a, G b ) { return new seq::type::String(false, (str(a)->getString() + str(b)->getString()).c_str() ); },
+			},
+			{ // Subtraction
+					[&] ( G a, G b ) { return new seq::type::Number(false, num(a)->getDouble() - num(b)->getDouble()); },
+					[&] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{ // Modulo
+					[&] ( G a, G b ) { return new seq::type::Number(false, num(a)->getLong() % num(b)->getLong()); },
+					[&] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{ // Power
+					[&] ( G a, G b ) { return new seq::type::Number(false, std::pow( num(a)->getDouble(), num(b)->getDouble() )); },
+					[&] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{ // BinaryAnd
+					[&] ( G a, G b ) { return new seq::type::Number(false, num(a)->getLong() & num(b)->getLong() ); },
+					[&] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{ // BinaryOr
+					[&] ( G a, G b ) { return new seq::type::Number(false, num(a)->getLong() | num(b)->getLong() ); },
+					[&] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{ // BinaryXor
+					[&] ( G a, G b ) { return new seq::type::Number(false, num(a)->getLong() ^ num(b)->getLong() ); },
+					[&] ( G a, G b ) { return new seq::type::Null(false); },
+			},
+			{ // BinaryNot
+					[&] ( G a, G b ) { return new seq::type::Number(false, ~ num(b)->getLong() ); },
+					[&] ( G a, G b ) { return new seq::type::Null(false); },
+			}
+	}};
 
-    // TODO
-    switch( op ) {
+	G ret = nullptr;
 
-    	case seq::ExprOperator::Less: {
-    		switch( type ) {
-    			case seq::DataType::Bool: return new seq::type::Bool( false, lb < rb );
-    			case seq::DataType::Number: return new seq::type::Bool( false, ld < rd );
-    			case seq::DataType::String: return new seq::type::Null( false );
-    			default: return new seq::type::Null( false );
-    		}
-    		break;
-    	}
+	if( type == seq::DataType::Number ) {
 
-    	case seq::ExprOperator::Greater: {
-    		switch( type ) {
-    			case seq::DataType::Bool: return new seq::type::Bool( false, lb > rb );
-    			case seq::DataType::Number: return new seq::type::Bool( false, ld > rd );
-    			case seq::DataType::String: return new seq::type::Null( false );
-    			default: return new seq::type::Null( false );
-    		}
-    		break;
-    	}
+		ret = lambdas.at( ((byte) op) - 1 ).at( 0 )( left, right );
 
-    	case seq::ExprOperator::Equal: {
-    		switch( type ) {
-    			case seq::DataType::Bool: return new seq::type::Bool( false, lb == rb );
-    			case seq::DataType::Number: return new seq::type::Bool( false, ld == rd );
-    			case seq::DataType::String: return new seq::type::Bool( false, ls == rs );
-    			default: return new seq::type::Null( false );
-    		}
-    		break;
-    	}
+	}else if( type == seq::DataType::Bool ) {
 
-    	case seq::ExprOperator::NotEqual: {
-    		switch( type ) {
-    			case seq::DataType::Bool: return new seq::type::Bool( false, lb != rb );
-    			case seq::DataType::Number: return new seq::type::Bool( false, ld != rd );
-    			case seq::DataType::String: return new seq::type::Bool( false, ls != rs );
-    			default: return new seq::type::Null( false );
-    		}
-    		break;
-    	}
+		G lb = new seq::type::Number( false, (float) ((seq::type::Bool*) left)->getBool() ? 1 : 0 );
+		G rb = new seq::type::Number( false, (float) ((seq::type::Bool*) right)->getBool() ? 1 : 0 );
+		G r = lambdas.at( ((byte) op) - 1 ).at( 0 )( lb, rb );
 
-    	case seq::ExprOperator::NotGreater: {
-    		switch( type ) {
-    			case seq::DataType::Bool: return new seq::type::Bool( false, lb <= rb );
-    			case seq::DataType::Number: return new seq::type::Bool( false, ld <= rd );
-    			case seq::DataType::String: return new seq::type::Null( false );
-    			default: return new seq::type::Null( false );
-    		}
-    		break;
-    	}
+		if( r->getDataType() == seq::DataType::Bool ) {
+			ret = r;
+		}else{
+			seq::type::Number* r_num = (seq::type::Number*) r;
+			ret = new seq::type::Bool( false, r_num->getLong() != 0 );
 
-    	case seq::ExprOperator::NotLess: {
-    		switch( type ) {
-    			case seq::DataType::Bool: return new seq::type::Bool( false, lb >= rb );
-    			case seq::DataType::Number: return new seq::type::Bool( false, ld >= rd );
-    			case seq::DataType::String: return new seq::type::Null( false );
-    			default: return new seq::type::Null( false );
-    		}
-    		break;
-    	}
+			delete r_num;
+		}
 
-    	case seq::ExprOperator::And: {
-    		switch( type ) {
-    			case seq::DataType::Bool: return new seq::type::Bool( false, lb && rb );
-    			case seq::DataType::Number: return new seq::type::Bool( false, ld != 0 && rd != 0 );
-    			case seq::DataType::String: return new seq::type::Null( false );
-    			default: return new seq::type::Null( false );
-    		}
-    		break;
-    	}
+		delete lb;
+		delete rb;
 
-    	case seq::ExprOperator::Or: {
-    		switch( type ) {
-    			case seq::DataType::Bool: return new seq::type::Bool( false, lb || rb );
-    			case seq::DataType::Number: return new seq::type::Bool( false, ld != 0 || rd != 0 );
-    			case seq::DataType::String: return new seq::type::Null( false );
-    			default: return new seq::type::Null( false );
-    		}
-    		break;
-    	}
+	}else if( type == seq::DataType::String ) {
 
-    	case seq::ExprOperator::Xor: {
-    		switch( type ) {
-    			case seq::DataType::Bool: return new seq::type::Bool( false, lb || rb );
-    			case seq::DataType::Number: return new seq::type::Bool( false, (ld != 0) != (rd != 0) );
-    			case seq::DataType::String: return new seq::type::Null( false );
-    			default: return new seq::type::Null( false );
-    		}
-    		break;
-    	}
+		ret = lambdas.at( ((byte) op) - 1 ).at( 1 )( left, right );
 
-    	case seq::ExprOperator::Not: {
-    		switch( type ) {
-    			case seq::DataType::Bool: return new seq::type::Bool( false, !rb );
-    			case seq::DataType::Number: return new seq::type::Bool( false, (rd == 0) );
-    			case seq::DataType::String: return new seq::type::Null( false );
-    			default: return new seq::type::Null( false );
-    		}
-    		break;
-    	}
+	}
 
-    	case seq::ExprOperator::Multiplication: {
-    		switch( type ) {
-    			case seq::DataType::Bool: return new seq::type::Bool( false, lb && rb );
-    			case seq::DataType::Number: return new seq::type::Number( false, ld * rd );
-    			case seq::DataType::String: return new seq::type::Null( false );
-    			default: return new seq::type::Null( false );
-    		}
-    		break;
-    	}
+	delete left;
+	delete right;
 
-    	case seq::ExprOperator::Division: {
-    		switch( type ) {
-    			case seq::DataType::Bool: if( !rb ) throw RuntimeError( "Divided by false!" ); else return new seq::type::Bool( false, lb );
-    			case seq::DataType::Number: if( rd == 0 ) throw RuntimeError( "Divided by 0!" ); else return new seq::type::Number( false, ld / rd );
-    			case seq::DataType::String: return new seq::type::Null( false );
-    			default: return new seq::type::Null( false );
-    		}
-    		break;
-    	}
-
-    	case seq::ExprOperator::Addition: {
-    		switch( type ) {
-    			case seq::DataType::Bool: return new seq::type::Bool( false, lb || rb );
-    			case seq::DataType::Number: return new seq::type::Number( false, ld + rd );
-    			case seq::DataType::String: return new seq::type::String( false, ( ls + rs ).c_str() );
-    			default: return new seq::type::Null( false );
-    		}
-    		break;
-    	}
-
-    	case seq::ExprOperator::Subtraction: {
-    		switch( type ) {
-    			case seq::DataType::Bool: return new seq::type::Bool( false, lb != rb );
-    			case seq::DataType::Number: return new seq::type::Number( false, ld - rd );
-    			case seq::DataType::String: return new seq::type::Null( false );
-    			default: return new seq::type::Null( false );
-    		}
-    		break;
-    	}
-
-    	case seq::ExprOperator::Modulo: {
-    		switch( type ) {
-    			case seq::DataType::Bool: return new seq::type::Bool( false, false );
-    			case seq::DataType::Number: return new seq::type::Number( false, seq::util::whole( ld ) % seq::util::whole( rd ) );
-    			case seq::DataType::String: return new seq::type::Null( false );
-    			default: return new seq::type::Null( false );
-    		}
-    		break;
-    	}
-
-    	case seq::ExprOperator::Power: {
-    		switch( type ) {
-    			case seq::DataType::Bool: return new seq::type::Bool( false, lb );
-    			case seq::DataType::Number: return new seq::type::Number( false, std::pow( ld, rd ) );
-    			case seq::DataType::String: return new seq::type::Null( false );
-    			default: return new seq::type::Null( false );
-    		}
-    		break;
-    	}
-
-    	case seq::ExprOperator::BinaryAnd: {
-    		switch( type ) {
-    			case seq::DataType::Bool: return new seq::type::Bool( false, lb && rb );
-    			case seq::DataType::Number: return new seq::type::Number( false, seq::util::whole( ld ) & seq::util::whole( rd ) );
-    			case seq::DataType::String: return new seq::type::Null( false );
-    			default: return new seq::type::Null( false );
-    		}
-    		break;
-    	}
-
-    	case seq::ExprOperator::BinaryOr: {
-    		switch( type ) {
-    			case seq::DataType::Bool: return new seq::type::Bool( false, lb || rb );
-    			case seq::DataType::Number: return new seq::type::Number( false, seq::util::whole( ld ) | seq::util::whole( rd ) );
-    			case seq::DataType::String: return new seq::type::Null( false );
-    			default: return new seq::type::Null( false );
-    		}
-    		break;
-    	}
-
-    	case seq::ExprOperator::BinaryXor: {
-    		switch( type ) {
-    			case seq::DataType::Bool: return new seq::type::Bool( false, lb != rb );
-    			case seq::DataType::Number: return new seq::type::Number( false, seq::util::whole( ld ) ^ seq::util::whole( rd ) );
-    			case seq::DataType::String: return new seq::type::Null( false );
-    			default: return new seq::type::Null( false );
-    		}
-    		break;
-    	}
-
-    	case seq::ExprOperator::BinaryNot: {
-    		switch( type ) {
-    			case seq::DataType::Bool: return new seq::type::Bool( false, !rb );
-    			case seq::DataType::Number: return new seq::type::Number( false, ~seq::util::whole( rd ) );
-    			case seq::DataType::String: return new seq::type::Null( false );
-    			default: return new seq::type::Null( false );
-    		}
-    		break;
-    	}
-    }
-
-    throw InternalError( "Invalid expression pair!" );
+	return ret;
 
 }
 
@@ -2316,6 +2223,7 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 		Start,
 		Comment,
 		String,
+		Escape,
 		Name,
 		Number,
 		Number2,
@@ -2347,12 +2255,6 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 
 	auto isNumber = [&] (byte chr) -> bool {
 		return std::isdigit( chr );
-	};
-
-	auto isEscaped = [&] (int offset) -> bool {
-		bool flag = false;
-		for( byte chr; offset >= 0 && ('\\'_b == (chr = code.at(offset - 1))); offset -- ) flag = !flag;
-		return flag;
 	};
 
 	auto bind = [] (byte a, byte b) -> seq::string {
@@ -2435,17 +2337,27 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 					break;
 
 				case State::String:
-					if( c == '"'_b && !isEscaped(i) ) {
+					if( c == '\\'_b ) {
+						state = State::Escape;
+					}else if( c == '"'_b ) {
 						token += '"'_b;
 						state = State::Start;
 						next();
-						break;
+					}else{
+						token += c;
 					}
-					if( c == 'n'_b && isEscaped(i) ) {
-						token += '\n'_b;
-						break;
+					break;
+
+				case State::Escape:
+					switch( c ) {
+						case 'n'_b: token += '\n'_b; break;
+						case 't'_b: token += '\t'_b; break;
+						case 'r'_b: token += '\r'_b; break;
+						case '\\'_b: token += '\\'_b; break;
+						case '"'_b: token += '"'_b; break;
+						default: throw CompilerError( std::string("char '") + (char) c + std::string("'"), "escape code (n, t, r, \\ or \")", "string", line );
 					}
-					token += c;
+					state = State::String;
 					break;
 
 				case State::Name: // or Tag
@@ -3077,96 +2989,6 @@ std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::To
 	bw.putFunc(anchor, arr);
 
 	return ret;
-}
-
-seq::type::Generic* _math_system_test( seq::ExprOperator op, seq::type::Generic* left, seq::type::Generic* right ) {
-
-	typedef seq::type::Generic* G;
-	//auto str = [] ( G g ) -> seq::type::String* { return (seq::type::String*) g; };
-	//auto num = [] ( G g ) -> seq::type::Number* { return (seq::type::Number*) g; };
-
-	static const std::array<std::array<std::function<seq::type::Generic*(seq::type::Generic*,seq::type::Generic*)>,2>,SEQ_MAX_OPERATOR> lambdas = {{
-			{
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-			},
-			{
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-			},
-			{
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-			},
-			{
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-			},
-			{
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-			},
-			{
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-			},
-			{
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-			},
-			{
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-			},
-			{
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-			},
-			{
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-			},
-			{
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-			},
-			{
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-			},
-			{
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-			},
-			{
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-			},
-			{
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-			},
-			{
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-			},
-			{
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-			},
-			{
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-			},
-			{
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-					[] ( G a, G b ) { return new seq::type::Null(false); },
-			}
-	}};
-
-	//lambdas.at( ((byte) op) - 1 ).at( /* type */ );
-
-	return nullptr;
 }
 
 //#undef SEQUENSA_IMPLEMENT
