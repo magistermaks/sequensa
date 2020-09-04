@@ -1574,10 +1574,6 @@ seq::FlowCondition::~FlowCondition() {
 
 bool seq::FlowCondition::validate( seq::type::Generic* arg ) {
 
-	if( arg->getDataType() != ((seq::type::Type*) this->a)->getType() ) {
-		return false;
-	}
-
     switch( this->type ) {
         case seq::FlowCondition::Type::Value: {
         		auto type = arg->getDataType();

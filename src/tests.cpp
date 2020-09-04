@@ -951,4 +951,31 @@ TEST( ce_flowc_3, {
 
 } );
 
+TEST( ce_flowc_4, {
+
+	try{
+
+		seq::string code = (byte*) (
+				"#exit << #[2] << true << null << \"Hello\" << 2");
+
+		auto buf = seq::Compiler::compile( code );
+		seq::ByteBuffer bb( buf.data(), buf.size() );
+
+		seq::Stream args;
+		args.push_back( new seq::type::Null( false ) );
+
+		seq::Executor exe;
+		exe.execute( bb, args );
+
+		CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Number );
+		CHECK( ((seq::type::Number*) exe.getResult())->getLong(), 2l );
+
+	}catch( seq::CompilerError& err ) {
+		FAIL( err.what() );
+	}catch( seq::InternalError& err ) {
+		FAIL( err.what() );
+	}
+
+} );
+
 BEGIN
