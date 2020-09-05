@@ -1117,6 +1117,9 @@ const bool seq::type::Stream::machesTags( byte _tags ) {
     if( this->tags & SEQ_TAG_FIRST ) return _tags & SEQ_TAG_FIRST;
     if( this->tags & SEQ_TAG_LAST ) return _tags & SEQ_TAG_LAST;
 
+    // this stream is waiting for the end tag
+    if( this->tags & SEQ_TAG_END ) return false;
+
     throw seq::InternalError( "Invalid Tag!" );
 }
 
@@ -1736,6 +1739,8 @@ seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream i
     // pop scope from stack
     this->stack.pop_back();
 
+    std::reverse(acc.begin(), acc.end());
+
     // return all accumulated entities
     return acc;
 }
@@ -1884,7 +1889,7 @@ seq::Stream seq::Executor::executeAnchor( seq::type::Generic* entity, seq::Strea
     for( auto g : input_stream ) {
         output_stream.push_back( this->executeCast( entity, g ) );
     }
-
+    std::reverse(output_stream.begin(), output_stream.end());
     return output_stream;
 
 }
@@ -2092,6 +2097,8 @@ seq::Stream seq::Executor::executeFlowc( std::vector<seq::FlowCondition*> fcs, s
         }
 
     }
+
+    std::reverse(acc.begin(), acc.end());
 
     return acc;
 }
@@ -2358,10 +2365,13 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 				case State::Name: // or Tag
 					if( isLetter( c ) ) token += c; else {
 
-						if( c == ';'_b ) token += c;
+						if( c == ';'_b ) {
+							token += c;
+						}else{
+							flag = true;
+						}
 
 						state = State::Start;
-						flag = true;
 						next();
 					}
 					break;
@@ -2456,9 +2466,9 @@ seq::Compiler::Token seq::Compiler::construct( seq::string raw, unsigned int lin
 	};
 
 	auto tagTypeFromString = [] ( seq::string str ) -> long {
-		if( str == "end;"_b ) return SEQ_TAG_FIRST;
-		if( str == "first;"_b ) return SEQ_TAG_LAST;
-		if( str == "last;"_b ) return SEQ_TAG_END;
+		if( str == "first;"_b ) return SEQ_TAG_FIRST;
+		if( str == "last;"_b ) return SEQ_TAG_LAST;
+		if( str == "end;"_b ) return SEQ_TAG_END;
 		return 0;
 	};
 
@@ -2959,6 +2969,9 @@ std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::To
 
 		if( tokens.at(i).getCategory() == seq::Compiler::Token::Category::Tag ) {
 			tags = tokens.at(i).getData();
+			if( (++ i) >= end ) {
+				throw seq::CompilerError( "end of input", "start of stream", "function", tokens.at(i).getLine() );
+			}
 		}
 
 		int j = findStreamEnd( tokens, i, end );
@@ -2969,7 +2982,7 @@ std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::To
 			i = j;
 
 		}else{
-			throw seq::CompilerError( "end of input", "end of stream", "", tokens.at(i).getLine() );
+			throw seq::CompilerError( "end of input", "end of stream", "function", tokens.at(i).getLine() );
 		}
 
 	}

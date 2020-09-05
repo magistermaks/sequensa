@@ -7,6 +7,23 @@ void print_buffer( seq::ByteBuffer& bb ) {
     while( br.hasNext() ) std::cout << (int) br.nextByte() << " ";
 }
 
+seq::Stream native_join_strings( seq::Stream input ) {
+	seq::string str;
+
+	for( auto& arg : input ) {
+		if( arg->getDataType() == seq::DataType::String ) {
+			str += ((seq::type::String*) arg)->getString();
+		}else{
+			throw seq::RuntimeError( "Invalid argument for 'join', string expected!" );
+		}
+	}
+	input.clear();
+
+	seq::Stream acc;
+	acc.push_back( new seq::type::String( false, str.c_str() ) );
+	return acc;
+}
+
 
 TEST( buffer_reader_simple, {
 
@@ -940,7 +957,36 @@ TEST( ce_type_cast_string_2, {
 } );
 
 
+TEST( ce_stream_tags, {
+
+	seq::string code = (byte*) (
+			"#exit << #join << #{\n"
+            "	first; #return << \"first\"\n"
+            "	last; #return << \"last\"\n"
+            "	#return << \"none\"\n"
+            "	end; #return << \"end\"\n"
+			"} << 1 << 2 << 3");
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Stream args;
+	args.push_back( new seq::type::Null( false ) );
+
+	seq::Executor exe;
+	exe.inject( "join"_b, native_join_strings );
+	exe.execute( bb, args );
+
+	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::String );
+	CHECK_ELSE( ((seq::type::String*) exe.getResult())->getString(), seq::string( (byte*) "firstnonenonelastnoneend" ) ) {
+		FAIL( "Invalid String!" );
+	}
+
+} );
+
+
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
+REGISTER_EXCEPTION( seq_runtime_error, seq::RuntimeError );
 
 BEGIN
