@@ -725,6 +725,8 @@ TEST( ce_expression_complex, {
 
 TEST( ce_arg, {
 
+	// MEMLEAK 56 bytes (24 direct, 32 indirect) in 1 block
+
 	seq::string code = (byte*) (
 			"#{\n"
 			"	#exit << #{\n"
@@ -959,6 +961,8 @@ TEST( ce_type_cast_string_2, {
 
 TEST( ce_stream_tags, {
 
+	// MEMLEAK 288 bytes in 1 block (seq::type::String)
+
 	seq::string code = (byte*) (
 			"#exit << #join << #{\n"
             "	first; #return << \"first\"\n"
@@ -985,6 +989,9 @@ TEST( ce_stream_tags, {
 } );
 
 TEST( ce_complex_sum, {
+
+	// MEMLEAK 24 bytes in 1 block (seq::type::Number)
+	// MEMLEAK 72 bytes in 3 blocks (seq::type::Number)
 
 	seq::string code = (byte*) (
 			"#exit << #{\n"

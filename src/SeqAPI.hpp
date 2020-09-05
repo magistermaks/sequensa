@@ -1692,7 +1692,7 @@ seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream i
         seq::BufferReader br = fbr;
 
         // set current stack argument (and free previous one)
-        this->getTopLevel()->replaceArg( (i == size) ? new seq::type::Null( false ) : input_stream[i] );
+        this->getTopLevel()->replaceArg( (i == size) ? new seq::type::Null( false ) : input_stream.at(i) );
 
         // iterate over function code
         while( br.hasNext() ) {
@@ -1711,11 +1711,13 @@ seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream i
 
                 case seq::CommandResult::ResultType::Break:
                 	// exit scope
+                	for( i ++ ; i < size; i ++ ) delete input_stream.at(i);
                     goto exit;
                     break;
 
                 case seq::CommandResult::ResultType::Exit:
                 	// stop program execution (by throwing exception)
+                	for( i ++ ; i < size; i ++ ) delete input_stream.at(i);
                     this->exit( cr.acc, 0 );
                     break;
 
@@ -1806,7 +1808,7 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream gs ) {
 
             	// get VMCall type and using a hacky way cast it to ResultType, then return
                 auto stt = (seq::CommandResult::ResultType) (byte) (( seq::type::VMCall* ) g )->getCall();
-                delete g;
+                for( ; i >= 0; i -- ) delete gs.at(i);
                 return CommandResult( stt, acc );
 
             }else{
