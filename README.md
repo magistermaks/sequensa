@@ -19,7 +19,7 @@ int main() {
 	seq::Executor exe;
 	exe.execute( bb, args );
 	
-	std::cout << std::toStdString( ((seq::type::String*) exe.getResult())->getString() );
+	std::cout << seq::util::toStdString( ((seq::type::String*) exe.getResult())->getString() );
 	
 }
 ```
