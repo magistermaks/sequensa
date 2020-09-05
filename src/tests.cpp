@@ -978,4 +978,116 @@ TEST( ce_flowc_4, {
 
 } );
 
+
+TEST( ce_type_cast_bool_1, {
+
+	seq::string code = (byte*) ("#exit << #bool << 1");
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Stream args;
+	args.push_back( new seq::type::Null( false ) );
+
+	seq::Executor exe;
+	exe.execute( bb, args );
+
+	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Bool );
+	CHECK( ((seq::type::Bool*) exe.getResult())->getBool(), true );
+
+} );
+
+TEST( ce_type_cast_bool_2, {
+
+	seq::string code = (byte*) ("#exit << #bool << 0");
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Stream args;
+	args.push_back( new seq::type::Null( false ) );
+
+	seq::Executor exe;
+	exe.execute( bb, args );
+
+	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Bool );
+	CHECK( ((seq::type::Bool*) exe.getResult())->getBool(), false );
+
+} );
+
+TEST( ce_type_cast_number_1, {
+
+	seq::string code = (byte*) ("#exit << #number << \"123\"");
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Stream args;
+	args.push_back( new seq::type::Null( false ) );
+
+	seq::Executor exe;
+	exe.execute( bb, args );
+
+	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Number );
+	CHECK( ((seq::type::Number*) exe.getResult())->getLong(), 123l );
+
+} );
+
+TEST( ce_type_cast_number_2, {
+
+	seq::string code = (byte*) ("#exit << #number << true");
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Stream args;
+	args.push_back( new seq::type::Null( false ) );
+
+	seq::Executor exe;
+	exe.execute( bb, args );
+
+	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Number );
+	CHECK( ((seq::type::Number*) exe.getResult())->getLong(), 1l );
+
+} );
+
+TEST( ce_type_cast_string_1, {
+
+	seq::string code = (byte*) ("#exit << #string << true");
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Stream args;
+	args.push_back( new seq::type::Null( false ) );
+
+	seq::Executor exe;
+	exe.execute( bb, args );
+
+	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::String );
+	CHECK_ELSE( ((seq::type::String*) exe.getResult())->getString(), seq::string( (byte*) "true" ) ) {
+		FAIL( "Invalid String!" );
+	}
+
+} );
+
+TEST( ce_type_cast_string_2, {
+
+	seq::string code = (byte*) ("#exit << #string << 123.2");
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Stream args;
+	args.push_back( new seq::type::Null( false ) );
+
+	seq::Executor exe;
+	exe.execute( bb, args );
+
+	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::String );
+	CHECK( std::stod( seq::util::toStdString(((seq::type::String*) exe.getResult())->getString()) ), 123.2 );
+
+} );
+
+
 BEGIN

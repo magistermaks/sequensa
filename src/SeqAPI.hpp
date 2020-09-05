@@ -1884,6 +1884,7 @@ seq::Stream seq::Executor::executeAnchor( seq::type::Generic* entity, seq::Strea
     for( auto g : input_stream ) {
         output_stream.push_back( this->executeCast( entity, g ) );
     }
+
     return output_stream;
 
 }
@@ -2108,22 +2109,19 @@ seq::type::Generic* seq::Executor::executeCast( seq::type::Generic* cast, seq::t
         case seq::DataType::Flowc:
         case seq::DataType::Func:
             delete arg;
-            return cast;
+            return seq::util::copyGeneric(cast);
 
         // type cast:
         case seq::DataType::Type: {
             switch( ( (seq::type::Type*) cast )->getType() ) {
 
                 case seq::DataType::Bool:
-                    delete cast;
                     return seq::util::boolCast( arg );
 
                 case seq::DataType::Number:
-                    delete cast;
                     return seq::util::numberCast( arg );
 
                 case seq::DataType::String:
-                    delete cast;
                     return seq::util::stringCast( arg );
 
                 default: throw seq::InternalError( "Invalid cast!" );
