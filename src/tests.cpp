@@ -984,6 +984,32 @@ TEST( ce_stream_tags, {
 
 } );
 
+TEST( ce_complex_sum, {
+
+	seq::string code = (byte*) (
+			"#exit << #{\n"
+			"	first; set x << 0\n"
+			"	set x << #{\n"
+			"		#return << (@@ + @)\n"
+			"	} << x\n"
+			"	last; #return << x\n"
+			"} << 1 << 2 << 3 << 4\n"
+			);
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Stream args;
+	args.push_back( new seq::type::Null( false ) );
+
+	seq::Executor exe;
+	exe.execute( bb, args );
+
+	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Number );
+	CHECK( ((seq::type::Number*) exe.getResult())->getLong(), 10l );
+
+} );
+
 
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
