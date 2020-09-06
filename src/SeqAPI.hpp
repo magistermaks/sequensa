@@ -321,6 +321,38 @@ namespace seq {
 
     }
 
+    class Generic {
+
+    	public:
+    		Generic( type::Generic* generic );
+    		Generic( const Generic& generic );
+    		Generic( Generic&& generic );
+    		~Generic();
+
+    		const DataType getDataType();
+    		bool getAnchor();
+    		void setAnchor( bool anchor );
+
+    		type::Null& Null();
+			type::Stream& Stream();
+    		type::Flowc& Flowc();
+    		type::Expression& Expression();
+    		type::Function& Function();
+    		type::Name& Name();
+    		type::VMCall& VMCall();
+    		type::Type& Type();
+    		type::String& String();
+    		type::Number& Number();
+    		type::Arg& Arg();
+    		type::Bool& Bool();
+
+    		type::Generic* getRaw();
+
+    	private:
+    		type::Generic* generic;
+
+    };
+
     namespace util {
 
         byte packTags( long pos, long end );
@@ -1141,6 +1173,80 @@ const std::vector< seq::FlowCondition* >& seq::type::Flowc::getConditions() {
     return this->conditions;
 }
 
+seq::Generic::Generic( seq::type::Generic* _generic ): generic( _generic ) {}
+
+seq::Generic::Generic( const seq::Generic& _generic ): generic( seq::util::copyGeneric( _generic.generic ) ) {}
+
+seq::Generic::Generic( seq::Generic&& _generic ): generic( std::move( _generic.generic ) ) {}
+
+seq::Generic::~Generic() {
+	delete this->generic;
+}
+
+const seq::DataType seq::Generic::getDataType() {
+	return this->generic->getDataType();
+}
+
+bool seq::Generic::getAnchor() {
+	return this->generic->getAnchor();
+}
+
+void seq::Generic::setAnchor( bool anchor ) {
+	return this->generic->setAnchor( anchor );
+}
+
+seq::type::Generic* seq::Generic::getRaw() {
+	return this->generic;
+}
+
+seq::type::Null& seq::Generic::Null() {
+	return *(static_cast<seq::type::Null*>(this->generic));
+}
+
+seq::type::Stream& seq::Generic::Stream() {
+	return *(static_cast<seq::type::Stream*>(this->generic));
+}
+
+seq::type::Flowc& seq::Generic::Flowc() {
+	return *(static_cast<seq::type::Flowc*>(this->generic));
+}
+
+seq::type::Expression& seq::Generic::Expression() {
+	return *(static_cast<seq::type::Expression*>(this->generic));
+}
+
+seq::type::Function& seq::Generic::Function() {
+	return *(static_cast<seq::type::Function*>(this->generic));
+}
+
+seq::type::Name& seq::Generic::Name() {
+	return *(static_cast<seq::type::Name*>(this->generic));
+}
+
+seq::type::VMCall& seq::Generic::VMCall() {
+	return *(static_cast<seq::type::VMCall*>(this->generic));
+}
+
+seq::type::Type& seq::Generic::Type() {
+	return *(static_cast<seq::type::Type*>(this->generic));
+}
+
+seq::type::String& seq::Generic::String() {
+	return *(static_cast<seq::type::String*>(this->generic));
+}
+
+seq::type::Number& seq::Generic::Number() {
+	return *(static_cast<seq::type::Number*>(this->generic));
+}
+
+seq::type::Arg& seq::Generic::Arg() {
+	return *(static_cast<seq::type::Arg*>(this->generic));
+}
+
+seq::type::Bool& seq::Generic::Bool() {
+	return *(static_cast<seq::type::Bool*>(this->generic));
+}
+
 seq::InternalError::InternalError( const std::string& error ) {
     this->error = "Internal Sequensa error occured: " + error;
 }
@@ -1671,8 +1777,8 @@ void seq::Executor::exit( seq::Stream stream, byte code ) {
 	}
 
 	// stop program execution
-    this->result = stream[0];
-    for( int i = 1; i < (long) stream.size(); i ++ ) delete stream[i];
+    this->result = stream.at(0);
+    for( int i = 1; i < (long) stream.size(); i ++ ) delete stream.at(i);
     throw seq::ExecutorInterrupt( code );
 }
 

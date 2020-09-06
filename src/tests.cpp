@@ -725,7 +725,7 @@ TEST( ce_expression_complex, {
 
 TEST( ce_arg, {
 
-	// MEMLEAK 56 bytes (24 direct, 32 indirect) in 1 block
+	// MEMLEAK 56 bytes (24 direct, 32 indirect) in 1 block (direct seq::type::Function, indirect seq::BufferReader (?))
 
 	seq::string code = (byte*) (
 			"#{\n"
