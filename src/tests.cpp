@@ -460,47 +460,7 @@ TEST( executor_hello_world_func, {
 
 } );
 
-
-void executor_native_test() {
-	seq::Executor exe;
-		exe.inject( (byte*) "sum", [] ( seq::Stream input ) -> seq::Stream {
-			double sum = 0;
-			for( auto& arg : input ) {
-				sum += seq::util::numberCast( arg ).Number().getDouble();
-			}
-			input.clear();
-
-			seq::Stream acc;
-			acc.push_back( seq::Generic( new seq::type::Number( false, sum ) ) );
-			return acc;
-		} );
-
-		std::vector<byte> arr_1;
-		seq::BufferWriter bw_1( arr_1 );
-		bw_1.putCall( true, seq::type::VMCall::CallType::Exit );
-		bw_1.putName( true, false, (byte*) "sum" );
-		bw_1.putNumber( false, (seq::Fraction) {1, 1} );
-		bw_1.putNumber( false, (seq::Fraction) {2, 1} );
-		bw_1.putNumber( false, (seq::Fraction) {3, 1} );
-		bw_1.putNumber( false, (seq::Fraction) {4, 1} );
-
-		std::vector<byte> arr_2;
-		seq::BufferWriter bw_2( arr_2 );
-		bw_2.putStream( false, 0, arr_1 );
-
-		seq::ByteBuffer bb( arr_2.data(), arr_2.size() );
-
-		auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
-		exe.execute( bb, args );
-
-		CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
-		CHECK( exe.getResult().Number().getLong(), (long) 10 );
-}
-
 TEST( executor_native, {
-
-		executor_native_test();
 
 	seq::Executor exe;
 	exe.inject( (byte*) "sum", [] ( seq::Stream input ) -> seq::Stream {
