@@ -11,8 +11,8 @@ seq::Stream native_join_strings( seq::Stream input ) {
 	seq::string str;
 
 	for( auto& arg : input ) {
-		if( arg->getDataType() == seq::DataType::String ) {
-			str += ((seq::type::String*) arg)->getString();
+		if( arg.getDataType() == seq::DataType::String ) {
+			str += arg.String().getString();
 		}else{
 			throw seq::RuntimeError( "Invalid argument for 'join', string expected!" );
 		}
@@ -20,7 +20,7 @@ seq::Stream native_join_strings( seq::Stream input ) {
 	input.clear();
 
 	seq::Stream acc;
-	acc.push_back( new seq::type::String( false, str.c_str() ) );
+	acc.push_back( seq::Generic( new seq::type::String( false, str.c_str() ) ) );
 	return acc;
 }
 
@@ -83,35 +83,35 @@ TEST( buffer_writer_complex, {
     	seq::TokenReader tr = br.next();
         CHECK( (byte) tr.getDataType(), (byte) seq::DataType::Bool );
         CHECK( tr.isAnchored(), true );
-        CHECK( ((seq::type::Bool*) tr.getGeneric())->getBool(), true );
+        CHECK( tr.getGeneric().Bool().getBool(), true );
     }
 
     { // small number
         seq::TokenReader tr = br.next();
         CHECK( (byte) tr.getDataType(), (byte) seq::DataType::Number );
         CHECK( tr.isAnchored(), false );
-        CHECK( ((seq::type::Number*) tr.getGeneric())->getLong(), (long) 12 );
+        CHECK( tr.getGeneric().Number().getLong(), (long) 12 );
     }
 
     { // fraction
         seq::TokenReader tr = br.next();
         CHECK( (byte) tr.getDataType(), (byte) seq::DataType::Number );
         CHECK( tr.isAnchored(), true );
-        CHECK( ((seq::type::Number*) tr.getGeneric())->getDouble(), (double) 0.5 );
+        CHECK( tr.getGeneric().Number().getDouble(), (double) 0.5 );
     }
 
     { // big number
         seq::TokenReader tr = br.next();
         CHECK( (byte) tr.getDataType(), (byte) seq::DataType::Number );
         CHECK( tr.isAnchored(), false );
-        CHECK( ((seq::type::Number*) tr.getGeneric())->getLong(), (long) 324221312413 );
+        CHECK( tr.getGeneric().Number().getLong(), (long) 324221312413 );
     }
 
     { // string
         seq::TokenReader tr = br.next();
         CHECK( (byte) tr.getDataType(), (byte) seq::DataType::String );
         CHECK( tr.isAnchored(), true );
-        CHECK_ELSE( ((seq::type::String*) tr.getGeneric())->getString(), seq::string( (byte*) "Hello World!" ) ) {
+        CHECK_ELSE( tr.getGeneric().String().getString(), seq::string( (byte*) "Hello World!" ) ) {
         	FAIL( "Invalid string!" );
         }
     }
@@ -120,31 +120,32 @@ TEST( buffer_writer_complex, {
         seq::TokenReader tr = br.next();
         CHECK( (byte) tr.getDataType(), (byte) seq::DataType::Type );
         CHECK( tr.isAnchored(), false );
-        CHECK( (byte) ((seq::type::Type*) tr.getGeneric())->getType(), (byte) seq::DataType::Number );
+        CHECK( (byte) tr.getGeneric().Type().getType(), (byte) seq::DataType::Number );
     }
 
     { // VM call
         seq::TokenReader tr = br.next();
         CHECK( (byte) tr.getDataType(), (byte) seq::DataType::VMCall );
         CHECK( tr.isAnchored(), false );
-        CHECK( (byte) ((seq::type::VMCall*) tr.getGeneric())->getCall(), (byte) seq::type::VMCall::CallType::Return );
+        CHECK( (byte) tr.getGeneric().VMCall().getCall(), (byte) seq::type::VMCall::CallType::Return );
     }
 
     { // arg
         seq::TokenReader tr = br.next();
         CHECK( (byte) tr.getDataType(), (byte) seq::DataType::Arg );
         CHECK( tr.isAnchored(), false );
-        CHECK( ((seq::type::Arg*) tr.getGeneric())->getLevel(), (byte) 3 );
+        CHECK( tr.getGeneric().Arg().getLevel(), (byte) 3 );
     }
 
     { // name (variable)
         seq::TokenReader tr = br.next();
         CHECK( (byte) tr.getDataType(), (byte) seq::DataType::Name );
         CHECK( tr.isAnchored(), false );
-        seq::type::Name* name = (seq::type::Name*) tr.getGeneric();
-        CHECK( name->getDefine(), true );
-        CHECK_ELSE( name->getName(), seq::string( (byte*) "name" ) ) {
-            FAIL( "Invalid string! - " + std::string( (char*) name->getName().c_str() ) );
+        seq::Generic generic = tr.getGeneric();
+        auto& name = generic.Name();
+        CHECK( name.getDefine(), true );
+        CHECK_ELSE( name.getName(), seq::string( (byte*) "name" ) ) {
+            FAIL( "Invalid string! - " + std::string( (char*) name.getName().c_str() ) );
         }
     }
 
@@ -172,7 +173,8 @@ TEST( buffer_writer_function, {
     CHECK( tr.isAnchored(), false );
 
     {
-        seq::BufferReader func_br = ((seq::type::Function*) tr.getGeneric())->getReader();
+    	auto g = tr.getGeneric();
+        seq::BufferReader func_br = tr.getGeneric().Function().getReader();
         CHECK( func_br.nextByte(), (byte) 'A' );
         CHECK( func_br.nextByte(), (byte) 'B' );
         CHECK( func_br.nextByte(), (byte) 'C' );
@@ -180,7 +182,8 @@ TEST( buffer_writer_function, {
     }
 
     {
-        seq::BufferReader func_br = ((seq::type::Function*) tr.getGeneric())->getReader();
+    	auto g = tr.getGeneric();
+        seq::BufferReader func_br = g.Function().getReader();
         CHECK( func_br.nextByte(), (byte) 'A' );
         CHECK( func_br.nextByte(), (byte) 'B' );
         CHECK( func_br.nextByte(), (byte) 'C' );
@@ -219,10 +222,11 @@ TEST( buffer_writer_expression, {
     CHECK( (byte) tr.getDataType(), (byte) seq::DataType::Expr );
     CHECK( tr.isAnchored(), false );
 
-    CHECK( (byte) ((seq::type::Expression*) tr.getGeneric())->getOperator(), (byte) seq::ExprOperator::Addition );
+    CHECK( (byte) tr.getGeneric().Expression().getOperator(), (byte) seq::ExprOperator::Addition );
 
     {
-        seq::BufferReader expr_br = ((seq::type::Expression*) tr.getGeneric())->getLeftReader();
+    	seq::Generic generic = tr.getGeneric();
+        seq::BufferReader expr_br = generic.Expression().getLeftReader();
         CHECK( expr_br.nextByte(), (byte) 'A' );
         CHECK( expr_br.nextByte(), (byte) 'B' );
         CHECK( expr_br.nextByte(), (byte) 'C' );
@@ -230,7 +234,8 @@ TEST( buffer_writer_expression, {
     }
 
     {
-        seq::BufferReader expr_br = ((seq::type::Expression*) tr.getGeneric())->getRightReader();
+    	seq::Generic generic = tr.getGeneric();
+        seq::BufferReader expr_br = generic.Expression().getRightReader();
         CHECK( expr_br.nextByte(), (byte) '1' );
         CHECK( expr_br.nextByte(), (byte) '2' );
         CHECK( expr_br.nextByte(), (byte) '3' );
@@ -269,16 +274,16 @@ TEST( buffer_writer_flowc, {
         seq::TokenReader tr = br.next();
         CHECK( (byte) tr.getDataType(), (byte) seq::DataType::Flowc );
         CHECK( tr.isAnchored(), false );
-        seq::type::Flowc* f = ((seq::type::Flowc*) tr.getGeneric());
 
-        std::vector< seq::FlowCondition* > fcs = f->getConditions();
+        seq::Generic generic = tr.getGeneric();
+        std::vector< seq::FlowCondition* > fcs = generic.Flowc().getConditions();
 
         CHECK( fcs.size(), (size_t) 2 );
         CHECK( (byte) fcs.at(0)->type, (byte) seq::FlowCondition::Type::Range );
-        CHECK( ( (seq::type::Number*) fcs.at(0)->a )->getLong(), (long) 12);
-        CHECK( ( (seq::type::Number*) fcs.at(0)->b )->getLong(), (long) 24);
+        CHECK( fcs.at(0)->a.Number().getLong(), (long) 12);
+        CHECK( fcs.at(0)->b.Number().getLong(), (long) 24);
         CHECK( (byte) fcs.at(1)->type, (byte) seq::FlowCondition::Type::Value );
-        CHECK( ( (seq::type::Bool*) fcs.at(1)->a )->getBool(), false );
+        CHECK( fcs.at(1)->a.Bool().getBool(), false );
     }
 
 } );
@@ -304,9 +309,9 @@ TEST( buffer_writer_stream, {
     seq::TokenReader tr = br.next();
     CHECK( (byte) tr.getDataType(), (byte) seq::DataType::Stream );
     CHECK( tr.isAnchored(), true );
-    seq::type::Stream* s = ((seq::type::Stream*) tr.getGeneric());
 
-    seq::BufferReader sbr = s->getReader();
+    auto g = tr.getGeneric();
+    seq::BufferReader sbr = g.Stream().getReader();
     CHECK( sbr.nextByte(), (byte) 'A' );
     CHECK( sbr.nextByte(), (byte) 'B' );
     CHECK( sbr.nextByte(), (byte) 'C' );
@@ -359,27 +364,26 @@ TEST( buffer_writer_file_header, {
 
 TEST( executor_hello_world, {
 
-	std::vector<byte> arr_1;
-	seq::BufferWriter bw_1( arr_1 );
-	bw_1.putCall( true, seq::type::VMCall::CallType::Exit );
-	bw_1.putString( false, (byte*) "Hello World!" );
+		std::vector<byte> arr_1;
+		seq::BufferWriter bw_1( arr_1 );
+		bw_1.putCall( true, seq::type::VMCall::CallType::Exit );
+		bw_1.putString( false, (byte*) "Hello World!" );
 
-	std::vector<byte> arr_2;
-	seq::BufferWriter bw_2( arr_2 );
-	bw_2.putStream( false, 0, arr_1 );
+		std::vector<byte> arr_2;
+		seq::BufferWriter bw_2( arr_2 );
+		bw_2.putStream( false, 0, arr_1 );
 
-	seq::ByteBuffer bb( arr_2.data(), arr_2.size() );
+		seq::ByteBuffer bb( arr_2.data(), arr_2.size() );
 
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
+		auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
 
-	seq::Executor exe;
-	exe.execute( bb, args );
+		seq::Executor exe;
+		exe.execute( bb, args );
 
-	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::String );
-	CHECK_ELSE( ((seq::type::String*) exe.getResult())->getString(), seq::string( (byte*) "Hello World!" ) ) {
-		FAIL( "Invalid String!" );
-	}
+		CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
+		CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "Hello World!" ) ) {
+			FAIL( "Invalid String!" );
+		}
 
 } );
 
@@ -403,14 +407,13 @@ TEST( executor_hello_world_var, {
 
 	seq::ByteBuffer bb( arr_3.data(), arr_3.size() );
 
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
+	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
 
 	seq::Executor exe;
 	exe.execute( bb, args );
 
-	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::String );
-	CHECK_ELSE( ((seq::type::String*) exe.getResult())->getString(), seq::string( (byte*) "Hello World!" ) ) {
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
+	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "Hello World!" ) ) {
 		FAIL( "Invalid String!" );
 	}
 
@@ -445,58 +448,94 @@ TEST( executor_hello_world_func, {
 
 	seq::ByteBuffer bb( arr_5.data(), arr_5.size() );
 
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
+	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
 
 	seq::Executor exe;
 	exe.execute( bb, args );
 
-	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::String );
-	CHECK_ELSE( ((seq::type::String*) exe.getResult())->getString(), seq::string( (byte*) "Hello World!" ) ) {
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
+	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "Hello World!" ) ) {
 		FAIL( "Invalid String!" );
 	}
 
 } );
 
+
+void executor_native_test() {
+	seq::Executor exe;
+		exe.inject( (byte*) "sum", [] ( seq::Stream input ) -> seq::Stream {
+			double sum = 0;
+			for( auto& arg : input ) {
+				sum += seq::util::numberCast( arg ).Number().getDouble();
+			}
+			input.clear();
+
+			seq::Stream acc;
+			acc.push_back( seq::Generic( new seq::type::Number( false, sum ) ) );
+			return acc;
+		} );
+
+		std::vector<byte> arr_1;
+		seq::BufferWriter bw_1( arr_1 );
+		bw_1.putCall( true, seq::type::VMCall::CallType::Exit );
+		bw_1.putName( true, false, (byte*) "sum" );
+		bw_1.putNumber( false, (seq::Fraction) {1, 1} );
+		bw_1.putNumber( false, (seq::Fraction) {2, 1} );
+		bw_1.putNumber( false, (seq::Fraction) {3, 1} );
+		bw_1.putNumber( false, (seq::Fraction) {4, 1} );
+
+		std::vector<byte> arr_2;
+		seq::BufferWriter bw_2( arr_2 );
+		bw_2.putStream( false, 0, arr_1 );
+
+		seq::ByteBuffer bb( arr_2.data(), arr_2.size() );
+
+		auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
+
+		exe.execute( bb, args );
+
+		CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
+		CHECK( exe.getResult().Number().getLong(), (long) 10 );
+}
+
 TEST( executor_native, {
 
-	seq::Executor exe;
-	exe.inject( (byte*) "sum", [] ( seq::Stream input ) -> seq::Stream {
-		double sum = 0;
-		for( auto arg : input ) {
-			seq::type::Number* num = seq::util::numberCast( arg );
-			sum += num->getDouble();
-			delete num;
-		}
-		input.clear();
+		executor_native_test();
 
-		seq::Stream acc;
-		acc.push_back( new seq::type::Number( false, sum ) );
-		return acc;
-	} );
-
-	std::vector<byte> arr_1;
-	seq::BufferWriter bw_1( arr_1 );
-	bw_1.putCall( true, seq::type::VMCall::CallType::Exit );
-	bw_1.putName( true, false, (byte*) "sum" );
-	bw_1.putNumber( false, (seq::Fraction) {1, 1} );
-	bw_1.putNumber( false, (seq::Fraction) {2, 1} );
-	bw_1.putNumber( false, (seq::Fraction) {3, 1} );
-	bw_1.putNumber( false, (seq::Fraction) {4, 1} );
-
-	std::vector<byte> arr_2;
-	seq::BufferWriter bw_2( arr_2 );
-	bw_2.putStream( false, 0, arr_1 );
-
-	seq::ByteBuffer bb( arr_2.data(), arr_2.size() );
-
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
-
-	exe.execute( bb, args );
-
-	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Number );
-	CHECK( ((seq::type::Number*) exe.getResult())->getLong(), (long) 10 );
+//	seq::Executor exe;
+//	exe.inject( (byte*) "sum", [] ( seq::Stream input ) -> seq::Stream {
+//		double sum = 0;
+//		for( auto& arg : input ) {
+//			sum += seq::util::numberCast( arg ).Number().getDouble();
+//		}
+//		input.clear();
+//
+//		seq::Stream acc;
+//		acc.push_back( seq::Generic( new seq::type::Number( false, sum ) ) );
+//		return acc;
+//	} );
+//
+//	std::vector<byte> arr_1;
+//	seq::BufferWriter bw_1( arr_1 );
+//	bw_1.putCall( true, seq::type::VMCall::CallType::Exit );
+//	bw_1.putName( true, false, (byte*) "sum" );
+//	bw_1.putNumber( false, (seq::Fraction) {1, 1} );
+//	bw_1.putNumber( false, (seq::Fraction) {2, 1} );
+//	bw_1.putNumber( false, (seq::Fraction) {3, 1} );
+//	bw_1.putNumber( false, (seq::Fraction) {4, 1} );
+//
+//	std::vector<byte> arr_2;
+//	seq::BufferWriter bw_2( arr_2 );
+//	bw_2.putStream( false, 0, arr_1 );
+//
+//	seq::ByteBuffer bb( arr_2.data(), arr_2.size() );
+//
+//	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
+//
+//	exe.execute( bb, args );
+//
+//	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
+//	CHECK( exe.getResult().Number().getLong(), (long) 10 );
 
 } );
 
@@ -521,14 +560,13 @@ TEST( expression_simple, {
 
 	seq::ByteBuffer bb( arr_4.data(), arr_4.size() );
 
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
+	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
 
 	seq::Executor exe;
 	exe.execute( bb, args );
 
-	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Number );
-	CHECK( ((seq::type::Number*) exe.getResult())->getLong(), (long) 42 );
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
+	CHECK( exe.getResult().Number().getLong(), (long) 42 );
 
 } );
 
@@ -560,14 +598,13 @@ TEST( ce_hello_world, {
 	auto buf = seq::Compiler::assembleFunction( tokens, 0, tokens.size(), true );
 	seq::ByteBuffer bb( buf.data() + 3, buf.size() - 3 );
 
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
+	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
 
 	seq::Executor exe;
 	exe.execute( bb, args );
 
-	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::String );
-	CHECK_ELSE( ((seq::type::String*) exe.getResult())->getString(), seq::string( (byte*) "Hello World!" ) ) {
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
+	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "Hello World!" ) ) {
 		FAIL( "Invalid String!" );
 	}
 
@@ -585,14 +622,13 @@ TEST( ce_hello_world_func, {
 	auto buf = seq::Compiler::assembleFunction( tokens, 0, tokens.size(), true );
 	seq::ByteBuffer bb( buf.data() + 3, buf.size() - 3 );
 
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
+	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
 
 	seq::Executor exe;
 	exe.execute( bb, args );
 
-	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::String );
-	CHECK_ELSE( ((seq::type::String*) exe.getResult())->getString(), seq::string( (byte*) "Hello World!" ) ) {
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
+	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "Hello World!" ) ) {
 		FAIL( "Invalid String!" );
 	}
 
@@ -607,14 +643,13 @@ TEST( ce_expression, {
 	auto buf = seq::Compiler::assembleFunction( tokens, 0, tokens.size(), true );
 	seq::ByteBuffer bb( buf.data() + 3, buf.size() - 3 );
 
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
+	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
 
 	seq::Executor exe;
 	exe.execute( bb, args );
 
-	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Number );
-	CHECK( ((seq::type::Number*) exe.getResult())->getLong(), (long) 10 );
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
+	CHECK( exe.getResult().Number().getLong(), (long) 10 );
 
 } );
 
@@ -628,14 +663,13 @@ TEST( ce_expression_nested_right, {
 	auto buf = seq::Compiler::assembleFunction( tokens, 0, tokens.size(), true );
 	seq::ByteBuffer bb( buf.data() + 3, buf.size() - 3 );
 
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
+	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
 
 	seq::Executor exe;
 	exe.execute( bb, args );
 
-	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Number );
-	CHECK( ((seq::type::Number*) exe.getResult())->getLong(), (long) 6 );
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
+	CHECK( exe.getResult().Number().getLong(), (long) 6 );
 
 } );
 
@@ -648,14 +682,13 @@ TEST( ce_expression_nested_left, {
 	auto buf = seq::Compiler::assembleFunction( tokens, 0, tokens.size(), true );
 	seq::ByteBuffer bb( buf.data() + 3, buf.size() - 3 );
 
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
+	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
 
 	seq::Executor exe;
 	exe.execute( bb, args );
 
-	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Number );
-	CHECK( ((seq::type::Number*) exe.getResult())->getLong(), (long) 6 );
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
+	CHECK( exe.getResult().Number().getLong(), (long) 6 );
 
 } );
 
@@ -669,14 +702,13 @@ TEST( ce_expression_nested_double, {
 	auto buf = seq::Compiler::assembleFunction( tokens, 0, tokens.size(), true );
 	seq::ByteBuffer bb( buf.data() + 3, buf.size() - 3 );
 
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
+	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
 
 	seq::Executor exe;
 	exe.execute( bb, args );
 
-	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Number );
-	CHECK( ((seq::type::Number*) exe.getResult())->getLong(), (long) 10 );
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
+	CHECK( exe.getResult().Number().getLong(), (long) 10 );
 
 } );
 
@@ -689,14 +721,13 @@ TEST( ce_expression_float, {
 	auto buf = seq::Compiler::assembleFunction( tokens, 0, tokens.size(), true );
 	seq::ByteBuffer bb( buf.data() + 3, buf.size() - 3 );
 
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
+	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
 
 	seq::Executor exe;
 	exe.execute( bb, args );
 
-	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Number );
-	CHECK( ((seq::type::Number*) exe.getResult())->getLong(), 555l );
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
+	CHECK( exe.getResult().Number().getLong(), 555l );
 
 } );
 
@@ -712,14 +743,13 @@ TEST( ce_expression_complex, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
+	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
 
 	seq::Executor exe;
 	exe.execute( bb, args );
 
-	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Number );
-	CHECK( ((seq::type::Number*) exe.getResult())->getLong(), 10l );
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
+	CHECK( exe.getResult().Number().getLong(), 10l );
 
 } );
 
@@ -737,14 +767,13 @@ TEST( ce_arg, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
+	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
 
 	seq::Executor exe;
 	exe.execute( bb, args );
 
-	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Number );
-	CHECK( ((seq::type::Number*) exe.getResult())->getLong(), 30l );
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
+	CHECK( exe.getResult().Number().getLong(), 30l );
 
 } );
 
@@ -757,14 +786,13 @@ TEST( ce_string_escape_codes, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
+	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
 
 	seq::Executor exe;
 	exe.execute( bb, args );
 
-	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::String );
-	CHECK_ELSE( ((seq::type::String*) exe.getResult())->getString(), seq::string( (byte*) "\\\n\t\"" ) ) {
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
+	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "\\\n\t\"" ) ) {
 		FAIL( "Invalid String!" );
 	}
 
@@ -779,14 +807,13 @@ TEST( ce_flowc_1, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
+	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
 
 	seq::Executor exe;
 	exe.execute( bb, args );
 
-	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Bool );
-	CHECK( ((seq::type::Bool*) exe.getResult())->getBool(), true );
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Bool );
+	CHECK( exe.getResult().Bool().getBool(), true );
 
 } );
 
@@ -798,14 +825,13 @@ TEST( ce_flowc_2, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
+	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
 
 	seq::Executor exe;
 	exe.execute( bb, args );
 
-	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Bool );
-	CHECK( ((seq::type::Bool*) exe.getResult())->getBool(), true );
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Bool );
+	CHECK( exe.getResult().Bool().getBool(), true );
 
 } );
 
@@ -817,14 +843,13 @@ TEST( ce_flowc_3, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
+	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
 
 	seq::Executor exe;
 	exe.execute( bb, args );
 
-	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Number );
-	CHECK( ((seq::type::Number*) exe.getResult())->getLong(), 2l );
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
+	CHECK( exe.getResult().Number().getLong(), 2l );
 
 } );
 
@@ -836,14 +861,13 @@ TEST( ce_flowc_4, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
+	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
 
 	seq::Executor exe;
 	exe.execute( bb, args );
 
-	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Number );
-	CHECK( ((seq::type::Number*) exe.getResult())->getLong(), 2l );
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
+	CHECK( exe.getResult().Number().getLong(), 2l );
 
 } );
 
@@ -855,14 +879,13 @@ TEST( ce_type_cast_bool_1, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
+	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
 
 	seq::Executor exe;
 	exe.execute( bb, args );
 
-	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Bool );
-	CHECK( ((seq::type::Bool*) exe.getResult())->getBool(), true );
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Bool );
+	CHECK( exe.getResult().Bool().getBool(), true );
 
 } );
 
@@ -873,14 +896,13 @@ TEST( ce_type_cast_bool_2, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
+	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
 
 	seq::Executor exe;
 	exe.execute( bb, args );
 
-	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Bool );
-	CHECK( ((seq::type::Bool*) exe.getResult())->getBool(), false );
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Bool );
+	CHECK( exe.getResult().Bool().getBool(), false );
 
 } );
 
@@ -891,14 +913,13 @@ TEST( ce_type_cast_number_1, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
+	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
 
 	seq::Executor exe;
 	exe.execute( bb, args );
 
-	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Number );
-	CHECK( ((seq::type::Number*) exe.getResult())->getLong(), 123l );
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
+	CHECK( exe.getResult().Number().getLong(), 123l );
 
 } );
 
@@ -909,14 +930,13 @@ TEST( ce_type_cast_number_2, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
+	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
 
 	seq::Executor exe;
 	exe.execute( bb, args );
 
-	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Number );
-	CHECK( ((seq::type::Number*) exe.getResult())->getLong(), 1l );
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
+	CHECK( exe.getResult().Number().getLong(), 1l );
 
 } );
 
@@ -927,14 +947,13 @@ TEST( ce_type_cast_string_1, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
+	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
 
 	seq::Executor exe;
 	exe.execute( bb, args );
 
-	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::String );
-	CHECK_ELSE( ((seq::type::String*) exe.getResult())->getString(), seq::string( (byte*) "true" ) ) {
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
+	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "true" ) ) {
 		FAIL( "Invalid String!" );
 	}
 
@@ -947,14 +966,13 @@ TEST( ce_type_cast_string_2, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
+	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
 
 	seq::Executor exe;
 	exe.execute( bb, args );
 
-	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::String );
-	CHECK( std::stod( seq::util::toStdString(((seq::type::String*) exe.getResult())->getString()) ), 123.2 );
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
+	CHECK( std::stod( seq::util::toStdString( exe.getResult().String().getString() ) ), 123.2 );
 
 } );
 
@@ -974,15 +992,14 @@ TEST( ce_stream_tags, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
+	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
 
 	seq::Executor exe;
 	exe.inject( "join"_b, native_join_strings );
 	exe.execute( bb, args );
 
-	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::String );
-	CHECK_ELSE( ((seq::type::String*) exe.getResult())->getString(), seq::string( (byte*) "firstnonenonelastnoneend" ) ) {
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
+	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "firstnonenonelastnoneend" ) ) {
 		FAIL( "Invalid String!" );
 	}
 
@@ -1006,14 +1023,13 @@ TEST( ce_complex_sum, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
+	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
 
 	seq::Executor exe;
 	exe.execute( bb, args );
 
-	CHECK( (byte) exe.getResult()->getDataType(), (byte) seq::DataType::Number );
-	CHECK( ((seq::type::Number*) exe.getResult())->getLong(), 10l );
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
+	CHECK( exe.getResult().Number().getLong(), 10l );
 
 } );
 

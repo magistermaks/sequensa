@@ -316,18 +316,19 @@ namespace seq {
 
         };
 
-        /// define Sequensa native function signature
-        typedef std::function<std::vector<Generic*>(std::vector<Generic*>)> Native;
-
     }
 
     class Generic {
 
     	public:
+    		Generic();
     		Generic( type::Generic* generic );
-    		Generic( const Generic& generic );
-    		Generic( Generic&& generic );
+    		Generic( const seq::Generic& generic );
+    		Generic( seq::Generic&& generic );
     		~Generic();
+
+    		Generic& operator= ( const Generic& generic );
+    		Generic& operator= ( Generic&& generic ) noexcept;
 
     		const DataType getDataType();
     		bool getAnchor();
@@ -353,6 +354,13 @@ namespace seq {
 
     };
 
+    namespace type {
+
+    	/// define Sequensa native function signature
+        typedef std::function<std::vector<seq::Generic>(std::vector<seq::Generic>)> Native;
+
+    }
+
     namespace util {
 
         byte packTags( long pos, long end );
@@ -360,9 +368,9 @@ namespace seq {
         seq::string toSeqString( std::string str );
         long whole( double val );
         type::Generic* copyGeneric( type::Generic* entity );
-        type::Number* numberCast( type::Generic* arg );
-        type::Bool* boolCast( type::Generic* arg );
-        type::String* stringCast( type::Generic* arg );
+        seq::Generic numberCast( seq::Generic arg );
+        seq::Generic boolCast( seq::Generic arg );
+        seq::Generic stringCast( seq::Generic arg );
         std::vector<FlowCondition*> copyFlowConditions( std::vector<FlowCondition*> conditions );
         seq::Fraction asFraction( double value );
         seq::DataType toDataType( seq::string str );
@@ -370,7 +378,7 @@ namespace seq {
     }
 
     /// define shorthand for stream
-    typedef std::vector<type::Generic*> Stream;
+    typedef std::vector<seq::Generic> Stream;
 
     /// Internal API error
     class InternalError: public std::exception {
@@ -437,19 +445,16 @@ namespace seq {
 
         public:
             TokenReader( BufferReader& reader );
-            ~TokenReader();
             DataType getDataType();
             bool isAnchored();
-            type::Generic* getGeneric();
-            void takeOwnership();
+            seq::Generic& getGeneric();
 
         private:
             BufferReader& reader;
             byte header;
-            bool anchor: 1;
-            bool free: 1;
+            bool anchor;
             DataType type;
-            type::Generic* generic;
+            seq::Generic generic;
 
             DataType getDataType( byte header );
             type::Bool* loadBool();
@@ -486,7 +491,6 @@ namespace seq {
             byte peekByte();
             bool hasNext();
             TokenReader next();
-            TokenReader nextOwned();
             BufferReader* nextBlock( long length );
             long nextInt();
             FileHeader getHeader();
@@ -530,18 +534,15 @@ namespace seq {
     class StackLevel {
 
         public:
-            StackLevel( type::Generic* arg );
+            StackLevel( seq::Generic arg );
             StackLevel( StackLevel&& level );
-            ~StackLevel();
-            void freeArg();
-            type::Generic* getArg();
+            seq::Generic getArg();
             Stream getVar( seq::string& name, bool anchor );
             void setVar( seq::string& name, Stream value );
-            void setArg( type::Generic* arg );
-            void replaceArg( type::Generic* arg );
+            void setArg( seq::Generic arg );
 
         private:
-            type::Generic* arg;
+            seq::Generic arg;
             std::unordered_map<seq::string, Stream> vars;
     };
 
@@ -553,13 +554,12 @@ namespace seq {
                 Range = 3
             };
 
-            FlowCondition( Type type, type::Generic* a, type::Generic* b );
-            ~FlowCondition();
-            bool validate( type::Generic* arg );
+            FlowCondition( Type type, seq::Generic a, seq::Generic b );
+            bool validate( seq::Generic arg );
 
             Type type;
-            type::Generic* a;
-            type::Generic* b;
+            seq::Generic a;
+            seq::Generic b;
     };
 
     class CommandResult {
@@ -587,7 +587,7 @@ namespace seq {
             StackLevel* getLevel( int level );
             StackLevel* getTopLevel();
             void free();
-            type::Generic* getResult();
+            seq::Generic getResult();
             void execute( ByteBuffer bb, seq::Stream args );
 
         private: // use these methods only if you know what you are doing //
@@ -595,17 +595,17 @@ namespace seq {
             Stream executeFunction( BufferReader br, seq::Stream stream );
             CommandResult executeCommand( TokenReader* br, byte tags );
             CommandResult executeStream( Stream stream );
-            Stream executeAnchor( type::Generic* entity, seq::Stream input_stream );
-            type::Generic* executeExprPair( type::Generic* left, type::Generic* right, ExprOperator op );
-            type::Generic* executeExpr( type::Generic* entity );
+            Stream executeAnchor( Generic entity, seq::Stream input_stream );
+            Generic executeExprPair( Generic left, Generic right, ExprOperator op );
+            Generic executeExpr( Generic entity );
             Stream resolveName( string& name, bool anchor );
             Stream executeFlowc( std::vector<FlowCondition*> fcs, Stream input_stream );
-            type::Generic* executeCast( type::Generic* cast, type::Generic* arg );
+            Generic executeCast( Generic cast, Generic arg );
 
         private:
             std::unordered_map<string, type::Native> natives;
             std::vector<StackLevel> stack;
-            type::Generic* result;
+            seq::Generic result;
     };
 
     namespace Compiler {
@@ -719,15 +719,15 @@ seq::type::Generic* seq::util::copyGeneric( seq::type::Generic* entity ) {
 	throw seq::InternalError( "Impossible state!" );
 }
 
-seq::type::Number* seq::util::numberCast( seq::type::Generic* arg ) {
+seq::Generic seq::util::numberCast( seq::Generic arg ) {
 	seq::type::Number* num = nullptr;
 
-	switch( arg->getDataType() ) {
+	switch( arg.getDataType() ) {
 
-		case seq::DataType::Number: return (seq::type::Number*) arg;
+		case seq::DataType::Number: return arg;
 
 		case seq::DataType::Bool:
-	    	if( ( (seq::type::Bool*) arg )->getBool() ) {
+	    	if( arg.Bool().getBool() ) {
 	        	num = new seq::type::Number( false, 1 );
 	    	}else{
 	        	num = new seq::type::Number( false, 0 );
@@ -740,7 +740,7 @@ seq::type::Number* seq::util::numberCast( seq::type::Generic* arg ) {
 
 	    case seq::DataType::String:
 	    	try {
-	    		num = new seq::type::Number( false, std::stod( seq::util::toStdString( ( (seq::type::String*) arg )->getString() ) ) );
+	    		num = new seq::type::Number( false, std::stod( seq::util::toStdString( arg.String().getString() ) ) );
 	    	} catch (std::invalid_argument &err) {
 	    		num = new seq::type::Number( false, 0 );
 	    	}
@@ -757,49 +757,47 @@ seq::type::Number* seq::util::numberCast( seq::type::Generic* arg ) {
 
 	}
 
-	delete arg;
-	return num;
+	return seq::Generic( num );
 }
 
-seq::type::Bool* seq::util::boolCast( seq::type::Generic* arg ) {
-	if( arg->getDataType() == seq::DataType::Bool ) return (seq::type::Bool*) arg;
+seq::Generic seq::util::boolCast( seq::Generic arg ) {
+	if( arg.getDataType() == seq::DataType::Bool ) return arg;
 
-	seq::type::Number* num = (seq::type::Number*) seq::util::numberCast( arg );
-	bool val = ( num->getDouble() != 0 );
-	delete num;
-	return new seq::type::Bool( false, val );
+	bool val = ( seq::util::numberCast( arg ).Number().getDouble() != 0 );
+
+	return seq::Generic( new seq::type::Bool( false, val ) );
 }
 
-seq::type::String* seq::util::stringCast( seq::type::Generic* arg ) {
+seq::Generic seq::util::stringCast( seq::Generic arg ) {
 	seq::type::String* str = nullptr;
 
-	switch( arg->getDataType() ) {
+	switch( arg.getDataType() ) {
 
-		case seq::DataType::String: return (seq::type::String*) arg;
+		case seq::DataType::String: return arg;
 
 		case seq::DataType::Bool:
-			if( ( (seq::type::Bool*) arg )->getBool() ) {
-				str = new seq::type::String( false, (byte*) "true" );
+			if( arg.Bool().getBool() ) {
+				str = new seq::type::String( false, "true"_b );
 			}else{
-				str = new seq::type::String( false, (byte*) "false" );
+				str = new seq::type::String( false, "false"_b );
 			}
 			break;
 
 		case seq::DataType::Null:
-			str = new seq::type::String( false, (byte*) "null" );
+			str = new seq::type::String( false, "null"_b );
 			break;
 
 		case seq::DataType::Number:
-			str = new seq::type::String( false, seq::util::toSeqString( std::to_string( ( (seq::type::Number*) arg )->getDouble() ) ).c_str()  );
+			str = new seq::type::String( false, seq::util::toSeqString( std::to_string( arg.Number().getDouble() ) ).c_str()  );
 			break;
 
 		case seq::DataType::Flowc:
-			str = new seq::type::String( false, (byte*) "flowc" );
+			str = new seq::type::String( false, "flowc"_b );
 			break;
 
 		case seq::DataType::VMCall:
 		case seq::DataType::Func:
-			str = new seq::type::String( false, (byte*) "func" );
+			str = new seq::type::String( false, "func"_b );
 			break;
 
 		// invalid casts: (stream, name, expr, arg)
@@ -807,8 +805,7 @@ seq::type::String* seq::util::stringCast( seq::type::Generic* arg ) {
 
 	}
 
-	delete arg;
-	return str;
+	return seq::Generic( str );
 }
 
 std::vector<seq::FlowCondition*> seq::util::copyFlowConditions( std::vector<seq::FlowCondition*> conditions ) {
@@ -1173,14 +1170,43 @@ const std::vector< seq::FlowCondition* >& seq::type::Flowc::getConditions() {
     return this->conditions;
 }
 
-seq::Generic::Generic( seq::type::Generic* _generic ): generic( _generic ) {}
+seq::Generic::Generic() {
+	this->generic = new seq::type::Null( false );
+}
 
-seq::Generic::Generic( const seq::Generic& _generic ): generic( seq::util::copyGeneric( _generic.generic ) ) {}
+seq::Generic::Generic( seq::type::Generic* _generic ) {
+	this->generic = _generic;
+}
 
-seq::Generic::Generic( seq::Generic&& _generic ): generic( std::move( _generic.generic ) ) {}
+seq::Generic::Generic( const seq::Generic& _generic ) {
+	this->generic = seq::util::copyGeneric( _generic.generic );
+}
+
+seq::Generic::Generic( seq::Generic&& _generic ) {
+	this->generic = std::move( _generic.generic );
+	_generic.generic = nullptr;
+}
 
 seq::Generic::~Generic() {
-	delete this->generic;
+	if( this->generic != nullptr ) delete this->generic;
+}
+
+seq::Generic& seq::Generic::operator= ( const Generic& generic ) {
+	if( this != &generic ) {
+		seq::type::Generic* g = seq::util::copyGeneric( generic.generic );
+		delete this->generic;
+		this->generic = g;
+	}
+	return *this;
+}
+
+seq::Generic& seq::Generic::operator= ( Generic&& generic ) noexcept {
+	if( this != &generic ) {
+		delete this->generic;
+		this->generic = generic.generic;
+		generic.generic = nullptr;
+	}
+	return *this;
 }
 
 const seq::DataType seq::Generic::getDataType() {
@@ -1327,12 +1353,6 @@ seq::TokenReader seq::BufferReader::next() {
     return seq::TokenReader( *this );
 }
 
-seq::TokenReader seq::BufferReader::nextOwned() {
-    auto tr = this->next();
-    tr.takeOwnership();
-    return tr;
-}
-
 seq::BufferReader* seq::BufferReader::nextBlock( long length ) {
     if( length < 0 ) throw seq::InternalError( "Invalid block size!" );
 
@@ -1407,7 +1427,6 @@ seq::Stream seq::BufferReader::readAll() {
     seq::Stream stream;
     while( this->hasNext() ) {
         TokenReader tr = this->next();
-        tr.takeOwnership();
         stream.push_back( tr.getGeneric() );
     }
 
@@ -1420,35 +1439,26 @@ seq::TokenReader::TokenReader( seq::BufferReader& reader ): reader( reader ) {
     this->header = (byte) ( header & 0b01111111 );
     this->anchor = (bool) ( header & 0b10000000 );
     this->type = getDataType( this->header );
-    this->free = true;
 
     switch( this->type ) {
-        case seq::DataType::Bool: this->generic = this->loadBool(); break;
-        case seq::DataType::Null: this->generic = new seq::type::Null( this->anchor ); break;
-        case seq::DataType::Number: this->generic = this->loadNumber(); break;
-        case seq::DataType::String: this->generic = this->loadString(); break;
-        case seq::DataType::Type: this->generic = this->loadType(); break;
-        case seq::DataType::VMCall: this->generic = this->loadCall(); break;
-        case seq::DataType::Arg: this->generic = this->loadArg(); break;
-        case seq::DataType::Func: this->generic = this->loadFunc(); break;
-        case seq::DataType::Expr: this->generic = this->loadExpr(); break;
-        case seq::DataType::Name: this->generic = this->loadName(); break;
-        case seq::DataType::Flowc: this->generic = this->loadFlowc(); break;
-        case seq::DataType::Stream: this->generic = this->loadStream(); break;
+        case seq::DataType::Bool: this->generic = seq::Generic( this->loadBool() ); break;
+        case seq::DataType::Null: this->generic = seq::Generic( new seq::type::Null( this->anchor ) ); break;
+        case seq::DataType::Number: this->generic = seq::Generic( this->loadNumber() ); break;
+        case seq::DataType::String: this->generic = seq::Generic( this->loadString() ); break;
+        case seq::DataType::Type: this->generic = seq::Generic( this->loadType() ); break;
+        case seq::DataType::VMCall: this->generic = seq::Generic( this->loadCall() ); break;
+        case seq::DataType::Arg: this->generic = seq::Generic( this->loadArg() ); break;
+        case seq::DataType::Func: this->generic = seq::Generic( this->loadFunc() ); break;
+        case seq::DataType::Expr: this->generic = seq::Generic( this->loadExpr() ); break;
+        case seq::DataType::Name: this->generic = seq::Generic( this->loadName() ); break;
+        case seq::DataType::Flowc: this->generic = seq::Generic( this->loadFlowc() ); break;
+        case seq::DataType::Stream: this->generic = seq::Generic( this->loadStream() ); break;
         default: throw seq::InternalError( "Invalid data type!" );
     }
 }
 
-seq::TokenReader::~TokenReader() {
-    if( this->free ) delete this->generic;
-}
-
-seq::type::Generic* seq::TokenReader::getGeneric() {
+seq::Generic& seq::TokenReader::getGeneric() {
     return this->generic;
-}
-
-void seq::TokenReader::takeOwnership() {
-    this->free = false;
 }
 
 seq::DataType seq::TokenReader::getDataType( byte header ) {
@@ -1596,15 +1606,15 @@ seq::type::Flowc* seq::TokenReader::loadFlowc() {
         long length = this->reader.nextInt();
         if( !length ) throw seq::InternalError( "Invalid flowc size!" );
         seq::BufferReader* br = this->reader.nextBlock( length );
-        seq::TokenReader tr = br->nextOwned();
+        seq::TokenReader tr = br->next();
 
         if( br->hasNext() ) {
-            blocks.push_back( new seq::FlowCondition( seq::FlowCondition::Type::Range, tr.getGeneric(), br->nextOwned().getGeneric() ) );
+            blocks.push_back( new seq::FlowCondition( seq::FlowCondition::Type::Range, tr.getGeneric(), br->next().getGeneric() ) );
         }else{
             if( tr.getDataType() == seq::DataType::Type ) {
-                blocks.push_back( new seq::FlowCondition( seq::FlowCondition::Type::Type, tr.getGeneric(), nullptr ) );
+                blocks.push_back( new seq::FlowCondition( seq::FlowCondition::Type::Type, tr.getGeneric(), seq::Generic() ) );
             }else{
-                blocks.push_back( new seq::FlowCondition( seq::FlowCondition::Type::Value, tr.getGeneric(), nullptr ) );
+                blocks.push_back( new seq::FlowCondition( seq::FlowCondition::Type::Value, tr.getGeneric(), seq::Generic() ) );
             }
         }
 
@@ -1622,39 +1632,24 @@ seq::type::Stream* seq::TokenReader::loadStream() {
     return new seq::type::Stream( this->anchor, tags, this->reader.nextBlock( length ) );
 }
 
-seq::StackLevel::StackLevel( seq::type::Generic* arg ) {
+seq::StackLevel::StackLevel( seq::Generic arg ) {
     this->arg = arg;
 }
 
 seq::StackLevel::StackLevel( seq::StackLevel&& level ) {
-    this->arg = level.arg;
+    this->arg = std::move( level.arg );
     this->vars = std::move( level.vars );
-    level.arg = nullptr;
 }
 
-seq::StackLevel::~StackLevel() {
-	if( this->arg ) delete this->arg;
-	for( auto it : this->vars )
-		for( auto g : it.second )
-			if( g ) delete g;
-}
-
-void seq::StackLevel::freeArg() {
-    if( this->arg ) {
-    	delete this->arg;
-    	this->arg = nullptr;
-    }
-}
-
-seq::type::Generic* seq::StackLevel::getArg() {
-    return seq::util::copyGeneric( this->arg );
+seq::Generic seq::StackLevel::getArg() {
+    return seq::Generic( this->arg );
 }
 
 seq::Stream seq::StackLevel::getVar( seq::string& name, bool anchor ) {
     seq::Stream ret;
-    for( seq::type::Generic* g : this->vars.at( name ) ) {
-        seq::type::Generic* ng = seq::util::copyGeneric( g );
-        ng->setAnchor( anchor );
+    for( auto& g : this->vars.at( name ) ) {
+        seq::Generic ng = seq::Generic( g );
+        ng.setAnchor( anchor );
         ret.push_back( ng );
     }
 
@@ -1665,37 +1660,27 @@ void seq::StackLevel::setVar( seq::string& name, seq::Stream value ) {
     this->vars[ name ] = value;
 }
 
-void seq::StackLevel::setArg( seq::type::Generic* _arg ) {
+void seq::StackLevel::setArg( seq::Generic _arg ) {
     this->arg = _arg;
 }
 
-void seq::StackLevel::replaceArg( seq::type::Generic* arg ) {
-	if( this->arg ) delete this->arg;
-	this->arg = arg;
-}
+seq::FlowCondition::FlowCondition( seq::FlowCondition::Type _type, seq::Generic _a, seq::Generic _b ): type( _type ), a( _a ), b( _b ) {}
 
-seq::FlowCondition::FlowCondition( seq::FlowCondition::Type _type, seq::type::Generic* _a, seq::type::Generic* _b ): type( _type ), a( _a ), b( _b ) {}
-
-seq::FlowCondition::~FlowCondition() {
-	delete this->a;
-	delete this->b;
-}
-
-bool seq::FlowCondition::validate( seq::type::Generic* arg ) {
+bool seq::FlowCondition::validate( seq::Generic arg ) {
 
     switch( this->type ) {
         case seq::FlowCondition::Type::Value: {
-        		auto type = arg->getDataType();
-        		if( type == this->a->getDataType() ) {
+        		auto type = arg.getDataType();
+        		if( type == this->a.getDataType() ) {
         			switch( type ) {
         				case seq::DataType::Null:
         					return true;
 
         				case seq::DataType::Bool:
-        					return ((seq::type::Bool*) this->a)->getBool() == ((seq::type::Bool*) arg)->getBool();
+        					return this->a.Bool().getBool() == arg.Bool().getBool();
 
         				case seq::DataType::Number:
-        					return ((seq::type::Number*) this->a)->getDouble() == ((seq::type::Number*) arg)->getDouble();
+        					return this->a.Number().getDouble() == arg.Number().getDouble();
 
         				default:
         					return false;
@@ -1705,13 +1690,13 @@ bool seq::FlowCondition::validate( seq::type::Generic* arg ) {
             return false;
 
         case seq::FlowCondition::Type::Type:
-            return (arg->getDataType() == ((seq::type::Type*) this->a)->getType());
+            return (arg.getDataType() == this->a.Type().getType());
 
         case seq::FlowCondition::Type::Range:
-        	if( arg->getDataType() == seq::DataType::Number ) {
-        		double av = ((seq::type::Number*) this->a)->getDouble();
-        		double bv = ((seq::type::Number*) this->b)->getDouble();
-        		double val = ((seq::type::Number*) arg)->getDouble();
+        	if( arg.getDataType() == seq::DataType::Number ) {
+        		double av = this->a.Number().getDouble();
+        		double bv = this->b.Number().getDouble();
+        		double val = arg.Number().getDouble();
         		return val < bv && val > av;
         	}
         	return false;
@@ -1735,10 +1720,6 @@ void seq::Executor::inject( seq::string name, seq::type::Native native ) {
 }
 
 void seq::Executor::free() {
-    if( this->result ) {
-    	delete this->result;
-    	this->result = nullptr;
-    }
     this->natives.clear();
 }
 
@@ -1754,21 +1735,17 @@ seq::StackLevel* seq::Executor::getTopLevel() {
 	return &(this->stack.back());
 }
 
-seq::type::Generic* seq::Executor::getResult() {
+seq::Generic seq::Executor::getResult() {
     return this->result;
 }
 
 void seq::Executor::execute( seq::ByteBuffer bb, seq::Stream args ) {
-	this->result = nullptr;
-	seq::Stream acc;
 	try{
-		acc = this->executeFunction( bb.getReader(), args );
-		this->exit( seq::Stream { new seq::type::Null( false ) }, 0 );
+		this->executeFunction( bb.getReader(), args );
+		this->exit( seq::Stream { seq::Generic( new seq::type::Null( false ) ) }, 0 );
 	}catch( seq::ExecutorInterrupt& ex ) {
 		// this->result set by the this->exit method
 	}
-
-	for( auto g : acc ) delete g;
 }
 
 void seq::Executor::exit( seq::Stream stream, byte code ) {
@@ -1778,14 +1755,13 @@ void seq::Executor::exit( seq::Stream stream, byte code ) {
 
 	// stop program execution
     this->result = stream.at(0);
-    for( int i = 1; i < (long) stream.size(); i ++ ) delete stream.at(i);
     throw seq::ExecutorInterrupt( code );
 }
 
 seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream input_stream ) {
 
     // push new stack into stack array
-    this->stack.push_back( seq::StackLevel( nullptr ) );
+    this->stack.push_back( seq::StackLevel( seq::Generic() ) );
 
     // accumulator of all returned entities
     seq::Stream acc;
@@ -1797,8 +1773,8 @@ seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream i
         const byte tags = seq::util::packTags( i, size );
         seq::BufferReader br = fbr;
 
-        // set current stack argument (and free previous one)
-        this->getTopLevel()->replaceArg( (i == size) ? new seq::type::Null( false ) : input_stream.at(i) );
+        // set current stack argument
+        this->getTopLevel()->setArg( (i == size) ? seq::Generic( new seq::type::Null( false ) ) : input_stream.at(i) );
 
         // iterate over function code
         while( br.hasNext() ) {
@@ -1817,17 +1793,16 @@ seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream i
 
                 case seq::CommandResult::ResultType::Break:
                 	// exit scope
-                	for( i ++ ; i < size; i ++ ) delete input_stream.at(i);
                     goto exit;
                     break;
 
                 case seq::CommandResult::ResultType::Exit:
                 	// stop program execution (by throwing exception)
-                	for( i ++ ; i < size; i ++ ) delete input_stream.at(i);
                     this->exit( cr.acc, 0 );
                     break;
 
                 case seq::CommandResult::ResultType::Again:
+                	// TODO
                 	// add returned arguments to CURRENT input stream
                     if( i == size ) throw RuntimeError( "Native function 'again' can not be called from 'end' taged stream!" );
                     acc.insert( acc.begin() + i + 1, cr.acc.begin(), cr.acc.end() );
@@ -1837,8 +1812,6 @@ seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream i
                 	break;
 
             }
-
-            // note: at this point TokenReader goes out of scope and deletes tk->generic
         }
     }
 
@@ -1859,9 +1832,11 @@ seq::CommandResult seq::Executor::executeCommand( seq::TokenReader* tr, byte tag
     if( tr->getDataType() == seq::DataType::Stream ) {
 
     	// execute stream if stream tags match current state
-        seq::type::Stream* stream = ( seq::type::Stream* ) tr->getGeneric();
-        if( stream->machesTags( tags ) ) {
-            return this->executeStream( stream->getReader().readAll() );
+    	auto generic = tr->getGeneric();
+        auto& stream = generic.Stream();
+
+        if( stream.machesTags( tags ) ) {
+            return this->executeStream( stream.getReader().readAll() );
         }else{
             return CommandResult( seq::CommandResult::ResultType::None, seq::Stream() );
         }
@@ -1878,32 +1853,30 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream gs ) {
     // iterate over stream entities
     for( long i = gs.size() - 1; i >= 0; i -- ) {
 
-        seq::type::Generic* g = gs.at( i );
-        seq::DataType t = g->getDataType();
+        seq::Generic g = gs.at( i );
+        seq::DataType t = g.getDataType();
 
         // if type is unsolid compute real value
         if( t == seq::DataType::Expr || t == seq::DataType::Arg ) {
-            seq::type::Generic* ng = this->executeExpr( g );
+            seq::Generic ng = this->executeExpr( g );
             g = ng;
-            t = g->getDataType();
+            t = g.getDataType();
         }
 
         // execute anchored entities
-        if( g->getAnchor() ) {
+        if( g.getAnchor() ) {
 
             // handle native function "emit"
-            if( t == seq::DataType::VMCall && (( seq::type::VMCall* ) g )->getCall() == seq::type::VMCall::CallType::Emit ) {
+            if( t == seq::DataType::VMCall && g.VMCall().getCall() == seq::type::VMCall::CallType::Emit ) {
                 if( acc.size() == 0 ) {
-                    acc.push_back( new seq::type::Null( false ) );
+                    acc.push_back( seq::Generic( new seq::type::Null( false ) ) );
                 }
 
-                delete g;
                 continue;
             }
 
             // if acc is empty there is nothing to execute - skip
             if( acc.size() == 0 ) {
-                delete g;
                 continue;
             }else{
                 std::reverse(acc.begin(), acc.end());
@@ -1913,16 +1886,13 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream gs ) {
             if( t == seq::DataType::VMCall ) {
 
             	// get VMCall type and using a hacky way cast it to ResultType, then return
-                auto stt = (seq::CommandResult::ResultType) (byte) (( seq::type::VMCall* ) g )->getCall();
-                for( ; i >= 0; i -- ) delete gs.at(i);
+                auto stt = (seq::CommandResult::ResultType) (byte) g.VMCall().getCall();
                 return CommandResult( stt, acc );
 
             }else{
 
             	// execute anchor and save result in acc
-                auto tmp = this->executeAnchor( g, acc );
-                acc = tmp;
-                delete g;
+            	acc = this->executeAnchor( g, acc );
                 continue;
 
             }
@@ -1930,23 +1900,22 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream gs ) {
 
         // if entity is a variable
         if( t == seq::DataType::Name ) {
-            seq::type::Name* name = ( seq::type::Name* ) g;
+            auto& name = g.Name();
 
-            if( name->getDefine() ) { // define variable (set)
+            if( name.getDefine() ) { // define variable (set)
 
-                this->stack.back().setVar( name->getName(), acc );
+                this->stack.back().setVar( name.getName(), acc );
                 acc.clear();
 
             }else{ // read variable from stack
 
-                auto tmp = this->resolveName( name->getName(), name->getAnchor() );
+                auto tmp = this->resolveName( name.getName(), name.getAnchor() );
 
                 // append tmp to acc
                 acc.reserve( acc.size() + tmp.size() );
                 acc.insert( acc.end(), tmp.begin(), tmp.end() );
             }
 
-            delete g;
             continue;
         }
 
@@ -1957,22 +1926,22 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream gs ) {
     return CommandResult( seq::CommandResult::ResultType::None, acc );
 }
 
-seq::Stream seq::Executor::executeAnchor( seq::type::Generic* entity, seq::Stream input_stream ) {
+seq::Stream seq::Executor::executeAnchor( seq::Generic entity, seq::Stream input_stream ) {
 
-    seq::DataType type = entity->getDataType();
+    seq::DataType type = entity.getDataType();
 
     // if given entity is a variable
     if( type == seq::DataType::Name ) {
 
-        seq::type::Name* name = ( seq::type::Name* ) entity;
+        seq::type::Name& name = entity.Name();
 
         // test if name refers to native function, and if so execute it
         try{
-            return this->natives.at( name->getName() )( input_stream );
+            return this->natives.at( name.getName() )( input_stream );
 		} catch (std::out_of_range &ignore) {
 
 			// if it isn't native, try finding it on the stack
-			seq::Stream s = this->resolveName( name->getName(), true );
+			seq::Stream s = this->resolveName( name.getName(), true );
 			s.insert( s.end(), input_stream.begin(), input_stream.end() );
 			return this->executeStream( s ).acc;
 
@@ -1982,14 +1951,12 @@ seq::Stream seq::Executor::executeAnchor( seq::type::Generic* entity, seq::Strea
 
     // execute anchored function
     if( type == seq::DataType::Func ) {
-        seq::type::Function* func = (seq::type::Function*) entity;
-        return this->executeFunction( func->getReader(), input_stream );
+        return this->executeFunction( entity.Function().getReader(), input_stream );
     }
 
     // execute anchored flowc
     if( type == seq::DataType::Flowc ) {
-        seq::type::Flowc* flowc = (seq::type::Flowc*) entity;
-        return this->executeFlowc( flowc->getConditions(), input_stream );
+        return this->executeFlowc( entity.Flowc().getConditions(), input_stream );
     }
 
     // if not any of the above, simply cast args to anchor
@@ -2002,27 +1969,25 @@ seq::Stream seq::Executor::executeAnchor( seq::type::Generic* entity, seq::Strea
 
 }
 
-seq::type::Generic* seq::Executor::executeExprPair( seq::type::Generic* left, seq::type::Generic* right, seq::ExprOperator op ) {
+seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic right, seq::ExprOperator op ) {
 
-	if( left->getDataType() == seq::DataType::Expr || left->getDataType() == seq::DataType::Arg ) left = this->executeExpr(left);
-	if( right->getDataType() == seq::DataType::Expr || right->getDataType() == seq::DataType::Arg ) right = this->executeExpr(right);
+	if( left.getDataType() == seq::DataType::Expr || left.getDataType() == seq::DataType::Arg ) left = this->executeExpr(left);
+	if( right.getDataType() == seq::DataType::Expr || right.getDataType() == seq::DataType::Arg ) right = this->executeExpr(right);
 
 	// not and binary not use only one argument (right)
 	if( op != seq::ExprOperator::Not || op != seq::ExprOperator::BinaryNot ) {
-		if( left->getDataType() != right->getDataType() ) {
-			delete left;
-			delete right;
-			return new seq::type::Null(false);
+		if( left.getDataType() != right.getDataType() ) {
+			return seq::Generic( new seq::type::Null(false) );
 		}
 	}
 
-	seq::DataType type = right->getDataType();
+	seq::DataType type = right.getDataType();
 
-	typedef seq::type::Generic* G;
-	auto str = [] ( G g ) -> seq::type::String* { return (seq::type::String*) g; };
-	auto num = [] ( G g ) -> seq::type::Number* { return (seq::type::Number*) g; };
+	typedef seq::Generic G;
+	auto str = [] ( G g ) -> seq::type::String* { return (seq::type::String*) g.getRaw(); };
+	auto num = [] ( G g ) -> seq::type::Number* { return (seq::type::Number*) g.getRaw(); };
 
-	static const std::array<std::array<std::function<seq::type::Generic*(seq::type::Generic*,seq::type::Generic*)>,2>,SEQ_MAX_OPERATOR> lambdas = {{
+	static const std::array<std::array<std::function<seq::type::Generic*(seq::Generic,seq::Generic)>,2>,SEQ_MAX_OPERATOR> lambdas = {{
 			{ // Less
 					[&] ( G a, G b ) { return new seq::type::Bool(false, num(a)->getDouble() < num(b)->getDouble()); },
 					[&] ( G a, G b ) { return new seq::type::Null(false); },
@@ -2105,66 +2070,57 @@ seq::type::Generic* seq::Executor::executeExprPair( seq::type::Generic* left, se
 			}
 	}};
 
-	G ret = nullptr;
-
 	if( type == seq::DataType::Number ) {
 
-		ret = lambdas.at( ((byte) op) - 1 ).at( 0 )( left, right );
+		return seq::Generic( lambdas.at( ((byte) op) - 1 ).at( 0 )( left, right ) );
 
 	}else if( type == seq::DataType::Bool ) {
 
-		G lb = new seq::type::Number( false, (float) ((seq::type::Bool*) left)->getBool() ? 1 : 0 );
-		G rb = new seq::type::Number( false, (float) ((seq::type::Bool*) right)->getBool() ? 1 : 0 );
-		G r = lambdas.at( ((byte) op) - 1 ).at( 0 )( lb, rb );
+		G lb = seq::Generic( new seq::type::Number( false, (float) (left.Bool().getBool() ? 1 : 0) ) );
+		G rb = seq::Generic( new seq::type::Number( false, (float) (right.Bool().getBool() ? 1 : 0) ) );
+		seq::type::Generic* r = lambdas.at( ((byte) op) - 1 ).at( 0 )( lb, rb );
 
 		if( r->getDataType() == seq::DataType::Bool ) {
-			ret = r;
+			return seq::Generic( r );
 		}else{
 			seq::type::Number* r_num = (seq::type::Number*) r;
-			ret = new seq::type::Bool( false, r_num->getLong() != 0 );
-
+			bool val = r_num->getLong() != 0;
 			delete r_num;
-		}
 
-		delete lb;
-		delete rb;
+			return seq::Generic( new seq::type::Bool( false, val ) );
+		}
 
 	}else if( type == seq::DataType::String ) {
 
-		ret = lambdas.at( ((byte) op) - 1 ).at( 1 )( left, right );
+		return seq::Generic( lambdas.at( ((byte) op) - 1 ).at( 1 )( left, right ) );
 
 	}
 
-	delete left;
-	delete right;
-
-	return ret;
+	throw seq::Generic( new seq::type::Null(false) );
 
 }
 
-seq::type::Generic* seq::Executor::executeExpr( seq::type::Generic* entity ) {
+seq::Generic seq::Executor::executeExpr( seq::Generic entity ) {
 
-    seq::DataType type = entity->getDataType();
+    seq::DataType type = entity.getDataType();
 
     if( type == seq::DataType::Expr ) {
-        seq::type::Expression* expr = (seq::type::Expression*) entity;
+        auto& expr = entity.Expression();
 
-        seq::type::Generic* left = expr->getLeftReader().nextOwned().getGeneric();
-        seq::type::Generic* right = expr->getRightReader().nextOwned().getGeneric();
-        seq::ExprOperator op = expr->getOperator();
+        seq::Generic left = expr.getLeftReader().next().getGeneric();
+        seq::Generic right = expr.getRightReader().next().getGeneric();
+        seq::ExprOperator op = expr.getOperator();
 
-        delete expr;
         return this->executeExprPair( left, right, op );
     }
 
     if( type == seq::DataType::Arg ) {
-        seq::type::Arg* arg = (seq::type::Arg*) entity;
+        auto& arg = entity.Arg();
 
-        long s = (long) this->stack.size() - 1L - (long) arg->getLevel();
-        delete entity;
+        long s = (long) this->stack.size() - 1L - (long) arg.getLevel();
 
         if( s < 0 ) {
-            return new seq::type::Null( false );
+            return seq::Generic( new seq::type::Null( false ) );
         }
 
         return this->stack.at( s ).getArg();
@@ -2192,18 +2148,12 @@ seq::Stream seq::Executor::executeFlowc( std::vector<seq::FlowCondition*> fcs, s
 
     seq::Stream acc;
 
-    for( seq::type::Generic* arg : input_stream ) {
-
+    for( seq::Generic& arg : input_stream ) {
         for( seq::FlowCondition* fc : fcs ) {
-
             if( fc->validate( arg ) ) {
                 acc.push_back( arg );
-            }else{
-                delete arg;
             }
-
         }
-
     }
 
     std::reverse(acc.begin(), acc.end());
@@ -2211,9 +2161,9 @@ seq::Stream seq::Executor::executeFlowc( std::vector<seq::FlowCondition*> fcs, s
     return acc;
 }
 
-seq::type::Generic* seq::Executor::executeCast( seq::type::Generic* cast, seq::type::Generic* arg ) {
+seq::Generic seq::Executor::executeCast( seq::Generic cast, seq::Generic arg ) {
 
-    switch( cast->getDataType() ) {
+    switch( cast.getDataType() ) {
 
         // simple value casts:
         case seq::DataType::Bool:
@@ -2223,12 +2173,11 @@ seq::type::Generic* seq::Executor::executeCast( seq::type::Generic* cast, seq::t
         case seq::DataType::VMCall:
         case seq::DataType::Flowc:
         case seq::DataType::Func:
-            delete arg;
-            return seq::util::copyGeneric(cast);
+            return arg;
 
         // type cast:
         case seq::DataType::Type: {
-            switch( ( (seq::type::Type*) cast )->getType() ) {
+            switch( cast.Type().getType() ) {
 
                 case seq::DataType::Bool:
                     return seq::util::boolCast( arg );
