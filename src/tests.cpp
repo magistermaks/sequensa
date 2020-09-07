@@ -544,9 +544,10 @@ TEST( tokenizer_basic, {
 
 TEST( ce_hello_world, {
 
-	auto tokens = seq::Compiler::tokenize( "#exit << \"Hello World!\""_b );
-	auto buf = seq::Compiler::assembleFunction( tokens, 0, tokens.size(), true );
-	seq::ByteBuffer bb( buf.data() + 3, buf.size() - 3 );
+	seq::string code = "#exit << \"Hello World!\""_b;
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
 	exe.execute( bb );
@@ -567,8 +568,8 @@ TEST( ce_hello_world_func, {
 
 	auto tokens = seq::Compiler::tokenize( code );
 
-	auto buf = seq::Compiler::assembleFunction( tokens, 0, tokens.size(), true );
-	seq::ByteBuffer bb( buf.data() + 3, buf.size() - 3 );
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
 	exe.execute( bb );
@@ -584,10 +585,8 @@ TEST( ce_expression, {
 
 	seq::string code = (byte*) ("#exit << ( 1 + 2 + 3 + 4 )");
 
-	auto tokens = seq::Compiler::tokenize( code );
-
-	auto buf = seq::Compiler::assembleFunction( tokens, 0, tokens.size(), true );
-	seq::ByteBuffer bb( buf.data() + 3, buf.size() - 3 );
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
 	exe.execute( bb );
@@ -602,10 +601,8 @@ TEST( ce_expression_nested_right, {
 
 	seq::string code = (byte*) ("#exit << ( 1 + ( 2 + 3 ) )");
 
-	auto tokens = seq::Compiler::tokenize( code );
-
-	auto buf = seq::Compiler::assembleFunction( tokens, 0, tokens.size(), true );
-	seq::ByteBuffer bb( buf.data() + 3, buf.size() - 3 );
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
 	exe.execute( bb );
@@ -619,10 +616,8 @@ TEST( ce_expression_nested_left, {
 
 	seq::string code = (byte*) ("#exit << ( ( 2 + 3 ) + 1 )");
 
-	auto tokens = seq::Compiler::tokenize( code );
-
-	auto buf = seq::Compiler::assembleFunction( tokens, 0, tokens.size(), true );
-	seq::ByteBuffer bb( buf.data() + 3, buf.size() - 3 );
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
 	exe.execute( bb );
@@ -637,10 +632,8 @@ TEST( ce_expression_nested_double, {
 
 	seq::string code = (byte*) ("#exit << ( ( 2 + 3 ) + ( 4 + 1 ) )");
 
-	auto tokens = seq::Compiler::tokenize( code );
-
-	auto buf = seq::Compiler::assembleFunction( tokens, 0, tokens.size(), true );
-	seq::ByteBuffer bb( buf.data() + 3, buf.size() - 3 );
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
 	exe.execute( bb );
@@ -654,10 +647,8 @@ TEST( ce_expression_float, {
 
 	seq::string code = (byte*) ("#exit << ( ( 2.14 + 3.41 ) * 100 )");
 
-	auto tokens = seq::Compiler::tokenize( code );
-
-	auto buf = seq::Compiler::assembleFunction( tokens, 0, tokens.size(), true );
-	seq::ByteBuffer bb( buf.data() + 3, buf.size() - 3 );
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
 	exe.execute( bb );
