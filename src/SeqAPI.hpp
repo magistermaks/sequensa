@@ -1820,7 +1820,7 @@ seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream i
     // pop scope from stack
     this->stack.pop_back();
 
-    std::reverse(acc.begin(), acc.end());
+    //std::reverse(acc.begin(), acc.end());
 
     // return all accumulated entities
     return acc;
@@ -1879,7 +1879,7 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream gs ) {
             if( acc.size() == 0 ) {
                 continue;
             }else{
-                std::reverse(acc.begin(), acc.end());
+                //std::reverse(acc.begin(), acc.end());
             }
 
             // if entity is a VM Call other than "emit"
@@ -1964,7 +1964,7 @@ seq::Stream seq::Executor::executeAnchor( seq::Generic entity, seq::Stream input
     for( auto g : input_stream ) {
         output_stream.push_back( this->executeCast( entity, g ) );
     }
-    std::reverse(output_stream.begin(), output_stream.end());
+    //std::reverse(output_stream.begin(), output_stream.end());
     return output_stream;
 
 }
@@ -2156,7 +2156,7 @@ seq::Stream seq::Executor::executeFlowc( std::vector<seq::FlowCondition*> fcs, s
         }
     }
 
-    std::reverse(acc.begin(), acc.end());
+    //std::reverse(acc.begin(), acc.end());
 
     return acc;
 }
