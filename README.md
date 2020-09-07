@@ -10,16 +10,14 @@ Read more about Sequensa programming language [here](http://darktree.net/project
 int main() {
 
 	seq::string code = "#exit << \"Hello World!\""_b;
+	
 	auto buffer = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buffer.data(), buffer.size() );
 
-	seq::Stream args;
-	args.push_back( new seq::type::Null( false ) );
-
 	seq::Executor exe;
-	exe.execute( bb, args );
+	exe.execute( bb );
 	
-	std::cout << seq::util::toStdString( ((seq::type::String*) exe.getResult())->getString() );
+	std::cout << seq::util::toStdString( exe.getResult().String().getString() );
 	
 }
 ```
