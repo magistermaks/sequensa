@@ -375,10 +375,8 @@ TEST( executor_hello_world, {
 
 		seq::ByteBuffer bb( arr_2.data(), arr_2.size() );
 
-		auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
 		seq::Executor exe;
-		exe.execute( bb, args );
+		exe.execute( bb );
 
 		CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
 		CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "Hello World!" ) ) {
@@ -407,10 +405,8 @@ TEST( executor_hello_world_var, {
 
 	seq::ByteBuffer bb( arr_3.data(), arr_3.size() );
 
-	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
 	seq::Executor exe;
-	exe.execute( bb, args );
+	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
 	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "Hello World!" ) ) {
@@ -448,10 +444,8 @@ TEST( executor_hello_world_func, {
 
 	seq::ByteBuffer bb( arr_5.data(), arr_5.size() );
 
-	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
 	seq::Executor exe;
-	exe.execute( bb, args );
+	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
 	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "Hello World!" ) ) {
@@ -490,9 +484,7 @@ TEST( executor_native, {
 
 	seq::ByteBuffer bb( arr_2.data(), arr_2.size() );
 
-	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
-	exe.execute( bb, args );
+	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
 	CHECK( exe.getResult().Number().getLong(), (long) 10 );
@@ -520,10 +512,8 @@ TEST( expression_simple, {
 
 	seq::ByteBuffer bb( arr_4.data(), arr_4.size() );
 
-	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
 	seq::Executor exe;
-	exe.execute( bb, args );
+	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
 	CHECK( exe.getResult().Number().getLong(), (long) 42 );
@@ -558,10 +548,8 @@ TEST( ce_hello_world, {
 	auto buf = seq::Compiler::assembleFunction( tokens, 0, tokens.size(), true );
 	seq::ByteBuffer bb( buf.data() + 3, buf.size() - 3 );
 
-	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
 	seq::Executor exe;
-	exe.execute( bb, args );
+	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
 	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "Hello World!" ) ) {
@@ -582,10 +570,8 @@ TEST( ce_hello_world_func, {
 	auto buf = seq::Compiler::assembleFunction( tokens, 0, tokens.size(), true );
 	seq::ByteBuffer bb( buf.data() + 3, buf.size() - 3 );
 
-	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
 	seq::Executor exe;
-	exe.execute( bb, args );
+	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
 	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "Hello World!" ) ) {
@@ -603,10 +589,8 @@ TEST( ce_expression, {
 	auto buf = seq::Compiler::assembleFunction( tokens, 0, tokens.size(), true );
 	seq::ByteBuffer bb( buf.data() + 3, buf.size() - 3 );
 
-	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
 	seq::Executor exe;
-	exe.execute( bb, args );
+	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
 	CHECK( exe.getResult().Number().getLong(), (long) 10 );
@@ -623,10 +607,8 @@ TEST( ce_expression_nested_right, {
 	auto buf = seq::Compiler::assembleFunction( tokens, 0, tokens.size(), true );
 	seq::ByteBuffer bb( buf.data() + 3, buf.size() - 3 );
 
-	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
 	seq::Executor exe;
-	exe.execute( bb, args );
+	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
 	CHECK( exe.getResult().Number().getLong(), (long) 6 );
@@ -642,10 +624,8 @@ TEST( ce_expression_nested_left, {
 	auto buf = seq::Compiler::assembleFunction( tokens, 0, tokens.size(), true );
 	seq::ByteBuffer bb( buf.data() + 3, buf.size() - 3 );
 
-	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
 	seq::Executor exe;
-	exe.execute( bb, args );
+	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
 	CHECK( exe.getResult().Number().getLong(), (long) 6 );
@@ -662,10 +642,8 @@ TEST( ce_expression_nested_double, {
 	auto buf = seq::Compiler::assembleFunction( tokens, 0, tokens.size(), true );
 	seq::ByteBuffer bb( buf.data() + 3, buf.size() - 3 );
 
-	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
 	seq::Executor exe;
-	exe.execute( bb, args );
+	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
 	CHECK( exe.getResult().Number().getLong(), (long) 10 );
@@ -681,10 +659,8 @@ TEST( ce_expression_float, {
 	auto buf = seq::Compiler::assembleFunction( tokens, 0, tokens.size(), true );
 	seq::ByteBuffer bb( buf.data() + 3, buf.size() - 3 );
 
-	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
 	seq::Executor exe;
-	exe.execute( bb, args );
+	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
 	CHECK( exe.getResult().Number().getLong(), 555l );
@@ -703,10 +679,8 @@ TEST( ce_expression_complex, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
 	seq::Executor exe;
-	exe.execute( bb, args );
+	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
 	CHECK( exe.getResult().Number().getLong(), 10l );
@@ -714,8 +688,6 @@ TEST( ce_expression_complex, {
 } );
 
 TEST( ce_arg, {
-
-	// MEMLEAK 56 bytes (24 direct, 32 indirect) in 1 block (direct seq::type::Function, indirect seq::BufferReader (?))
 
 	seq::string code = (byte*) (
 			"#{\n"
@@ -727,10 +699,8 @@ TEST( ce_arg, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
 	seq::Executor exe;
-	exe.execute( bb, args );
+	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
 	CHECK( exe.getResult().Number().getLong(), 30l );
@@ -746,10 +716,8 @@ TEST( ce_string_escape_codes, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
 	seq::Executor exe;
-	exe.execute( bb, args );
+	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
 	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "\\\n\t\"" ) ) {
@@ -767,10 +735,8 @@ TEST( ce_flowc_1, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
 	seq::Executor exe;
-	exe.execute( bb, args );
+	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Bool );
 	CHECK( exe.getResult().Bool().getBool(), true );
@@ -785,10 +751,8 @@ TEST( ce_flowc_2, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
 	seq::Executor exe;
-	exe.execute( bb, args );
+	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Bool );
 	CHECK( exe.getResult().Bool().getBool(), true );
@@ -803,10 +767,8 @@ TEST( ce_flowc_3, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
 	seq::Executor exe;
-	exe.execute( bb, args );
+	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
 	CHECK( exe.getResult().Number().getLong(), 2l );
@@ -821,10 +783,8 @@ TEST( ce_flowc_4, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
 	seq::Executor exe;
-	exe.execute( bb, args );
+	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
 	CHECK( exe.getResult().Number().getLong(), 2l );
@@ -839,10 +799,8 @@ TEST( ce_type_cast_bool_1, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
 	seq::Executor exe;
-	exe.execute( bb, args );
+	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Bool );
 	CHECK( exe.getResult().Bool().getBool(), true );
@@ -856,10 +814,8 @@ TEST( ce_type_cast_bool_2, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
 	seq::Executor exe;
-	exe.execute( bb, args );
+	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Bool );
 	CHECK( exe.getResult().Bool().getBool(), false );
@@ -873,10 +829,8 @@ TEST( ce_type_cast_number_1, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
 	seq::Executor exe;
-	exe.execute( bb, args );
+	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
 	CHECK( exe.getResult().Number().getLong(), 123l );
@@ -890,10 +844,8 @@ TEST( ce_type_cast_number_2, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
 	seq::Executor exe;
-	exe.execute( bb, args );
+	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
 	CHECK( exe.getResult().Number().getLong(), 1l );
@@ -907,10 +859,8 @@ TEST( ce_type_cast_string_1, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
 	seq::Executor exe;
-	exe.execute( bb, args );
+	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
 	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "true" ) ) {
@@ -926,10 +876,8 @@ TEST( ce_type_cast_string_2, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
 	seq::Executor exe;
-	exe.execute( bb, args );
+	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
 	CHECK( std::stod( seq::util::toStdString( exe.getResult().String().getString() ) ), 123.2 );
@@ -938,8 +886,6 @@ TEST( ce_type_cast_string_2, {
 
 
 TEST( ce_stream_tags, {
-
-	// MEMLEAK 288 bytes in 1 block (seq::type::String)
 
 	seq::string code = (byte*) (
 			"#exit << #join << #{\n"
@@ -952,11 +898,9 @@ TEST( ce_stream_tags, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
 	seq::Executor exe;
 	exe.inject( "join"_b, native_join_strings );
-	exe.execute( bb, args );
+	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
 	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "firstnonenonelastnoneend" ) ) {
@@ -966,9 +910,6 @@ TEST( ce_stream_tags, {
 } );
 
 TEST( ce_complex_sum, {
-
-	// MEMLEAK 24 bytes in 1 block (seq::type::Number)
-	// MEMLEAK 72 bytes in 3 blocks (seq::type::Number)
 
 	seq::string code = (byte*) (
 			"#exit << #{\n"
@@ -983,10 +924,8 @@ TEST( ce_complex_sum, {
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-	auto args = (seq::Stream) { seq::Generic( new seq::type::Null( false ) ) };
-
 	seq::Executor exe;
-	exe.execute( bb, args );
+	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
 	CHECK( exe.getResult().Number().getLong(), 10l );

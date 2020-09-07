@@ -581,14 +581,13 @@ namespace seq {
     class Executor {
 
         public:
-            Executor();
-            ~Executor();
             void inject( seq::string name, seq::type::Native native );
             StackLevel* getLevel( int level );
             StackLevel* getTopLevel();
-            void free();
+            void reset();
             seq::Generic getResult();
-            void execute( ByteBuffer bb, seq::Stream args );
+            seq::Stream& getResults();
+            void execute( ByteBuffer bb, seq::Stream args = { seq::Generic( new type::Null( false ) ) } );
 
         private: // use these methods only if you know what you are doing //
             void exit( seq::Stream stream, byte code );
@@ -605,7 +604,7 @@ namespace seq {
         private:
             std::unordered_map<string, type::Native> natives;
             std::vector<StackLevel> stack;
-            seq::Generic result;
+            seq::Stream result;
     };
 
     namespace Compiler {
@@ -1707,20 +1706,8 @@ bool seq::FlowCondition::validate( seq::Generic arg ) {
 
 seq::CommandResult::CommandResult( seq::CommandResult::ResultType _stt, seq::Stream _acc ): stt( _stt ), acc( _acc ) {}
 
-seq::Executor::Executor() {
-    this->result = nullptr;
-}
-
-seq::Executor::~Executor() {
-	this->free();
-}
-
 void seq::Executor::inject( seq::string name, seq::type::Native native ) {
 	this->natives[ name ] = native;
-}
-
-void seq::Executor::free() {
-    this->natives.clear();
 }
 
 seq::StackLevel* seq::Executor::getLevel( int level ) {
@@ -1735,7 +1722,15 @@ seq::StackLevel* seq::Executor::getTopLevel() {
 	return &(this->stack.back());
 }
 
+void seq::Executor::reset() {
+    this->natives.clear();
+}
+
 seq::Generic seq::Executor::getResult() {
+    return this->result.at(0);
+}
+
+seq::Stream& seq::Executor::getResults() {
     return this->result;
 }
 
@@ -1750,11 +1745,11 @@ void seq::Executor::execute( seq::ByteBuffer bb, seq::Stream args ) {
 
 void seq::Executor::exit( seq::Stream stream, byte code ) {
 	if( stream.size() == 0 ) {
-		throw seq::InternalError( "Unable to exit without argument!" );
+		throw seq::InternalError( "Unable to exit without arguments!" );
 	}
 
 	// stop program execution
-    this->result = stream.at(0);
+    this->result = stream;
     throw seq::ExecutorInterrupt( code );
 }
 
@@ -1802,10 +1797,9 @@ seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream i
                     break;
 
                 case seq::CommandResult::ResultType::Again:
-                	// TODO
                 	// add returned arguments to CURRENT input stream
                     if( i == size ) throw RuntimeError( "Native function 'again' can not be called from 'end' taged stream!" );
-                    acc.insert( acc.begin() + i + 1, cr.acc.begin(), cr.acc.end() );
+                    input_stream.insert( input_stream.begin() + i + 1, cr.acc.begin(), cr.acc.end() );
                     break;
 
                 default:
@@ -1819,8 +1813,6 @@ seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream i
 
     // pop scope from stack
     this->stack.pop_back();
-
-    //std::reverse(acc.begin(), acc.end());
 
     // return all accumulated entities
     return acc;
@@ -1878,8 +1870,6 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream gs ) {
             // if acc is empty there is nothing to execute - skip
             if( acc.size() == 0 ) {
                 continue;
-            }else{
-                //std::reverse(acc.begin(), acc.end());
             }
 
             // if entity is a VM Call other than "emit"
@@ -1964,7 +1954,6 @@ seq::Stream seq::Executor::executeAnchor( seq::Generic entity, seq::Stream input
     for( auto g : input_stream ) {
         output_stream.push_back( this->executeCast( entity, g ) );
     }
-    //std::reverse(output_stream.begin(), output_stream.end());
     return output_stream;
 
 }
@@ -2155,8 +2144,6 @@ seq::Stream seq::Executor::executeFlowc( std::vector<seq::FlowCondition*> fcs, s
             }
         }
     }
-
-    //std::reverse(acc.begin(), acc.end());
 
     return acc;
 }
