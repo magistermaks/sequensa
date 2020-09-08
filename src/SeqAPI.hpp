@@ -3051,7 +3051,7 @@ int seq::Compiler::assembleHeader( std::vector<Token>& tokens, std::vector<seq::
 	int s = 0;
 
 	if( tokens.size() > 0 && tokens.at(0).getCategory() == seq::Compiler::Token::Category::Load ) {
-		int l = tokens.at(0).getLine();
+		int l = 0;
 		const int size = tokens.size();
 
 		for( int i = 0; i < size; i ++ ) {
@@ -3063,11 +3063,11 @@ int seq::Compiler::assembleHeader( std::vector<Token>& tokens, std::vector<seq::
 
 				if( token.getCategory() == seq::Compiler::Token::Category::Load ) {
 
-					if( i - s != 2 ) {
+					if( i + 1 >= size || (i + 2 >= size && (int) tokens.at( i + 2 ).getLine() == l) ) {
 						throw seq::CompilerError( "token " + seq::util::toStdString( token.getRaw() ), "load statement", "header", l );
 					}
 
-					auto& token2 = tokens.at( s + 1 );
+					auto& token2 = tokens.at( i + 1 );
 
 					if( token2.getCategory() != seq::Compiler::Token::Category::String || token2.getAnchor() ) {
 						throw seq::CompilerError( "token " + seq::util::toStdString( token.getRaw() ), "load statement", "header", l );

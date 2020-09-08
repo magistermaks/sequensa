@@ -923,6 +923,36 @@ TEST( ce_complex_sum, {
 
 } );
 
+TEST( ce_header, {
+
+	seq::string code = (byte*) (
+			"load \"test-1\" \n"
+			"load \"test-2\" \n"
+			"#exit << 1 \n"
+			);
+
+	std::vector<seq::string> loades;
+
+	auto buf = seq::Compiler::compile( code, &loades );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
+	CHECK( exe.getResult().Number().getLong(), 1l );
+	CHECK( (long) loades.size(), 2l );
+
+	CHECK_ELSE( loades.at(0), seq::string( (byte*) "test-1" ) ) {
+		FAIL( "Invalid String!" );
+	}
+
+	CHECK_ELSE( loades.at(1), seq::string( (byte*) "test-2" ) ) {
+		FAIL( "Invalid String!" );
+	}
+
+} );
+
 
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
