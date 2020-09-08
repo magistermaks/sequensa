@@ -19,13 +19,19 @@
 #define SEQ_MAX_CALL_TYPE 5
 #define SEQ_MIN_OPERATOR 1
 #define SEQ_MAX_OPERATOR 20
-#define SEQ_MAX_UBYTE1 ((long) 255)
-#define SEQ_MAX_UBYTE2 ((long) 65535)
-#define SEQ_MAX_UBYTE4 ((long) 4294967295)
-#define SEQ_MAX_UBYTE8 ((long) 18446744073709551615)
+#define SEQ_MAX_UBYTE1 255l
+#define SEQ_MAX_UBYTE2 65535l
+#define SEQ_MAX_UBYTE4 4294967295l
+#define SEQ_MAX_UBYTE8 18446744073709551615l
 #define SEQ_TAG_FIRST 1
 #define SEQ_TAG_LAST 2
 #define SEQ_TAG_END 4
+
+#define SEQ_API_STANDARD "2020-07-15"
+#define SEQ_API_VERSION_MAJOR 1
+#define SEQ_API_VERSION_MINOR 0
+#define SEQ_API_VERSION_PATCH 0
+#define SEQ_API_NAME "SeqAPI"
 
 namespace seq {
 
@@ -655,7 +661,7 @@ namespace seq {
 
     	};
 
-    	std::vector<byte> compile( seq::string code );
+    	std::vector<byte> compile( seq::string code, std::vector<seq::string>* headerData = nullptr );
 
     	std::vector<Token> tokenize( seq::string code );
     	Token construct( seq::string raw, unsigned int line );
@@ -668,6 +674,7 @@ namespace seq {
     	std::vector<byte> assembleFlowc( std::vector<Token>& tokens, int start, int end, bool anchor );
     	std::vector<byte> assembleExpression( std::vector<Token>& tokens, int start, int end, bool anchor );
     	std::vector<byte> assembleFunction( std::vector<Token>& tokens, int start, int end, bool anchor );
+    	int assembleHeader( std::vector<Token>& tokens, std::vector<seq::string>* arrayPtr );
 
     };
 
@@ -2253,9 +2260,10 @@ std::string seq::Compiler::Token::toString() {
 	return catstr + "::" + seq::util::toStdString( this->getRaw() );
 }
 
-std::vector<byte> seq::Compiler::compile( seq::string code ) {
+std::vector<byte> seq::Compiler::compile( seq::string code, std::vector<seq::string>* headerData ) {
 	auto tokens = seq::Compiler::tokenize( code );
-	auto buffer = seq::Compiler::assembleFunction( tokens, 0, tokens.size(), true );
+	int offset = seq::Compiler::assembleHeader(tokens, headerData);
+	auto buffer = seq::Compiler::assembleFunction( tokens, offset, tokens.size(), true );
 
 	int functionOffset = (buffer.at(1) >> 4) + 2;
 	buffer.erase( buffer.begin(), buffer.begin() + functionOffset );
@@ -3036,6 +3044,52 @@ std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::To
 	bw.putFunc(anchor, arr);
 
 	return ret;
+}
+
+int seq::Compiler::assembleHeader( std::vector<Token>& tokens, std::vector<seq::string>* arrayPtr ) {
+
+	int s = 0;
+
+	if( tokens.size() > 0 && tokens.at(0).getCategory() == seq::Compiler::Token::Category::Load ) {
+		int l = tokens.at(0).getLine();
+		const int size = tokens.size();
+
+		for( int i = 0; i < size; i ++ ) {
+			auto& token = tokens.at(i);
+
+			if( l != (int) token.getLine() ) {
+
+				l = token.getLine();
+
+				if( token.getCategory() == seq::Compiler::Token::Category::Load ) {
+
+					if( i - s != 2 ) {
+						throw seq::CompilerError( "token " + seq::util::toStdString( token.getRaw() ), "load statement", "header", l );
+					}
+
+					auto& token2 = tokens.at( s + 1 );
+
+					if( token2.getCategory() != seq::Compiler::Token::Category::String || token2.getAnchor() ) {
+						throw seq::CompilerError( "token " + seq::util::toStdString( token.getRaw() ), "load statement", "header", l );
+					}
+
+					if( arrayPtr != nullptr ) {
+						arrayPtr->push_back( token2.getClean() );
+					}
+
+					s = i;
+					continue;
+				}
+
+				s = i;
+				break;
+
+			}
+		}
+	}
+
+	return s;
+
 }
 
 //#undef SEQUENSA_IMPLEMENT
