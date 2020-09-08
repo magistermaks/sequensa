@@ -674,7 +674,7 @@ namespace seq {
     	std::vector<byte> assembleFlowc( std::vector<Token>& tokens, int start, int end, bool anchor );
     	std::vector<byte> assembleExpression( std::vector<Token>& tokens, int start, int end, bool anchor );
     	std::vector<byte> assembleFunction( std::vector<Token>& tokens, int start, int end, bool anchor );
-    	int assembleHeader( std::vector<Token>& tokens, std::vector<seq::string>* arrayPtr );
+    	int extractHeaderData( std::vector<Token>& tokens, std::vector<seq::string>* arrayPtr );
 
     };
 
@@ -2262,7 +2262,7 @@ std::string seq::Compiler::Token::toString() {
 
 std::vector<byte> seq::Compiler::compile( seq::string code, std::vector<seq::string>* headerData ) {
 	auto tokens = seq::Compiler::tokenize( code );
-	int offset = seq::Compiler::assembleHeader(tokens, headerData);
+	int offset = seq::Compiler::extractHeaderData(tokens, headerData);
 	auto buffer = seq::Compiler::assembleFunction( tokens, offset, tokens.size(), true );
 
 	int functionOffset = (buffer.at(1) >> 4) + 2;
@@ -3046,7 +3046,7 @@ std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::To
 	return ret;
 }
 
-int seq::Compiler::assembleHeader( std::vector<Token>& tokens, std::vector<seq::string>* arrayPtr ) {
+int seq::Compiler::extractHeaderData( std::vector<Token>& tokens, std::vector<seq::string>* arrayPtr ) {
 
 	int s = 0;
 
