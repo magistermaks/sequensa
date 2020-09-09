@@ -972,7 +972,6 @@ TEST( ce_simple_loop, {
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
 	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "109876543210" ) ) {
-		std::cout << seq::util::toStdString( exe.getResult().String().getString() );
 		FAIL( "Invalid String!" );
 	}
 

@@ -193,6 +193,7 @@ namespace seq {
                 Number( bool anchor, double value );
                 const double getDouble();
                 const long getLong();
+                const bool isNatural();
                 const Fraction getFraction();
                 static byte sizeOf( unsigned long value );
 
@@ -794,7 +795,10 @@ seq::Generic seq::util::stringCast( seq::Generic arg ) {
 			break;
 
 		case seq::DataType::Number:
-			str = new seq::type::String( false, seq::util::toSeqString( std::to_string( arg.Number().getDouble() ) ).c_str()  );
+			str = new seq::type::String( false, seq::util::toSeqString(
+					arg.Number().isNatural() ?
+							std::to_string( arg.Number().getLong() ) :
+							std::to_string( arg.Number().getDouble() ) ).c_str()  );
 			break;
 
 		case seq::DataType::Flowc:
@@ -1034,7 +1038,11 @@ const double seq::type::Number::getDouble() {
 }
 
 const long seq::type::Number::getLong() {
-    return this->value;
+    return trunc( this->value );
+}
+
+const bool seq::type::Number::isNatural() {
+	return this->getLong() == this->value;
 }
 
 const seq::Fraction seq::type::Number::getFraction() {
