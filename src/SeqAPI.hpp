@@ -1803,6 +1803,7 @@ seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream i
 
                 case seq::CommandResult::ResultType::Break:
                 	// exit scope
+                	acc.insert(acc.end(), cr.acc.begin(), cr.acc.end());
                     goto exit;
                     break;
 

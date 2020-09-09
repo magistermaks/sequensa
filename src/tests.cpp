@@ -978,6 +978,38 @@ TEST( ce_simple_loop, {
 } );
 
 
+TEST( ce_fibonacci_recursion, {
+
+	seq::string code = (byte*) (
+			"set sum << { \n"
+			"	first; set x << 0 \n"
+			"	set x << #{ \n"
+			"		#return << (@@ + @) \n"
+			"	} << x \n"
+			"	last; #return << x \n"
+			"} \n"
+			" \n"
+			"set fib << {\n"
+			"	#break << #@ << #[true] << ( @ < 1 ) \n"
+			"	#return << #sum << #fib << ( @ - 1 ) << ( @ - 2 )\n"
+			"} \n"
+			" \n"
+			"#exit << #fib << 9 \n"
+			);
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.inject( "join"_b, native_join_strings );
+	exe.execute( bb );
+
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
+	CHECK( exe.getResult().Number().getLong(), 34l );
+
+} );
+
+
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
 REGISTER_EXCEPTION( seq_runtime_error, seq::RuntimeError );
