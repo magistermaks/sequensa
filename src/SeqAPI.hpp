@@ -601,7 +601,7 @@ namespace seq {
             CommandResult executeCommand( TokenReader* br, byte tags );
             CommandResult executeStream( Stream stream );
             Stream executeAnchor( Generic entity, seq::Stream input_stream );
-            Generic executeExprPair( Generic left, Generic right, ExprOperator op );
+            Generic executeExprPair( Generic left, Generic right, ExprOperator op, bool anchor );
             Generic executeExpr( Generic entity );
             Stream resolveName( string& name, bool anchor );
             Stream executeFlowc( std::vector<FlowCondition*> fcs, Stream input_stream );
@@ -1965,7 +1965,7 @@ seq::Stream seq::Executor::executeAnchor( seq::Generic entity, seq::Stream input
 
 }
 
-seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic right, seq::ExprOperator op ) {
+seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic right, seq::ExprOperator op, bool anchor ) {
 
 	if( left.getDataType() == seq::DataType::Expr || left.getDataType() == seq::DataType::Arg ) left = this->executeExpr(left);
 	if( right.getDataType() == seq::DataType::Expr || right.getDataType() == seq::DataType::Arg ) right = this->executeExpr(right);
@@ -1973,108 +1973,112 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 	// not and binary not use only one argument (right)
 	if( op != seq::ExprOperator::Not || op != seq::ExprOperator::BinaryNot ) {
 		if( left.getDataType() != right.getDataType() ) {
-			return seq::Generic( new seq::type::Null(false) );
+			return seq::Generic( new seq::type::Null(anchor) );
 		}
 	}
 
 	seq::DataType type = right.getDataType();
 
+	if( type == seq::DataType::Null ) {
+		return seq::Generic( new seq::type::Null(anchor) );
+	}
+
 	typedef seq::Generic G;
 	auto str = [] ( G g ) -> seq::type::String* { return (seq::type::String*) g.getRaw(); };
 	auto num = [] ( G g ) -> seq::type::Number* { return (seq::type::Number*) g.getRaw(); };
 
-	static const std::array<std::array<std::function<seq::type::Generic*(seq::Generic,seq::Generic)>,2>,SEQ_MAX_OPERATOR> lambdas = {{
+	static const std::array<std::array<std::function<seq::type::Generic*(bool,seq::Generic,seq::Generic)>,2>,SEQ_MAX_OPERATOR> lambdas = {{
 			{ // Less
-					[&] ( G a, G b ) { return new seq::type::Bool(false, num(a)->getDouble() < num(b)->getDouble()); },
-					[&] ( G a, G b ) { return new seq::type::Null(false); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Bool(anchor, num(a)->getDouble() < num(b)->getDouble()); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Null(anchor); },
 			},
 			{ // Greater
-					[&] ( G a, G b ) { return new seq::type::Bool(false, num(a)->getDouble() > num(b)->getDouble()); },
-					[&] ( G a, G b ) { return new seq::type::Null(false); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Bool(f, num(a)->getDouble() > num(b)->getDouble()); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Null(f); },
 			},
 			{ // Equal
-					[&] ( G a, G b ) { return new seq::type::Bool(false, num(a)->getDouble() == num(b)->getDouble()); },
-					[&] ( G a, G b ) { return new seq::type::Bool(false, str(a)->getString() == str(b)->getString()); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Bool(f, num(a)->getDouble() == num(b)->getDouble()); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Bool(f, str(a)->getString() == str(b)->getString()); },
 			},
 			{ // NotEqual
-					[&] ( G a, G b ) { return new seq::type::Bool(false, num(a)->getDouble() != num(b)->getDouble()); },
-					[&] ( G a, G b ) { return new seq::type::Bool(false, str(a)->getString() != str(b)->getString()); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Bool(f, num(a)->getDouble() != num(b)->getDouble()); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Bool(f, str(a)->getString() != str(b)->getString()); },
 			},
 			{ // NotGreater
-					[&] ( G a, G b ) { return new seq::type::Bool(false, num(a)->getDouble() <= num(b)->getDouble()); },
-					[&] ( G a, G b ) { return new seq::type::Null(false); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Bool(f, num(a)->getDouble() <= num(b)->getDouble()); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Null(f); },
 			},
 			{ // NotLess
-					[&] ( G a, G b ) { return new seq::type::Bool(false, num(a)->getDouble() >= num(b)->getDouble()); },
-					[&] ( G a, G b ) { return new seq::type::Null(false); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Bool(f, num(a)->getDouble() >= num(b)->getDouble()); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Null(f); },
 			},
 			{ // And
-					[&] ( G a, G b ) { return new seq::type::Bool(false, num(a)->getLong() != 0 && num(b)->getLong() != 0); },
-					[&] ( G a, G b ) { return new seq::type::Null(false); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Bool(f, num(a)->getLong() != 0 && num(b)->getLong() != 0); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Null(f); },
 			},
 			{ // Or
-					[&] ( G a, G b ) { return new seq::type::Bool(false, num(a)->getLong() != 0 || num(b)->getLong() != 0); },
-					[&] ( G a, G b ) { return new seq::type::Null(false); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Bool(f, num(a)->getLong() != 0 || num(b)->getLong() != 0); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Null(f); },
 			},
 			{ // Xor
-					[&] ( G a, G b ) { return new seq::type::Bool(false, (num(a)->getLong() != 0) != (num(b)->getLong() != 0)); },
-					[&] ( G a, G b ) { return new seq::type::Null(false); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Bool(f, (num(a)->getLong() != 0) != (num(b)->getLong() != 0)); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Null(f); },
 			},
 			{ // Not
-					[&] ( G a, G b ) { return new seq::type::Bool(false, num(b)->getLong() == 0); },
-					[&] ( G a, G b ) { return new seq::type::Null(false); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Bool(f, num(b)->getLong() == 0); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Null(f); },
 			},
 			{ // Multiplication
-					[&] ( G a, G b ) { return new seq::type::Number(false, num(a)->getDouble() * num(b)->getDouble()); },
-					[&] ( G a, G b ) { return new seq::type::Null(false); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Number(f, num(a)->getDouble() * num(b)->getDouble()); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Null(f); },
 			},
 			{ // Division
-					[&] ( G a, G b ) { return new seq::type::Number(false, num(a)->getDouble() / num(b)->getDouble()); },
-					[&] ( G a, G b ) { return new seq::type::Null(false); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Number(f, num(a)->getDouble() / num(b)->getDouble()); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Null(f); },
 			},
 			{ // Addition
-					[&] ( G a, G b ) { return new seq::type::Number(false, num(a)->getDouble() + num(b)->getDouble()); },
-					[&] ( G a, G b ) { return new seq::type::String(false, (str(a)->getString() + str(b)->getString()).c_str() ); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Number(f, num(a)->getDouble() + num(b)->getDouble()); },
+					[&] ( bool f, G a, G b ) { return new seq::type::String(f, (str(a)->getString() + str(b)->getString()).c_str() ); },
 			},
 			{ // Subtraction
-					[&] ( G a, G b ) { return new seq::type::Number(false, num(a)->getDouble() - num(b)->getDouble()); },
-					[&] ( G a, G b ) { return new seq::type::Null(false); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Number(f, num(a)->getDouble() - num(b)->getDouble()); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Null(f); },
 			},
 			{ // Modulo
-					[&] ( G a, G b ) { return new seq::type::Number(false, num(a)->getLong() % num(b)->getLong()); },
-					[&] ( G a, G b ) { return new seq::type::Null(false); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Number(f, num(a)->getLong() % num(b)->getLong()); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Null(f); },
 			},
 			{ // Power
-					[&] ( G a, G b ) { return new seq::type::Number(false, std::pow( num(a)->getDouble(), num(b)->getDouble() )); },
-					[&] ( G a, G b ) { return new seq::type::Null(false); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Number(f, std::pow( num(a)->getDouble(), num(b)->getDouble() )); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Null(f); },
 			},
 			{ // BinaryAnd
-					[&] ( G a, G b ) { return new seq::type::Number(false, num(a)->getLong() & num(b)->getLong() ); },
-					[&] ( G a, G b ) { return new seq::type::Null(false); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Number(f, num(a)->getLong() & num(b)->getLong() ); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Null(f); },
 			},
 			{ // BinaryOr
-					[&] ( G a, G b ) { return new seq::type::Number(false, num(a)->getLong() | num(b)->getLong() ); },
-					[&] ( G a, G b ) { return new seq::type::Null(false); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Number(f, num(a)->getLong() | num(b)->getLong() ); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Null(f); },
 			},
 			{ // BinaryXor
-					[&] ( G a, G b ) { return new seq::type::Number(false, num(a)->getLong() ^ num(b)->getLong() ); },
-					[&] ( G a, G b ) { return new seq::type::Null(false); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Number(f, num(a)->getLong() ^ num(b)->getLong() ); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Null(f); },
 			},
 			{ // BinaryNot
-					[&] ( G a, G b ) { return new seq::type::Number(false, ~ num(b)->getLong() ); },
-					[&] ( G a, G b ) { return new seq::type::Null(false); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Number(f, ~ num(b)->getLong() ); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Null(f); },
 			}
 	}};
 
 	if( type == seq::DataType::Number ) {
 
-		return seq::Generic( lambdas.at( ((byte) op) - 1 ).at( 0 )( left, right ) );
+		return seq::Generic( lambdas.at( ((byte) op) - 1 ).at( 0 )( anchor, left, right ) );
 
 	}else if( type == seq::DataType::Bool ) {
 
 		G lb = seq::Generic( new seq::type::Number( false, (float) (left.Bool().getBool() ? 1 : 0) ) );
 		G rb = seq::Generic( new seq::type::Number( false, (float) (right.Bool().getBool() ? 1 : 0) ) );
-		seq::type::Generic* r = lambdas.at( ((byte) op) - 1 ).at( 0 )( lb, rb );
+		seq::type::Generic* r = lambdas.at( ((byte) op) - 1 ).at( 0 )( anchor, lb, rb );
 
 		if( r->getDataType() == seq::DataType::Bool ) {
 			return seq::Generic( r );
@@ -2083,12 +2087,12 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 			bool val = r_num->getLong() != 0;
 			delete r_num;
 
-			return seq::Generic( new seq::type::Bool( false, val ) );
+			return seq::Generic( new seq::type::Bool( anchor, val ) );
 		}
 
 	}else if( type == seq::DataType::String ) {
 
-		return seq::Generic( lambdas.at( ((byte) op) - 1 ).at( 1 )( left, right ) );
+		return seq::Generic( lambdas.at( ((byte) op) - 1 ).at( 1 )( anchor, left, right ) );
 
 	}
 
@@ -2099,6 +2103,7 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 seq::Generic seq::Executor::executeExpr( seq::Generic entity ) {
 
     seq::DataType type = entity.getDataType();
+    bool anchor = entity.getAnchor();
 
     if( type == seq::DataType::Expr ) {
         auto& expr = entity.Expression();
@@ -2107,7 +2112,7 @@ seq::Generic seq::Executor::executeExpr( seq::Generic entity ) {
         seq::Generic right = expr.getRightReader().next().getGeneric();
         seq::ExprOperator op = expr.getOperator();
 
-        return this->executeExprPair( left, right, op );
+        return this->executeExprPair( left, right, op, anchor );
     }
 
     if( type == seq::DataType::Arg ) {
@@ -2116,7 +2121,7 @@ seq::Generic seq::Executor::executeExpr( seq::Generic entity ) {
         long s = (long) this->stack.size() - 1L - (long) arg.getLevel();
 
         if( s < 0 ) {
-            return seq::Generic( new seq::type::Null( false ) );
+            return seq::Generic( new seq::type::Null( anchor ) );
         }
 
         return this->stack.at( s ).getArg();
@@ -2167,7 +2172,8 @@ seq::Generic seq::Executor::executeCast( seq::Generic cast, seq::Generic arg ) {
         case seq::DataType::VMCall:
         case seq::DataType::Flowc:
         case seq::DataType::Func:
-            return arg;
+        	cast.setAnchor(false);
+            return cast;
 
         // type cast:
         case seq::DataType::Type: {

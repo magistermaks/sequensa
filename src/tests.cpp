@@ -954,6 +954,31 @@ TEST( ce_header, {
 } );
 
 
+TEST( ce_simple_loop, {
+
+	seq::string code = (byte*) (
+			"#exit << #join << #string << #{\n"
+            "	#return << @\n"
+            "	#again << #( @ - 1 ) << #[true] << ( @ > 0 )\n"
+            "} << 10\n"
+			);
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.inject( "join"_b, native_join_strings );
+	exe.execute( bb );
+
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
+	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "109876543210" ) ) {
+		std::cout << seq::util::toStdString( exe.getResult().String().getString() );
+		FAIL( "Invalid String!" );
+	}
+
+} );
+
+
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
 REGISTER_EXCEPTION( seq_runtime_error, seq::RuntimeError );
