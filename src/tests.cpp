@@ -980,6 +980,8 @@ TEST( ce_simple_loop, {
 
 TEST( ce_fibonacci_recursion, {
 
+	// TODO fix me
+
 	seq::string code = (byte*) (
 			"set sum << { \n"
 			"	first; set x << 0 \n"
@@ -989,7 +991,7 @@ TEST( ce_fibonacci_recursion, {
 			"	last; #return << x \n"
 			"} \n"
 			" \n"
-			"set fib << {\n"
+			"set fib << { \n"
 			"	#break << #@ << #[true] << ( @ < 1 ) \n"
 			"	#return << #sum << #fib << ( @ - 1 ) << ( @ - 2 )\n"
 			"} \n"
