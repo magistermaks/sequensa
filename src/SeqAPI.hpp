@@ -16,7 +16,7 @@
 #define SEQ_MIN_DATA_TYPE 1
 #define SEQ_MAX_DATA_TYPE 12
 #define SEQ_MIN_CALL_TYPE 1
-#define SEQ_MAX_CALL_TYPE 5
+#define SEQ_MAX_CALL_TYPE 6
 #define SEQ_MIN_OPERATOR 1
 #define SEQ_MAX_OPERATOR 20
 #define SEQ_MAX_UBYTE1 255l
@@ -239,7 +239,8 @@ namespace seq {
                     Break = 2,
                     Exit = 3,
                     Again = 4,
-                    Emit = 5
+                    Emit = 5,
+					Final = 6
                 };
 
                 VMCall( bool anchor, CallType value );
@@ -576,7 +577,8 @@ namespace seq {
                 Break = 2,
                 Exit = 3,
                 Again = 4,
-                None = 5
+                None = 5,
+				Final = 6
             };
 
             CommandResult( ResultType stt, Stream acc );
@@ -1803,7 +1805,6 @@ seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream i
 
                 case seq::CommandResult::ResultType::Break:
                 	// exit scope
-                	acc.insert(acc.end(), cr.acc.begin(), cr.acc.end());
                     goto exit;
                     break;
 
@@ -1811,6 +1812,11 @@ seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream i
                 	// stop program execution (by throwing exception)
                     this->exit( cr.acc, 0 );
                     break;
+
+                case seq::CommandResult::ResultType::Final:
+                	// exit scope and return value
+                	acc.insert(acc.end(), cr.acc.begin(), cr.acc.end());
+                	break;
 
                 case seq::CommandResult::ResultType::Again:
                 	// add returned arguments to CURRENT input stream
@@ -2521,6 +2527,7 @@ seq::Compiler::Token seq::Compiler::construct( seq::string raw, unsigned int lin
 		if( str == "exit"_b ) return (byte) seq::type::VMCall::CallType::Exit;
 		if( str == "again"_b ) return (byte) seq::type::VMCall::CallType::Again;
 		if( str == "emit"_b ) return (byte) seq::type::VMCall::CallType::Emit;
+		if( str == "final"_b ) return (byte) seq::type::VMCall::CallType::Final;
 		return 0;
 	};
 
