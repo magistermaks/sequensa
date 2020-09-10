@@ -977,8 +977,10 @@ TEST( ce_simple_loop, {
 
 } );
 
-void ce_fibonacci_recursion() {
-	seq::string code = (byte*) (
+
+TEST( ce_fibonacci_recursion, {
+
+		seq::string code = (byte*) (
 				"set sum << { \n"
 				"	first; set x << 0 \n"
 				"	set x << #{ \n"
@@ -989,11 +991,11 @@ void ce_fibonacci_recursion() {
 				" \n"
 				"set fib << { \n"
 				"	#final << #@ << #[true] << (@ <= 1) \n"
-				"	#final << #sum << #fib << (@ - 1) << (@ - 2)\n"
+				"	#return << #sum << #fib << (@ - 1) << (@ - 2) \n"
 				"} \n"
 				" \n"
 				"#exit << #fib << 9 \n"
-				);
+		);
 
 		auto buf = seq::Compiler::compile( code );
 		seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -1003,11 +1005,6 @@ void ce_fibonacci_recursion() {
 
 		CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
 		CHECK( exe.getResult().Number().getLong(), 34l );
-}
-
-TEST( ce_fibonacci_recursion, {
-
-	ce_fibonacci_recursion();
 
 } );
 
