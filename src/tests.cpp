@@ -55,6 +55,7 @@ TEST( buffer_writer_simple, {
     CHECK( buf[3], (byte) ((byte) seq::Opcode::BLT | 0b00000000) );
     CHECK( buf[4], (byte) ((byte) seq::Opcode::BLF | 0b00000000) );
     CHECK( buf[5], (byte) ((byte) seq::Opcode::NIL | 0b00000000) );
+
 } );
 
 
@@ -994,7 +995,7 @@ TEST( ce_fibonacci_recursion, {
 				"	#return << #sum << #fib << (@ - 1) << (@ - 2) \n"
 				"} \n"
 				" \n"
-				"#exit << #fib << 9 \n"
+				"#exit << #fib << 9 << 11 << 6 << 12 \n"
 		);
 
 		auto buf = seq::Compiler::compile( code );
@@ -1003,8 +1004,62 @@ TEST( ce_fibonacci_recursion, {
 		seq::Executor exe;
 		exe.execute( bb );
 
-		CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
-		CHECK( exe.getResult().Number().getLong(), 34l );
+		auto& res = exe.getResults();
+
+		CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
+		CHECK( res.at(0).Number().getLong(), 34l );
+
+		CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Number );
+		CHECK( res.at(1).Number().getLong(), 89l );
+
+		CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::Number );
+		CHECK( res.at(2).Number().getLong(), 8l );
+
+		CHECK( (byte) res.at(3).getDataType(), (byte) seq::DataType::Number );
+		CHECK( res.at(3).Number().getLong(), 144l );
+
+} );
+
+
+TEST( ce_prime_numbers, {
+
+		seq::string code = (byte*) (
+				"set isPrime << { \n"
+				"	#return << #{ \n"
+				"		#final << #false << #[true] << ((@@ % @) = 0) \n"
+				"		#again << #(@ - 1) << #[true] << (@ > 2) \n"
+				"		end; #return << true"
+				"	} << (@ - 1) \n"
+				"} \n"
+				" \n"
+				"#exit << #isPrime << 7 << 11 << 6 << 13 << 64 << 4 \n"
+		);
+
+		auto buf = seq::Compiler::compile( code );
+		seq::ByteBuffer bb( buf.data(), buf.size() );
+
+		seq::Executor exe;
+		exe.execute( bb );
+
+		auto& res = exe.getResults();
+
+		CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Bool );
+		CHECK( res.at(0).Bool().getBool(), true );
+
+		CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Bool );
+		CHECK( res.at(1).Bool().getBool(), true );
+
+		CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::Bool );
+		CHECK( res.at(2).Bool().getBool(), false );
+
+		CHECK( (byte) res.at(3).getDataType(), (byte) seq::DataType::Bool );
+		CHECK( res.at(3).Bool().getBool(), true );
+
+		CHECK( (byte) res.at(4).getDataType(), (byte) seq::DataType::Bool );
+		CHECK( res.at(4).Bool().getBool(), false );
+
+		CHECK( (byte) res.at(5).getDataType(), (byte) seq::DataType::Bool );
+		CHECK( res.at(5).Bool().getBool(), false );
 
 } );
 
@@ -1013,4 +1068,4 @@ REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
 REGISTER_EXCEPTION( seq_runtime_error, seq::RuntimeError );
 
-BEGIN
+BEGIN( VSTL_MODE_LENIENT );

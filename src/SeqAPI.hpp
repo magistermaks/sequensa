@@ -2510,6 +2510,7 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 seq::Compiler::Token seq::Compiler::construct( seq::string raw, unsigned int line ) {
 
 	// setup regex'es and string vectors
+	// FIXME invalid operator weights
 	const static std::vector<std::string> operators = { "+", "-", "/", "*", "**", "%", ">", "<", "=", "!=", ">=", "!>", "<=", "!<", "&&", "||", "^^", "&", "|", "^", "!" };
 	const static std::vector<byte> operator_weights = {   3,   3,   4,   4,    5,   4,   2,   2,   2,    2,    2,    2,    2,    2,    1,    1,    1,   0,   0,   0,   6 };
 	const static std::regex regex_arg("^@+$");
