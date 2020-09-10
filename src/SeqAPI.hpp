@@ -1816,6 +1816,7 @@ seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream i
                 case seq::CommandResult::ResultType::Final:
                 	// exit scope and return value
                 	acc.insert(acc.end(), cr.acc.begin(), cr.acc.end());
+                	goto exit;
                 	break;
 
                 case seq::CommandResult::ResultType::Again:
@@ -2139,7 +2140,9 @@ seq::Generic seq::Executor::executeExpr( seq::Generic entity ) {
             return seq::Generic( new seq::type::Null( anchor ) );
         }
 
-        return this->stack.at( s ).getArg();
+        auto ret = this->stack.at( s ).getArg();
+        ret.setAnchor(anchor);
+        return ret;
     }
 
     return entity;
