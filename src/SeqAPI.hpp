@@ -2512,9 +2512,8 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 seq::Compiler::Token seq::Compiler::construct( seq::string raw, unsigned int line ) {
 
 	// setup regex'es and string vectors
-	// FIXME invalid operator weights
 	const static std::vector<std::string> operators = { "+", "-", "/", "*", "**", "%", ">", "<", "=", "!=", ">=", "!>", "<=", "!<", "&&", "||", "^^", "&", "|", "^", "!" };
-	const static std::vector<byte> operator_weights = {   3,   3,   4,   4,    5,   4,   2,   2,   2,    2,    2,    2,    2,    2,    1,    1,    1,   0,   0,   0,   0 };
+	const static std::vector<byte> operator_weights = {  17,  17,  16,  16,   15,  16,  18,  18,  18,   18,   18,   18,   18,   18,   19,   19,   19,  17,  17,  17,  15 };
 	const static std::regex regex_arg("^@+$");
 	const static std::regex regex_name("^[a-zA-Z_]{1}[a-zA-Z_0-9]*(:[a-zA-Z_0-9]+)*$");
 	const static std::regex regex_number_1("^\\d+.\\d+$");
@@ -2578,7 +2577,7 @@ seq::Compiler::Token seq::Compiler::construct( seq::string raw, unsigned int lin
 		if( str == "~"_b ) op = seq::ExprOperator::BinaryNot;
 
 		long operatorCode = (long) op;
-		return (20 - weight) | (operatorCode << 8);
+		return weight | (operatorCode << 8);
 	};
 
 
