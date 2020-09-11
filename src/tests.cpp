@@ -1066,6 +1066,45 @@ TEST( ce_prime_numbers, {
 } );
 
 
+TEST( ce_factorial_recursion, {
+
+	seq::string code = (byte*) (
+			"set factorial << { \n"
+			"	#return << #{"
+			"		#final << #1 << #[true] << (@ <= 0) \n"
+			"		#return << #{ \n"
+			"			#final << (@@ * @) \n"
+			"		} << #factorial << (@ - 1) \n"
+			"	} << @ \n"
+			"} \n"
+			" \n"
+			"#exit << #factorial << 1 << 5 << 7 << 3 \n"
+	);
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	auto& res = exe.getResults();
+
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(0).Number().getLong(), 1l );
+
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(1).Number().getLong(), 120l );
+
+	CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(2).Number().getLong(), 5040l );
+
+	CHECK( (byte) res.at(3).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(3).Number().getLong(), 6l );
+
+} );
+
+
+
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
 REGISTER_EXCEPTION( seq_runtime_error, seq::RuntimeError );
