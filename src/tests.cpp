@@ -1026,7 +1026,7 @@ TEST( ce_prime_numbers, {
 		seq::string code = (byte*) (
 				"set isPrime << { \n"
 				"	#return << #{ \n"
-				"		#final << #false << #[true] << ((@@ % @) = 0) \n"
+				"		#final << #false << #[true] << (@@ % @ = 0) \n"
 				"		#again << #(@ - 1) << #[true] << (@ > 2) \n"
 				"		end; #return << true"
 				"	} << (@ - 1) \n"
