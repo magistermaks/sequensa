@@ -1869,7 +1869,7 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream& gs ) {
     seq::Stream acc;
 
     // iterate over stream entities
-    for( long i = gs.size() - 1; i >= 0; i -- ) {
+    for( int i = gs.size() - 1; i >= 0; i -- ) {
 
         seq::Generic g = gs.at( i );
         seq::DataType t = g.getDataType();
@@ -1935,7 +1935,7 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream& gs ) {
         }
 
         // if entity is a simple, solid value add it to acc
-        acc.push_back( g );
+        acc.insert( acc.begin(), g );
     }
 
     return CommandResult( seq::CommandResult::ResultType::None, acc );
@@ -3042,6 +3042,10 @@ std::vector<byte> seq::Compiler::assembleExpression( std::vector<seq::Compiler::
 std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::Token>& tokens, int start, int end, bool anchor ) {
 
 	std::vector<byte> arr;
+
+	if( end - start < 2 ) {
+		throw seq::CompilerError( "end of scope", "stream", "function", tokens.at(start).getLine() );
+	}
 
 	for( int i = start; i < end; i ++ ) {
 

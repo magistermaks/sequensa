@@ -786,7 +786,7 @@ TEST( ce_flowc_4, {
 
 TEST( ce_type_cast_bool_1, {
 
-	seq::string code = (byte*) ("#exit << #bool << 1");
+	seq::string code = (byte*) ("#exit << #bool << 1 << null << \"hello\"");
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -794,14 +794,22 @@ TEST( ce_type_cast_bool_1, {
 	seq::Executor exe;
 	exe.execute( bb );
 
-	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Bool );
-	CHECK( exe.getResult().Bool().getBool(), true );
+	auto& res = exe.getResults();
+
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Bool );
+	CHECK( res.at(0).Bool().getBool(), true );
+
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Bool );
+	CHECK( res.at(1).Bool().getBool(), false );
+
+	CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::Bool );
+	CHECK( res.at(2).Bool().getBool(), false );
 
 } );
 
 TEST( ce_type_cast_bool_2, {
 
-	seq::string code = (byte*) ("#exit << #bool << 0");
+	seq::string code = (byte*) ("#exit << #bool << 0 << 2 << 0.00234");
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -809,14 +817,22 @@ TEST( ce_type_cast_bool_2, {
 	seq::Executor exe;
 	exe.execute( bb );
 
-	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Bool );
-	CHECK( exe.getResult().Bool().getBool(), false );
+	auto& res = exe.getResults();
+
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Bool );
+	CHECK( res.at(0).Bool().getBool(), false );
+
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Bool );
+	CHECK( res.at(1).Bool().getBool(), true );
+
+	CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::Bool );
+	CHECK( res.at(2).Bool().getBool(), true );
 
 } );
 
 TEST( ce_type_cast_number_1, {
 
-	seq::string code = (byte*) ("#exit << #number << \"123\"");
+	seq::string code = (byte*) ("#exit << #number << \"123\" << \"42.5\" << break");
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -824,14 +840,22 @@ TEST( ce_type_cast_number_1, {
 	seq::Executor exe;
 	exe.execute( bb );
 
-	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
-	CHECK( exe.getResult().Number().getLong(), 123l );
+	auto& res = exe.getResults();
+
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(0).Number().getLong(), 123l );
+
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(1).Number().getDouble(), 42.5 );
+
+	CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(2).Number().getLong(), 1l );
 
 } );
 
 TEST( ce_type_cast_number_2, {
 
-	seq::string code = (byte*) ("#exit << #number << true");
+	seq::string code = (byte*) ("#exit << #number << true << 6 << null");
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -839,14 +863,22 @@ TEST( ce_type_cast_number_2, {
 	seq::Executor exe;
 	exe.execute( bb );
 
-	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
-	CHECK( exe.getResult().Number().getLong(), 1l );
+	auto& res = exe.getResults();
+
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(0).Number().getLong(), 1l );
+
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(1).Number().getLong(), 6l );
+
+	CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(2).Number().getLong(), 0l );
 
 } );
 
 TEST( ce_type_cast_string_1, {
 
-	seq::string code = (byte*) ("#exit << #string << true");
+	seq::string code = (byte*) ("#exit << #string << true << null << 69");
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -854,8 +886,20 @@ TEST( ce_type_cast_string_1, {
 	seq::Executor exe;
 	exe.execute( bb );
 
-	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
-	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "true" ) ) {
+	auto& res = exe.getResults();
+
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::String );
+	CHECK_ELSE( res.at(0).String().getString(), seq::string( (byte*) "true" ) ) {
+		FAIL( "Invalid String!" );
+	}
+
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::String );
+	CHECK_ELSE( res.at(1).String().getString(), seq::string( (byte*) "null" ) ) {
+		FAIL( "Invalid String!" );
+	}
+
+	CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::String );
+	CHECK_ELSE( res.at(2).String().getString(), seq::string( (byte*) "69" ) ) {
 		FAIL( "Invalid String!" );
 	}
 
@@ -863,7 +907,7 @@ TEST( ce_type_cast_string_1, {
 
 TEST( ce_type_cast_string_2, {
 
-	seq::string code = (byte*) ("#exit << #string << 123.2");
+	seq::string code = (byte*) ("#exit << #string << 123.2 << 42 << \"hello\" ");
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -871,8 +915,18 @@ TEST( ce_type_cast_string_2, {
 	seq::Executor exe;
 	exe.execute( bb );
 
-	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
-	CHECK( std::stod( seq::util::toStdString( exe.getResult().String().getString() ) ), 123.2 );
+	auto& res = exe.getResults();
+
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::String );
+	CHECK( std::stod( seq::util::toStdString( res.at(0).String().getString() ) ), 123.2 );
+
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::String );
+	CHECK( std::stod( seq::util::toStdString( res.at(1).String().getString() ) ), 42.0 );
+
+	CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::String );
+	CHECK_ELSE( res.at(2).String().getString(), seq::string( (byte*) "hello" ) ) {
+		FAIL( "Invalid String!" );
+	}
 
 } );
 
@@ -957,7 +1011,7 @@ TEST( ce_header, {
 
 TEST( ce_simple_loop, {
 
-	// TODO investigate why this is so slow
+	// TODO investigate why this is so slow (in valgrind)
 
 	seq::string code = (byte*) (
 			"#exit << #join << #string << #{\n"
@@ -975,6 +1029,7 @@ TEST( ce_simple_loop, {
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
 	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "109876543210" ) ) {
+		std::cout << seq::util::toStdString( exe.getResult().String().getString() );
 		FAIL( "Invalid String!" );
 	}
 
@@ -1103,6 +1158,125 @@ TEST( ce_factorial_recursion, {
 
 } );
 
+
+TEST( ce_order_1, {
+
+	seq::string code = (byte*) ("#exit << 1 << 2 << 3");
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	auto& res = exe.getResults();
+
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(0).Number().getLong(), 1l );
+
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(1).Number().getLong(), 2l );
+
+	CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(2).Number().getLong(), 3l );
+
+} );
+
+TEST( ce_order_2, {
+
+	seq::string code = (byte*) ("#exit << #{ #return << @ } << 1 << 2 << 3");
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	auto& res = exe.getResults();
+
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(0).Number().getLong(), 1l );
+
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(1).Number().getLong(), 2l );
+
+	CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(2).Number().getLong(), 3l );
+
+} );
+
+
+TEST( ce_order_3, {
+
+	seq::string code = (byte*) ("#exit << #[number] << 1 << 2 << 3");
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	auto& res = exe.getResults();
+
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(0).Number().getLong(), 1l );
+
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(1).Number().getLong(), 2l );
+
+	CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(2).Number().getLong(), 3l );
+
+} );
+
+TEST( ce_order_4, {
+
+	seq::string code = (byte*) ("#exit << #number << 1 << 2 << 3");
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	auto& res = exe.getResults();
+
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(0).Number().getLong(), 1l );
+
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(1).Number().getLong(), 2l );
+
+	CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(2).Number().getLong(), 3l );
+
+} );
+
+TEST( ce_order_5, {
+
+	seq::string code = (byte*) (
+			"set var << 1 << 2 << 3 \n"
+			"#exit << var"
+			);
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	auto& res = exe.getResults();
+
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(0).Number().getLong(), 1l );
+
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(1).Number().getLong(), 2l );
+
+	CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(2).Number().getLong(), 3l );
+
+} );
 
 
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
