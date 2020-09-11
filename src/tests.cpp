@@ -957,6 +957,8 @@ TEST( ce_header, {
 
 TEST( ce_simple_loop, {
 
+	// TODO investigate why this is so slow
+
 	seq::string code = (byte*) (
 			"#exit << #join << #string << #{\n"
             "	#return << @\n"
@@ -981,85 +983,85 @@ TEST( ce_simple_loop, {
 
 TEST( ce_fibonacci_recursion, {
 
-		seq::string code = (byte*) (
-				"set sum << { \n"
-				"	first; set x << 0 \n"
-				"	set x << #{ \n"
-				"		#return << (@@ + @) \n"
-				"	} << x \n"
-				"	last; #return << x \n"
-				"} \n"
-				" \n"
-				"set fib << { \n"
-				"	#final << #@ << #[true] << (@ <= 1) \n"
-				"	#return << #sum << #fib << (@ - 1) << (@ - 2) \n"
-				"} \n"
-				" \n"
-				"#exit << #fib << 9 << 11 << 6 << 12 \n"
-		);
+	seq::string code = (byte*) (
+			"set sum << { \n"
+			"	first; set x << 0 \n"
+			"	set x << #{ \n"
+			"		#return << (@@ + @) \n"
+			"	} << x \n"
+			"	last; #return << x \n"
+			"} \n"
+			" \n"
+			"set fib << { \n"
+			"	#final << #@ << #[true] << (@ <= 1) \n"
+			"	#return << #sum << #fib << (@ - 1) << (@ - 2) \n"
+			"} \n"
+			" \n"
+			"#exit << #fib << 9 << 11 << 6 << 12 \n"
+	);
 
-		auto buf = seq::Compiler::compile( code );
-		seq::ByteBuffer bb( buf.data(), buf.size() );
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-		seq::Executor exe;
-		exe.execute( bb );
+	seq::Executor exe;
+	exe.execute( bb );
 
-		auto& res = exe.getResults();
+	auto& res = exe.getResults();
 
-		CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
-		CHECK( res.at(0).Number().getLong(), 34l );
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(0).Number().getLong(), 34l );
 
-		CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Number );
-		CHECK( res.at(1).Number().getLong(), 89l );
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(1).Number().getLong(), 89l );
 
-		CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::Number );
-		CHECK( res.at(2).Number().getLong(), 8l );
+	CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(2).Number().getLong(), 8l );
 
-		CHECK( (byte) res.at(3).getDataType(), (byte) seq::DataType::Number );
-		CHECK( res.at(3).Number().getLong(), 144l );
+	CHECK( (byte) res.at(3).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(3).Number().getLong(), 144l );
 
 } );
 
 
 TEST( ce_prime_numbers, {
 
-		seq::string code = (byte*) (
-				"set isPrime << { \n"
-				"	#return << #{ \n"
-				"		#final << #false << #[true] << (@@ % @ = 0) \n"
-				"		#again << #(@ - 1) << #[true] << (@ > 2) \n"
-				"		end; #return << true"
-				"	} << (@ - 1) \n"
-				"} \n"
-				" \n"
-				"#exit << #isPrime << 7 << 11 << 6 << 13 << 64 << 4 \n"
-		);
+	seq::string code = (byte*) (
+			"set isPrime << { \n"
+			"	#return << #{ \n"
+			"		#final << #false << #[true] << (@@ % @ = 0) \n"
+			"		#again << #(@ - 1) << #[true] << (@ > 2) \n"
+			"		end; #return << true"
+			"	} << (@ - 1) \n"
+			"} \n"
+			" \n"
+			"#exit << #isPrime << 7 << 11 << 6 << 13 << 64 << 4 \n"
+	);
 
-		auto buf = seq::Compiler::compile( code );
-		seq::ByteBuffer bb( buf.data(), buf.size() );
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-		seq::Executor exe;
-		exe.execute( bb );
+	seq::Executor exe;
+	exe.execute( bb );
 
-		auto& res = exe.getResults();
+	auto& res = exe.getResults();
 
-		CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Bool );
-		CHECK( res.at(0).Bool().getBool(), true );
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Bool );
+	CHECK( res.at(0).Bool().getBool(), true );
 
-		CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Bool );
-		CHECK( res.at(1).Bool().getBool(), true );
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Bool );
+	CHECK( res.at(1).Bool().getBool(), true );
 
-		CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::Bool );
-		CHECK( res.at(2).Bool().getBool(), false );
+	CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::Bool );
+	CHECK( res.at(2).Bool().getBool(), false );
 
-		CHECK( (byte) res.at(3).getDataType(), (byte) seq::DataType::Bool );
-		CHECK( res.at(3).Bool().getBool(), true );
+	CHECK( (byte) res.at(3).getDataType(), (byte) seq::DataType::Bool );
+	CHECK( res.at(3).Bool().getBool(), true );
 
-		CHECK( (byte) res.at(4).getDataType(), (byte) seq::DataType::Bool );
-		CHECK( res.at(4).Bool().getBool(), false );
+	CHECK( (byte) res.at(4).getDataType(), (byte) seq::DataType::Bool );
+	CHECK( res.at(4).Bool().getBool(), false );
 
-		CHECK( (byte) res.at(5).getDataType(), (byte) seq::DataType::Bool );
-		CHECK( res.at(5).Bool().getBool(), false );
+	CHECK( (byte) res.at(5).getDataType(), (byte) seq::DataType::Bool );
+	CHECK( res.at(5).Bool().getBool(), false );
 
 } );
 
