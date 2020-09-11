@@ -599,15 +599,15 @@ namespace seq {
             void execute( ByteBuffer bb, seq::Stream args = { seq::Generic( new type::Null( false ) ) } );
 
         private: // use these methods only if you know what you are doing //
-            void exit( seq::Stream stream, byte code );
-            Stream executeFunction( BufferReader br, seq::Stream stream );
+            void exit( seq::Stream& stream, byte code );
+            Stream executeFunction( BufferReader br, Stream& stream );
             CommandResult executeCommand( TokenReader* br, byte tags );
-            CommandResult executeStream( Stream stream );
-            Stream executeAnchor( Generic entity, seq::Stream input_stream );
+            CommandResult executeStream( Stream& stream );
+            Stream executeAnchor( Generic entity, Stream& input_stream );
             Generic executeExprPair( Generic left, Generic right, ExprOperator op, bool anchor );
             Generic executeExpr( Generic entity );
             Stream resolveName( string& name, bool anchor );
-            Stream executeFlowc( std::vector<FlowCondition*> fcs, Stream input_stream );
+            Stream executeFlowc( std::vector<FlowCondition*> fcs, Stream& input_stream );
             Generic executeCast( Generic cast, Generic arg );
 
         private:
@@ -1752,15 +1752,17 @@ seq::Stream& seq::Executor::getResults() {
 }
 
 void seq::Executor::execute( seq::ByteBuffer bb, seq::Stream args ) {
+	static seq::Stream exitStream = seq::Stream { seq::Generic( new seq::type::Null( false ) ) };
+
 	try{
 		this->executeFunction( bb.getReader(), args );
-		this->exit( seq::Stream { seq::Generic( new seq::type::Null( false ) ) }, 0 );
+		this->exit( exitStream, 0 );
 	}catch( seq::ExecutorInterrupt& ex ) {
 		// this->result set by the this->exit method
 	}
 }
 
-void seq::Executor::exit( seq::Stream stream, byte code ) {
+void seq::Executor::exit( seq::Stream& stream, byte code ) {
 	if( stream.size() == 0 ) {
 		throw seq::InternalError( "Unable to exit without arguments!" );
 	}
@@ -1770,7 +1772,7 @@ void seq::Executor::exit( seq::Stream stream, byte code ) {
     throw seq::ExecutorInterrupt( code );
 }
 
-seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream input_stream ) {
+seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream& input_stream ) {
 
     // push new stack into stack array
     this->stack.push_back( seq::StackLevel( seq::Generic() ) );
@@ -1851,7 +1853,8 @@ seq::CommandResult seq::Executor::executeCommand( seq::TokenReader* tr, byte tag
         auto& stream = generic.Stream();
 
         if( stream.machesTags( tags ) ) {
-            return this->executeStream( stream.getReader().readAll() );
+        	seq::Stream s = stream.getReader().readAll();
+            return this->executeStream( s );
         }else{
             return CommandResult( seq::CommandResult::ResultType::None, seq::Stream() );
         }
@@ -1861,7 +1864,7 @@ seq::CommandResult seq::Executor::executeCommand( seq::TokenReader* tr, byte tag
     throw seq::InternalError( "Invalid command in function!" );
 }
 
-seq::CommandResult seq::Executor::executeStream( seq::Stream gs ) {
+seq::CommandResult seq::Executor::executeStream( seq::Stream& gs ) {
 
     seq::Stream acc;
 
@@ -1873,8 +1876,7 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream gs ) {
 
         // if type is unsolid compute real value
         if( t == seq::DataType::Expr || t == seq::DataType::Arg ) {
-            seq::Generic ng = this->executeExpr( g );
-            g = ng;
+            g = this->executeExpr( g );
             t = g.getDataType();
         }
 
@@ -1939,7 +1941,7 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream gs ) {
     return CommandResult( seq::CommandResult::ResultType::None, acc );
 }
 
-seq::Stream seq::Executor::executeAnchor( seq::Generic entity, seq::Stream input_stream ) {
+seq::Stream seq::Executor::executeAnchor( seq::Generic entity, seq::Stream& input_stream ) {
 
     seq::DataType type = entity.getDataType();
 
@@ -2163,7 +2165,7 @@ seq::Stream seq::Executor::resolveName( seq::string& name, bool anchor ) {
 
 }
 
-seq::Stream seq::Executor::executeFlowc( std::vector<seq::FlowCondition*> fcs, seq::Stream input_stream ) {
+seq::Stream seq::Executor::executeFlowc( std::vector<seq::FlowCondition*> fcs, seq::Stream& input_stream ) {
 
     seq::Stream acc;
 
