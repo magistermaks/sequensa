@@ -1278,6 +1278,62 @@ TEST( ce_order_5, {
 
 } );
 
+TEST( ce_expr_complex_math, {
+
+	seq::string code = (byte*) (
+			"#exit << (\n"
+			"8 ** 2 * 9 - 5 * (( 12 + 12 - 25 ) ** 2) / 5 \n"
+			")"
+			);
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
+	CHECK( exe.getResult().Number().getLong(), 575l );
+
+} );
+
+TEST( ce_expr_complex_logic, {
+
+	seq::string code = (byte*) (
+			"#exit << (\n"
+			"(true || false) && ( true ^^ false ) && !false && !( 1 > 10 ) \n"
+			")"
+			);
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Bool );
+	CHECK( exe.getResult().Bool().getBool(), true );
+
+} );
+
+TEST( ce_deep_function, {
+
+	seq::string code = (byte*) (
+			"#exit << #{ #return << #{ #return << #{ #return << (@ * 2) } << (@ + 1) } << (@**2) } << 2"
+			);
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
+	CHECK( exe.getResult().Number().getLong(), 10l );
+
+} );
+
+
 
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );

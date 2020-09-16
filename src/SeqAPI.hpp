@@ -1989,17 +1989,14 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 	if( right.getDataType() == seq::DataType::Expr || right.getDataType() == seq::DataType::Arg ) right = this->executeExpr(right);
 
 	// not and binary not use only one argument (right)
-	if( op != seq::ExprOperator::Not || op != seq::ExprOperator::BinaryNot ) {
-		if( left.getDataType() != right.getDataType() ) {
+	if( op != seq::ExprOperator::Not && op != seq::ExprOperator::BinaryNot ) {
+		if( left.getDataType() != right.getDataType() || left.getDataType() == seq::DataType::Null ) {
 			return seq::Generic( new seq::type::Null(anchor) );
 		}
+
 	}
 
 	seq::DataType type = right.getDataType();
-
-	if( type == seq::DataType::Null ) {
-		return seq::Generic( new seq::type::Null(anchor) );
-	}
 
 	typedef seq::Generic G;
 	auto str = [] ( G g ) -> seq::type::String* { return (seq::type::String*) g.getRaw(); };
@@ -2114,7 +2111,7 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 
 	}
 
-	throw seq::Generic( new seq::type::Null(false) );
+	throw seq::InternalError( "Invalid operands!" );
 
 }
 
