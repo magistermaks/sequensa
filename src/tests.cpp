@@ -1,4 +1,5 @@
 
+#define SEQ_IMPLEMENT
 #include "SeqAPI.hpp"
 #include "vstl.hpp"
 

@@ -856,7 +856,7 @@ namespace seq {
 
 using seq::byte;
 
-//#ifdef SEQUENSA_IMPLEMENT
+#ifdef SEQ_IMPLEMENT
 
 byte seq::util::packTags( long pos, long end ) {
     byte tags = 0;
@@ -3291,5 +3291,5 @@ int seq::Compiler::extractHeaderData( std::vector<Token>& tokens, std::vector<se
 
 }
 
-//#undef SEQUENSA_IMPLEMENT
-//#endif // SEQUENSA_IMPLEMENT
+#undef SEQ_IMPLEMENT
+#endif // SEQ_IMPLEMENT
