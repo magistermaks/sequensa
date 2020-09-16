@@ -140,6 +140,34 @@
  * 				3. Some other completely unexpected thing.
  * 			It is advised to report those exceptions as bugs.
  *
+ * 7. seq::string, seq::byte and c++11 literals
+ *
+ * 		seq::byte is alias for unsigned char,
+ * 		seq::string is a std::basic_string of seq::bytes it can be used to store utf-8 data
+ * 		(on linux and macos char is unsigned by default making it 100% to safe to cast between
+ * 		std::string and seq::string using the seq::util::toStdString and seq::util::toSeqString functions,
+ * 		but it should still work correctly on windows at least as long as only ASCII data is used)
+ *
+ * 		To create seq::string the following syntax can be used:
+ * 			seq::string text = "Hello Text!"_b;
+ *
+ * 		The `_b` literal can also be used to create seq::bytes:
+ * 			seq::byte b = 'A'_b;
+ *
+ * 8. Sequensa API meta-data
+ *
+ * 		All meta-data can be found in the SEQ_API_* macros
+ *
+ * 		SEQ_API_STANDARD - string - version of the Sequensa Standard implemented by the API
+ * 		SEQ_API_NAME - string - name of the API
+ * 		SEQ_API_VERSION_MAJOR - byte - Major component of the version number
+ * 		SEQ_API_VERSION_MINOR - byte - Minor component of the version number
+ * 		SEQ_API_VERSION_PATCH - byte - Patch component of the version number
+ */
+
+/*
+ * Preprocessor:
+ * #define SEQ_IMPLEMENT to implement the Sequensa API
  */
 
 #include <inttypes.h>
