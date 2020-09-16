@@ -1,4 +1,99 @@
 
+/*
+ * MIT License
+ *
+ * Copyright (c) 2020 magistermaks
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+/*
+ * Copyright Appendix:
+ * The following Software is licensed under the MIT license written above,
+ * but the Sequensa Language with all its specification is copyrighted by darktree.net
+ * Thus you may only redistribute the Software if your copy does not violate that license.
+ */
+
+/*
+ * General API overview:
+ *
+ * 		For more informations about Sequensa Language itself see:
+ * 		http://darktree.net/projects/sequensa/
+ *
+ * 1. Compiling and executing:
+ *
+ *		seq::Compiler::compile( seq::string code, std::vector<seq::string>* headerData = nullptr )
+ *		The seq::Compiler::compile function can be used to generate executable Sequesa binary buffer.
+ *		If provided with the `headerData` pointer it will store an array of found dependence names in it.
+ * 		The returned buffer is of type `std::vector<seq::byte> `
+ *
+ * 		To execute returned buffer it first must encased in ByteBuffer object, the first expected constructor
+ * 		argument is the pointer to the buffer, and the second one is the buffer size:
+ * 		seq::ByteBuffer bb( buf.data(), buf.size() )
+ * 		where `buf` is the std::vector returned by seq::Copiler::compile.
+ *
+ * 		Then the ByteBuffer can be passed to the seq::Executor's execute method:
+ * 		Full example:
+ *
+ * 			// Compile the code and save bytecode in the ByteBuffer
+ * 			auto buf = seq::Compiler::compile( code_to_excecute );
+ * 			seq::ByteBuffer bb( buf.data(), buf.size() );
+ *
+ * 			// Execute the bytecode
+ * 			seq::Executor exe;
+ * 			exe.execute( bb );
+ *
+ * 2. Execution argument(s):
+ *
+ *		The seq::Excecutor's execute method can also accept additional argument 'args'
+ *		which contains the stream of top-level arguments (using more than one argument is
+ *		unadvised, as it will cause the whole Sequensa program to execute multiple times - ones per argument)
+ *		The default value is an one-element stream containing the value 'null'
+ *
+ *			// Create args stream containing the number '2'
+ *			seq::Stream args = {
+ *				seq::Generic( new seq::type::Number( false, 2 ) )
+ * 			};
+ *
+ * 			// Execute the bytecode with given args
+ * 			seq::Executor exe;
+ * 			exe.execute( bb, args );
+ *
+ * 3. Injecting (and removing) functions to Sequensa
+ *
+ * 		By default nothing outside of the Sequnsa program can be manipulated by SVM
+ * 		(Sequensa Virtual Machine) to allow function to be invoked from inside of the
+ * 		Sequensa program it must first be injected into the executor using the 'inject' method.
+ *
+ * 		`inject` method takes two parameters: name of the function inside of the Sequensa and the
+ * 		function pointer (seq::type::Native). the given function must take seq::Stream as an argument and return
+ * 		seq::Stream.
+ *
+ * 			exe.inject( "myfunc"_b, [] (seq::Stream args) -> seq::Stream {
+ * 				// ...
+ * 			} );
+ *
+ * 		All injected function can be removed from the Executor object by
+ * 		calling `executor.reset()`
+ *
+ */
+
 #include <inttypes.h>
 #include <exception>
 #include <string>
@@ -365,7 +460,7 @@ namespace seq {
     namespace type {
 
     	/// define Sequensa native function signature
-        typedef std::function<std::vector<seq::Generic>(std::vector<seq::Generic>)> Native;
+        typedef std::vector<seq::Generic>(*Native)(std::vector<seq::Generic>);
 
     }
 
