@@ -136,7 +136,7 @@
  * 		seq::InternalError
  * 			Can be caused by many Sequensa API methods it can signal one of the following problems:
  * 				1. Invalid Sequensa bytecode (file corruption etc)
- * 				2. Programmer error - both on the side of the API itself and the user.
+ * 				2. Programmer error - either on the side of the API itself or the user.
  * 				3. Some other completely unexpected thing.
  * 			It is advised to report those exceptions as bugs.
  *
