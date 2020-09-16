@@ -458,7 +458,7 @@ TEST( executor_hello_world_func, {
 TEST( executor_native, {
 
 	seq::Executor exe;
-	exe.inject( (byte*) "sum", [] ( seq::Stream input ) -> seq::Stream {
+	exe.inject( "sum"_b, [] ( seq::Stream input ) -> seq::Stream {
 		double sum = 0;
 		for( auto& arg : input ) {
 			sum += seq::util::numberCast( arg ).Number().getDouble();
@@ -1330,6 +1330,27 @@ TEST( ce_deep_function, {
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
 	CHECK( exe.getResult().Number().getLong(), 10l );
+
+} );
+
+TEST( ce_top_args, {
+
+	seq::string code = (byte*) (
+			"#exit << @"
+			);
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Stream args = {
+			seq::Generic( new seq::type::Number( false, 2 ) )
+	};
+
+	seq::Executor exe;
+	exe.execute( bb, args );
+
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
+	CHECK( exe.getResult().Number().getLong(), 2l );
 
 } );
 
