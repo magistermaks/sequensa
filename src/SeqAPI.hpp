@@ -170,6 +170,8 @@
  * #define SEQ_IMPLEMENT to implement the Sequensa API
  */
 
+#pragma once
+
 #include <inttypes.h>
 #include <exception>
 #include <string>
@@ -201,7 +203,7 @@
 #define SEQ_API_STANDARD "2020-07-15"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 0
-#define SEQ_API_VERSION_PATCH 0
+#define SEQ_API_VERSION_PATCH 1
 #define SEQ_API_NAME "SeqAPI"
 
 namespace seq {
@@ -267,7 +269,7 @@ namespace seq {
         VAR = 12, // VAR [ASCI...] [NULL] ;
         DEF = 13, // DEF [ASCI...] [NULL] ;
         FLC = 14, // FLC [SIZE] [[SIZE] [BODY...]...] ;
-        SSL = 15 // SSL [TAGS] [HEAD] [TAIL...] [BODY...] ;
+        SSL = 15  // SSL [TAGS] [HEAD] [TAIL...] [BODY...] ;
     };
 
     /// Sequensa data types
