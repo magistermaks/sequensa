@@ -676,6 +676,7 @@ namespace seq {
             long nextInt();
             FileHeader getHeader();
             Stream readAll();
+            ByteBuffer getSubBuffer();
 
         private:
             long first;
@@ -703,12 +704,15 @@ namespace seq {
             void putStream( bool anchor, byte tags, std::vector<byte>& buf );
             void putFileHeader( byte seq_major, byte seq_minor, byte seq_patch, const std::map<seq::string, seq::string>& data );
 
+        public:
+            // usage of this function is unadvised but not forbidden
+            void putBuffer( std::vector<byte>& buffer );
+
         private:
             void putString( const byte* str );
             void putOpcode( bool anchor, seq::Opcode code );
             void putInteger( byte length, long value );
             void putHead( byte left, byte right );
-            void putBuffer( std::vector<byte>& buffer );
             std::vector<byte>& buffer;
     };
 
@@ -1622,6 +1626,10 @@ seq::Stream seq::BufferReader::readAll() {
     return stream;
 }
 
+seq::ByteBuffer seq::BufferReader::getSubBuffer() {
+	return seq::ByteBuffer( this->pointer + this->position + 1, this->last + 1 - this->position );
+}
+
 seq::TokenReader::TokenReader( seq::BufferReader& reader ): reader( reader ) {
     byte header = reader.nextByte();
 
@@ -2461,6 +2469,7 @@ std::vector<byte> seq::Compiler::compile( seq::string code, std::vector<seq::str
 	int offset = seq::Compiler::extractHeaderData(tokens, headerData);
 	auto buffer = seq::Compiler::assembleFunction( tokens, offset, tokens.size(), true );
 
+	// get rid of the first function opcode
 	int functionOffset = (buffer.at(1) >> 4) + 2;
 	buffer.erase( buffer.begin(), buffer.begin() + functionOffset );
 	return buffer;
