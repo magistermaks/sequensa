@@ -313,8 +313,8 @@ namespace seq {
 
     /// Simple fraction struct, used by seq::type::Number
     struct Fraction {
-        const long numerator = 0;
-        const long denominator = 1;
+        const long numerator;
+        const long denominator;
     };
 
     namespace type {
@@ -1248,7 +1248,7 @@ const seq::Fraction seq::type::Number::getFraction() {
 
     multiplier /= hcf;
 
-    return { (long) (sign * ( (part / hcf) + (whole * multiplier) )), multiplier };
+    return (seq::Fraction) { (long) (sign * ( (part / hcf) + (whole * multiplier) )), multiplier };
 }
 
 byte seq::type::Number::sizeOf( unsigned long value ) {
