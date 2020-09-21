@@ -87,12 +87,12 @@ DynamicLibrary::DynamicLibrary( const char* path ) {
 
 #ifdef LIBLOAD_WIN
 	this->data.handle = LoadLibrary( TEXT(path) );
-	if( !this->data.handle ) this->status = "NULL handle, unable to load library!";
+	if( !this->data.handle ) this->status = "NULL handle!";
 #endif
 
 #ifdef LIBLOAD_LINUX
 	this->data.handle = dlopen("myclass.so", RTLD_LAZY);
-	if( !this->data.handle ) this->status = "NULL handle, unable to load library!";
+	if( !this->data.handle ) this->status = "NULL handle!";
 #endif
 
 }
