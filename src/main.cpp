@@ -14,7 +14,7 @@ int main( int argc, char **argv ) {
 
 	mode |= argp.hasFlag("help") || argp.hasFlag("h") ? 1 : 0;
 	mode |= argp.hasFlag("build") || argp.hasFlag("b") ? 2 : 0;
-	mode |= argp.hasFlag("run") || argp.hasFlag("r") ? 8 : 0;
+	mode |= argp.hasFlag("run") || argp.hasFlag("r") ? 4 : 0;
 
 	switch( mode ) {
 
@@ -24,10 +24,6 @@ int main( int argc, char **argv ) {
 
 		case 2:
 			build( argp );
-			break;
-
-		case 4:
-			//link( argp );
 			break;
 
 		case 8:
