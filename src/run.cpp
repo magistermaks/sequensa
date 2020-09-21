@@ -1,5 +1,6 @@
 
 #include "modes.hpp"
+#include "SeqAPI.hpp"
 
 #define LIBLOAD_IMPLEMENT
 #define LIBLOAD_LINUX
@@ -7,30 +8,39 @@
 
 std::vector<DynamicLibrary> dls;
 
-bool file_exist( const char *fileName ) {
-    std::ifstream infile(fileName);
-    return infile.good();
-}
-
-std::string get_exe_path() {
-	int length = wai_getExecutablePath(NULL, 0, NULL);
-	char path[length + 1];
-	wai_getExecutablePath(path, length, NULL);
-	path[length] = '\0';
-
-	return std::string( path );
-}
-
 bool load_native_lib( seq::Executor& exe, seq::FileHeader& header, std::string& path, bool v ) {
 
 	DynamicLibrary dl( path.c_str() );
 	if( dl.isLoaded() ) {
-		return dl.fetch<DynLibInit>("init")(&exe,&header);
+
+		int status = 0;
+
+		try{
+			status = dl.fetch<DynLibInit>("init")(&exe,&header);
+			dls.push_back( std::move(dl) );
+		}catch(...){
+			status = -1;
+		}
+
+		if( status != 0 ) {
+			std::cout << "Failed to load native library from: '" + path + "', error: " << status << "!" << std::endl;
+			return false;
+		}else if(v) {
+			std::cout << "Successfully loaded native library: " + path + "!" << std::endl;
+		}
+
+		return true;
+
 	}
 
-	std::cout << "Unable to load native library from: " + path + "!" << std::endl;
-	std::cout << "Error: " << dl.getMessage() << std::endl;
+	std::cout << "Failed to load native library from: '" + path + "', error: " << dl.getMessage() << "!" << std::endl;
 	return false;
+
+}
+
+void unload_native_libs() {
+
+	for( auto& lib : dls ) lib.close();
 
 }
 
