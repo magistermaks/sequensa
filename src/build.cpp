@@ -29,6 +29,9 @@ void build( std::string input, std::string output, bool v ) {
 
 				}
 
+				// TODO using headerData include other sq files OR
+				// TODO scan sq files for `load "somefile.sq"`, copy-paste the required sources and THEN compile
+
 				for( auto& str : headerData ) {
 					load += str;
 					load += ';'_b;
@@ -47,7 +50,7 @@ void build( std::string input, std::string output, bool v ) {
 			bw.putBuffer( buffer );
 		}
 
-		std::cout << "Compiled '" << input << "' successfully!" << (v ? " (" + input + ")" : "") << std::endl;
+		std::cout << "Compiled '" << input << "' successfully!" << std::endl;
 
 		std::ofstream outfile( output, std::ios::binary );
 		outfile.write( (char*) arr.data(), arr.size() );
