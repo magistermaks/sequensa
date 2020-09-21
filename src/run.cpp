@@ -26,7 +26,7 @@ bool load_native_lib( seq::Executor& exe, seq::FileHeader& header, std::string& 
 			std::cout << "Failed to load native library from: '" + path + "', error: " << status << "!" << std::endl;
 			return false;
 		}else if(v) {
-			std::cout << "Successfully loaded native library: " + path + "!" << std::endl;
+			std::cout << "Successfully loaded native library: '" + path + "'!" << std::endl;
 		}
 
 		return true;
@@ -55,26 +55,19 @@ bool load_native_libs( seq::Executor& exe, seq::FileHeader& header, bool v ) {
 		std::string lib_path = (path + "/lib/" + segment + "/" + SEQ_LIB_NAME);
 
 		if( file_exist( lib_path.c_str() ) ) {
-			if( !load_native_lib( exe, header, lib_path, v ) ) {
-				std::cout << "Library '" << segment << "' failed to load!" << std::endl;
-				return false;
-			}else{
-				if( v ) std::cout << "Loaded native library: '" << segment << "' from: " << lib_path << std::endl;
-			}
+			if( !load_native_lib( exe, header, lib_path, v ) ) return false;
 			continue;
 		}
 
 		lib_path = ("./lib/" + segment + "/" + SEQ_LIB_NAME);
 
 		if( file_exist( lib_path.c_str() ) ) {
-			if( !load_native_lib( exe, header, lib_path, v ) ) {
-				std::cout << "Library '" << segment << "' failed to load!" << std::endl;
-				return false;
-			}else{
-				if( v ) std::cout << "Loaded native library: '" << segment << "' from: " << lib_path << std::endl;
-			}
+			if( !load_native_lib( exe, header, lib_path, v ) ) return false;
 			continue;
 		}
+
+		std::cout << "Unable to find native library: '" << segment << "'!" << std::endl;
+		return false;
 
 	}
 
@@ -95,15 +88,19 @@ void run( std::string input, bool v ) {
 		try{
 
 			seq::Executor exe;
+
 			if( !load_native_libs( exe, header, v ) ) {
-				std::cout << "Unable to create virtual environment! Stopping!" << std::endl;
+				std::cout << "Failed to create virtual environment, start aborted!" << std::endl;
 				return;
-			}else{
-				if( v ) std::cout << "Successfully created virtual environment! Starting!" << std::endl;
 			}
+
+			if( v ){
+				std::cout << "Successfully created virtual environment, starting!" << std::endl;
+			}
+
 			exe.execute( br.getSubBuffer() );
 
-			std::cout << "Exit value: " << seq::util::toStdString(seq::util::stringCast(exe.getResult()).String().getString()) << std::endl;
+			std::cout << "Exit value: " << exe.getResultString() << std::endl;
 
 		}catch( seq::RuntimeError& err ) {
 
@@ -119,6 +116,7 @@ void run( std::string input, bool v ) {
 		return;
 	}
 
+	unload_native_libs();
 	infile.close();
 
 }
