@@ -24,6 +24,11 @@
  */
 
 /*
+ * On Linux link with -ldl
+ * Example: g++ main.o -ldl
+ */
+
+/*
  * Usage:
  * 	DynamicLibrary dl( "./path/to/lib" );
  * 	if( dl.isLoaded() ) {
