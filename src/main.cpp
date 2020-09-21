@@ -26,7 +26,7 @@ int main( int argc, char **argv ) {
 			build( argp );
 			break;
 
-		case 8:
+		case 4:
 			run( argp );
 			break;
 
