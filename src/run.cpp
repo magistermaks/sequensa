@@ -1,6 +1,6 @@
 
 #include "modes.hpp"
-#include "SeqAPI.hpp"
+#include "api/SeqAPI.hpp"
 
 #define LIBLOAD_IMPLEMENT
 #define LIBLOAD_LINUX

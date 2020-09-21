@@ -8,8 +8,8 @@
 
 // SeqAPI is re-included in every module
 // because my IDE was complaining about "undefined symbols"
-#include "SeqAPI.hpp"
-#include "argparse.hpp"
+#include "api/SeqAPI.hpp"
+#include "lib/argparse.hpp"
 #include "lib/whereami.h"
 
 typedef int (*DynLibInit) (seq::Executor*,seq::FileHeader*);

@@ -1,6 +1,6 @@
 
 #include "modes.hpp"
-#include "SeqAPI.hpp"
+#include "api/SeqAPI.hpp"
 
 void build( std::string input, std::string output, bool v ) {
 

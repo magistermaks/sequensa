@@ -1,7 +1,7 @@
 
 #define SEQ_IMPLEMENT
 #include "SeqAPI.hpp"
-#include "vstl.hpp"
+#include "../lib/vstl.hpp"
 
 void print_buffer( seq::ByteBuffer& bb ) {
     seq::BufferReader br = bb.getReader();

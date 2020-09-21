@@ -1,9 +1,9 @@
 
 #define SEQ_IMPLEMENT
-#include "SeqAPI.hpp"
+#include "api/SeqAPI.hpp"
 
 #define ARGPARSE_IMPLEMENT
-#include "argparse.hpp"
+#include "lib/argparse.hpp"
 
 #include "modes.hpp"
 
