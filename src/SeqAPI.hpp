@@ -203,7 +203,7 @@
 #define SEQ_API_STANDARD "2020-07-15"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 0
-#define SEQ_API_VERSION_PATCH 1
+#define SEQ_API_VERSION_PATCH 2
 #define SEQ_API_NAME "SeqAPI"
 
 namespace seq {
