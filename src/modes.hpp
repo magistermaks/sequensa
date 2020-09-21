@@ -16,7 +16,6 @@ typedef bool (*DynLibInit) (seq::Executor*,seq::FileHeader*);
 
 void help( ArgParse& argp );
 void build( ArgParse& argp );
-void link( ArgParse& argp );
 void run( ArgParse& argp );
 
 #endif /* MODES_HPP_ */
