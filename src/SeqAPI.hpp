@@ -203,7 +203,7 @@
 #define SEQ_API_STANDARD "2020-07-15"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 0
-#define SEQ_API_VERSION_PATCH 2
+#define SEQ_API_VERSION_PATCH 3
 #define SEQ_API_NAME "SeqAPI"
 
 namespace seq {
@@ -771,6 +771,7 @@ namespace seq {
             StackLevel* getLevel( int level );
             StackLevel* getTopLevel();
             void reset();
+            std::string getResultString();
             seq::Generic getResult();
             seq::Stream& getResults();
             void execute( ByteBuffer bb, seq::Stream args = { seq::Generic( new type::Null( false ) ) } );
@@ -1922,6 +1923,10 @@ seq::StackLevel* seq::Executor::getTopLevel() {
 
 void seq::Executor::reset() {
     this->natives.clear();
+}
+
+std::string seq::Executor::getResultString() {
+    return seq::util::toStdString( seq::util::stringCast( this->getResult() ).String().getString() );
 }
 
 seq::Generic seq::Executor::getResult() {
