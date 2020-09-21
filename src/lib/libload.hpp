@@ -65,6 +65,7 @@ class DynamicLibrary {
 
 	public:
 		DynamicLibrary( const char* path );
+		DynamicLibrary( DynamicLibrary&& dl );
 		~DynamicLibrary();
 
 		void close();
@@ -94,6 +95,12 @@ DynamicLibrary::DynamicLibrary( const char* path ) {
 	if( !this->data.handle ) this->status = "NULL handle, unable to load library!";
 #endif
 
+}
+
+DynamicLibrary::DynamicLibrary( DynamicLibrary&& dl ) {
+	this->data = std::move( dl.data );
+	this->status = dl.status;
+	dl.status = "Library ownership moved.";
 }
 
 DynamicLibrary::~DynamicLibrary() {
