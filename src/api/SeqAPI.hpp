@@ -167,7 +167,8 @@
 
 /*
  * Preprocessor:
- * #define SEQ_IMPLEMENT to implement the Sequensa API
+ * 	#define SEQ_IMPLEMENT 			to implement the Sequensa API
+ * 	#define SEQ_EXCLUDE_COMPILER 	to exclude compiler code from API
  */
 
 #pragma once
@@ -203,7 +204,7 @@
 #define SEQ_API_STANDARD "2020-07-15"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 0
-#define SEQ_API_VERSION_PATCH 3
+#define SEQ_API_VERSION_PATCH 4
 #define SEQ_API_NAME "SeqAPI"
 
 namespace seq {
@@ -613,6 +614,9 @@ namespace seq {
             const bool checkVersion( byte seq_major, byte seq_minor );
             const bool checkPatch( byte seq_patch );
             seq::string& getValue( const byte* key );
+            int getVersionMajor();
+            int getVersionMinor();
+            int getVersionPatch();
 
         private:
             const byte seq_major;
@@ -794,6 +798,7 @@ namespace seq {
             seq::Stream result;
     };
 
+#ifndef SEQ_EXCLUDE_COMPILER
     namespace Compiler {
 
     	class Token {
@@ -858,6 +863,7 @@ namespace seq {
     	int extractHeaderData( std::vector<Token>& tokens, std::vector<seq::string>* arrayPtr );
 
     };
+#endif // SEQ_EXCLUDE_COMPILER
 
 }
 
@@ -1181,6 +1187,18 @@ const bool seq::FileHeader::checkPatch( byte _seq_patch ) {
 
 seq::string& seq::FileHeader::getValue( const byte* key ) {
     return this->properties.at( seq::string(key) );
+}
+
+int seq::FileHeader::getVersionMajor() {
+	return (int) this->seq_major;
+}
+
+int seq::FileHeader::getVersionMinor() {
+	return (int) this->seq_minor;
+}
+
+int seq::FileHeader::getVersionPatch() {
+	return (int) this->seq_patch;
 }
 
 seq::type::Generic::Generic( const DataType _type, bool _anchor ): type( _type ), anchor( _anchor ) {}
@@ -2402,6 +2420,7 @@ seq::Generic seq::Executor::executeCast( seq::Generic cast, seq::Generic arg ) {
 
 }
 
+#ifndef SEQ_EXCLUDE_COMPILER
 seq::Compiler::Token::Token( unsigned int _line, long _data, bool _anchor, Category _category, seq::string& _raw, seq::string& _clean ): line( _line ), data( _data ), anchor( _anchor ),  category( _category ), raw( _raw ), clean( _clean ) {}
 
 seq::Compiler::Token::Token( const Token& token ): line( token.line ), data( token.data ), anchor( token.anchor ), category( token.category ), raw( token.raw ), clean( token.clean ) {}
@@ -3306,6 +3325,8 @@ int seq::Compiler::extractHeaderData( std::vector<Token>& tokens, std::vector<se
 	return s;
 
 }
+
+#endif // SEQ_EXCLUDE_COMPILER
 
 #undef SEQ_IMPLEMENT
 #endif // SEQ_IMPLEMENT
