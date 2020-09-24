@@ -16,18 +16,22 @@ int main( int argc, char **argv ) {
 	mode |= argp.hasFlag("build") || argp.hasFlag("b") ? 2 : 0;
 	mode |= argp.hasFlag("run") || argp.hasFlag("r") ? 4 : 0;
 
+	Options options = {0};
+	options.verbose = argp.hasFlag("v");
+	options.force_execution = argp.hasFlag("f");
+
 	switch( mode ) {
 
 		case 1:
-			help( argp );
+			help( argp, options );
 			break;
 
 		case 2:
-			build( argp );
+			build( argp, options );
 			break;
 
 		case 4:
-			run( argp );
+			run( argp, options );
 			break;
 
 		default:
