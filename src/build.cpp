@@ -2,77 +2,121 @@
 #include "modes.hpp"
 #include "api/SeqAPI.hpp"
 
-void build( std::string input, std::string output, bool v ) {
+bool build( std::string input, std::vector<seq::byte>* buffer, std::vector<std::string>* dependencies, std::vector<std::string>* natives, bool v ) {
 
 	std::ifstream infile( input );
 	if( infile.good() ) {
 
-		std::vector<seq::byte> arr;
-		{
-			std::map<seq::string, seq::string> header;
-			std::vector<seq::byte> buffer;
+		std::vector<seq::string> headerData;
 
-			{
-				seq::string load = ""_b;
-				std::vector<seq::string> headerData;
+		try{
 
-				try{
+			seq::string content( (std::istreambuf_iterator<char>(infile) ), (std::istreambuf_iterator<char>() ));
+			*buffer = seq::Compiler::compile(content, &headerData);
 
-					seq::string content( (std::istreambuf_iterator<char>(infile) ), (std::istreambuf_iterator<char>() ));
-					buffer = seq::Compiler::compile(content, &headerData);
+		}catch( seq::CompilerError& err ){
 
-				}catch( seq::CompilerError& err ){
+			std::cout << "Compilation of '" << input << "' failed!" << std::endl;
+			std::cout << err.what() << std::endl;
+			return false;
 
-					std::cout << "Compilation failed!" << std::endl;
-					std::cout << err.what() << (v ? " (" + input + ")" : "") << std::endl;
-					return;
+		}
 
-				}
+		for( auto& str : headerData ) {
 
-				// TODO using headerData include other sq files OR
-				// TODO scan sq files for `load "somefile.sq"`, copy-paste the required sources and THEN compile
+			int s = str.size();
 
-				for( auto& str : headerData ) {
-					load += str;
-					load += ';'_b;
-				}
+			if( s > 3 && str.at( s - 1 ) == 'q'_b && str.at( s - 2 ) == 's'_b && str.at( s - 3 ) == '.'_b ) {
 
-				header["load"_b] = load;
+				(*dependencies).push_back( seq::util::toStdString(str) );
+
+			}else{
+
+				(*natives).push_back( seq::util::toStdString(str) );
+
 			}
 
-			header["time"_b] = std::time(0);
-			header["std"_b] = (seq::byte*) SEQ_API_STANDARD;
-			header["api"_b] = (seq::byte*) SEQ_API_NAME;
-
-			seq::BufferWriter bw( arr );
-
-			bw.putFileHeader(SEQ_API_VERSION_MAJOR, SEQ_API_VERSION_MINOR, SEQ_API_VERSION_PATCH, header);
-			bw.putBuffer( buffer );
 		}
 
 		std::cout << "Compiled '" << input << "' successfully!" << std::endl;
 
-		std::ofstream outfile( output, std::ios::binary );
-		outfile.write( (char*) arr.data(), arr.size() );
-		outfile.flush();
-		outfile.close();
+		infile.close();
+		return true;
 
-	}else{
-		std::cout << "No such file '" << input << "' found!" << std::endl;
-		std::cout << "Use '-help' for usage help." << std::endl;
-		return;
 	}
 
-	infile.close();
+	std::cout << "Compilation of '" << input << "' failed!" << std::endl;
+	std::cout << "No such file found!" << std::endl;
+	return false;
 
 }
 
-void build( ArgParse& argp ) {
+bool build_tree( std::string input, std::string output, bool v ) {
+
+	struct CompiledUnit {
+		std::vector<std::string> dependencies;
+		std::vector<seq::byte> buffer;
+	};
+
+	std::vector<std::string> done;
+	std::map<size_t,CompiledUnit> units;
+	std::vector<std::string> natives;
+
+	auto build_targets = [v] ( std::map<size_t,CompiledUnit>* units, std::vector<std::string>* dependencies, std::vector<std::string>* targets, std::vector<std::string>* done, std::vector<std::string>* natives ) -> bool {
+
+		for( auto& target : *targets ) {
+
+			if( std::find(done->begin(), done->end(), target) != done->end() ) {
+				continue;
+			}
+
+			CompiledUnit unit;
+			size_t hash = get_path_hash( target );
+
+			if( !build( target, &unit.buffer, &unit.dependencies, natives, v ) ){
+				return false;
+			}
+
+			dependencies->insert( dependencies->end(), unit.dependencies.begin(), unit.dependencies.end() );
+
+			// put compiled unit in unit map
+			(*units)[hash] = std::move( unit );
+			done->push_back( target );
+
+		}
+
+		return true;
+
+	};
+
+	std::vector<std::string> targets = {input};
+
+	while( !targets.empty() ) {
+
+		std::vector<std::string> dependencies;
+
+		if( !build_targets( &units, &dependencies, &targets, &done, &natives ) ) {
+			return false;
+		}
+
+		targets = dependencies;
+
+	}
+
+	// TODO: sort compiled units
+
+	// TODO: save buffers in output file
+
+	return true;
+
+}
+
+void build( ArgParse& argp, Options opt ) {
 
 	auto vars = argp.getValues();
 
 	if( vars.size() == 2 ) {
-		build( vars.at(0), vars.at(1), argp.hasFlag( "v" ) );
+		build_tree( vars.at(0), vars.at(1), opt.verbose );
 	}else{
 		std::cout << "Invalid arguments!" << std::endl;
 		std::cout << "Use '-help' for usage help." << std::endl;
