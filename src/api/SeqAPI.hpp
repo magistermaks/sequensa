@@ -96,7 +96,8 @@
  *
  * 		After successful execution (exe.execute) of the program the returned value(s) can be
  * 		obtained by calling `exe.getResult()` for single result or `exe.getResults()` for stream
- * 		of returned values.
+ * 		of returned values. Additional helper method `exe.getResultString()` can be used to obtain result
+ * 		directly as c++ string.
  *
  * 		Note: `exe.getResult()` returns first element of the result stream (according to
  * 		Sequensa Language Specification this is the program's exit code)
