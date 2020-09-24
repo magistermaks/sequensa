@@ -80,7 +80,7 @@ bool load_native_libs( seq::Executor& exe, seq::FileHeader& header, bool v ) {
 
 }
 
-void run( std::string input, bool v ) {
+void run( std::string input, Options opt ) {
 
 	std::ifstream infile( input );
 	if( infile.good() ) {
@@ -90,16 +90,34 @@ void run( std::string input, bool v ) {
 		seq::BufferReader br = bb.getReader();
 		seq::FileHeader header = br.getHeader();
 
+		if( !header.checkVersion(SEQ_API_VERSION_MAJOR, SEQ_API_VERSION_MINOR) ) {
+			std::cout << "Error! Invalid Sequensa Virtual Machine version!" << std::endl;
+			std::cout << "Program expected: " << header.getVersionMajor() << '.' << header.getVersionMinor() << '.' << header.getVersionPatch() << std::endl;
+
+			// force program execution regardless of version mismatch
+			if( opt.force_execution ) {
+				std::cout << "Execution forced, this may cause errors!" << std::endl;
+			}else{
+				return;
+			}
+
+		}
+
+		if( opt.verbose && !header.checkPatch(SEQ_API_VERSION_PATCH) ) {
+			std::cout << "Warning! Invalid Sequensa Virtual Machine version!" << std::endl;
+			std::cout << "Program expected: " << header.getVersionMajor() << '.' << header.getVersionMinor() << '.' << header.getVersionPatch() << std::endl;
+		}
+
 		try{
 
 			seq::Executor exe;
 
-			if( !load_native_libs( exe, header, v ) ) {
+			if( !load_native_libs( exe, header, opt.verbose ) ) {
 				std::cout << "Failed to create virtual environment, start aborted!" << std::endl;
 				return;
 			}
 
-			if( v ){
+			if( opt.verbose ){
 				std::cout << "Successfully created virtual environment, starting!" << std::endl;
 			}
 
@@ -110,7 +128,7 @@ void run( std::string input, bool v ) {
 		}catch( seq::RuntimeError& err ) {
 
 			std::cout << "Runtime exception!" << std::endl;
-			std::cout << err.what() << (v ? " (" + input + ")" : "") << std::endl;
+			std::cout << err.what() << (opt.verbose ? " (" + input + ")" : "") << std::endl;
 			return;
 
 		}
@@ -126,12 +144,12 @@ void run( std::string input, bool v ) {
 
 }
 
-void run( ArgParse& argp ) {
+void run( ArgParse& argp, Options opt ) {
 
 	auto vars = argp.getValues();
 
 	if( vars.size() == 1 ) {
-		run( vars.at(0), argp.hasFlag( "v" ) );
+		run( vars.at(0), opt );
 	}else{
 		std::cout << "Invalid arguments!" << std::endl;
 		std::cout << "Use '-help' for usage help." << std::endl;
