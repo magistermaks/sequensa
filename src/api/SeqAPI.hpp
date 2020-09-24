@@ -205,7 +205,7 @@
 #define SEQ_API_STANDARD "2020-07-15"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 0
-#define SEQ_API_VERSION_PATCH 4
+#define SEQ_API_VERSION_PATCH 5
 #define SEQ_API_NAME "SeqAPI"
 
 namespace seq {
@@ -2496,7 +2496,13 @@ std::vector<byte> seq::Compiler::compile( seq::string code, std::vector<seq::str
 
 	// get rid of the first function opcode
 	int functionOffset = (buffer.at(1) >> 4) + 2;
-	buffer.erase( buffer.begin(), buffer.begin() + functionOffset );
+
+	// if that is NOT the case something weird has happened/the file is empty
+	// but we will pretend that everything is OK and just skip this step
+	if( functionOffset < (long) buffer.size() ) {
+		buffer.erase( buffer.begin(), buffer.begin() + functionOffset );
+	}
+
 	return buffer;
 }
 
