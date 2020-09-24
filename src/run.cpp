@@ -101,11 +101,13 @@ void run( std::string input, Options opt ) {
 				return;
 			}
 
-		}
+		}else{
 
-		if( opt.verbose && !header.checkPatch(SEQ_API_VERSION_PATCH) ) {
-			std::cout << "Warning! Invalid Sequensa Virtual Machine version!" << std::endl;
-			std::cout << "Program expected: " << header.getVersionMajor() << '.' << header.getVersionMinor() << '.' << header.getVersionPatch() << std::endl;
+			if( opt.verbose && !header.checkPatch(SEQ_API_VERSION_PATCH) ) {
+				std::cout << "Warning! Invalid Sequensa Virtual Machine version!" << std::endl;
+				std::cout << "Program expected: " << header.getVersionMajor() << '.' << header.getVersionMinor() << '.' << header.getVersionPatch() << std::endl;
+			}
+
 		}
 
 		try{
