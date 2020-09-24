@@ -17,7 +17,7 @@ int main() {
 	seq::Executor exe;
 	exe.execute( bb );
 	
-	std::cout << seq::util::toStdString( exe.getResult().String().getString() );
+	std::cout << exe.getResultString();
 	
 }
 ```
