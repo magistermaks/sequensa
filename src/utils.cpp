@@ -19,6 +19,11 @@ std::string get_cwd_path() {
 	return ( getcwd(temp, sizeof(temp)) ? std::string( temp ) : std::string("") );
 }
 
+std::string get_directory( std::string& path ) {
+     size_t pos = path.find_last_of("/\\");
+     return (std::string::npos == pos) ? "" : path.substr(0, pos);
+}
+
 std::string get_base_name( std::string path ) {
 	return path.substr( path.find_last_of("/\\") + 1 );
 }
@@ -55,7 +60,11 @@ std::string get_absolute_path( std::string relative, std::string base ) {
 		}
 
 		if( part == ".." ) {
-			base_parts.pop_back();
+
+			if( !base_parts.empty() ) {
+				base_parts.pop_back();
+			}
+
 			continue;
 		}
 
@@ -64,12 +73,14 @@ std::string get_absolute_path( std::string relative, std::string base ) {
 	}
 
 	std::string res;
+
 	for( const auto& part : base_parts ) {
 		res += part;
 		res += '/';
 	}
 
 	if( !res.empty() ) res.pop_back();
+
 	return res;
 
 }
