@@ -87,12 +87,12 @@ DynamicLibrary::DynamicLibrary( const char* path ) {
 
 #ifdef LIBLOAD_WIN
 	this->data.handle = LoadLibrary( TEXT(path) );
-	if( !this->data.handle ) this->status = "NULL handle!";
+	if( !this->data.handle ) this->status = "null handle";
 #endif
 
 #ifdef LIBLOAD_LINUX
-	this->data.handle = dlopen("myclass.so", RTLD_LAZY);
-	if( !this->data.handle ) this->status = "NULL handle!";
+	this->data.handle = dlopen(path, RTLD_LAZY);
+	if( !this->data.handle ) this->status = dlerror();
 #endif
 
 }
@@ -100,7 +100,7 @@ DynamicLibrary::DynamicLibrary( const char* path ) {
 DynamicLibrary::DynamicLibrary( DynamicLibrary&& dl ) {
 	this->data = std::move( dl.data );
 	this->status = dl.status;
-	dl.status = "Library ownership moved.";
+	dl.status = "library ownership moved";
 }
 
 DynamicLibrary::~DynamicLibrary() {
@@ -117,7 +117,7 @@ bool DynamicLibrary::isLoaded() {
 
 void DynamicLibrary::close() {
 	if( this->isLoaded() ) {
-		this->status = "Library unloaded.";
+		this->status = "library unloaded";
 
 #ifdef LIBLOAD_WIN
 		FreeLibrary( this->data.handle )
