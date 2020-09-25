@@ -205,7 +205,7 @@
 #define SEQ_API_STANDARD "2020-07-15"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 0
-#define SEQ_API_VERSION_PATCH 5
+#define SEQ_API_VERSION_PATCH 6
 #define SEQ_API_NAME "SeqAPI"
 
 namespace seq {
@@ -1066,7 +1066,7 @@ void seq::BufferWriter::putBool( bool anchor, bool value ) {
 }
 
 void seq::BufferWriter::putNumber( bool anchor, seq::Fraction f ) {
-    if( f.denominator == 1 && f.numerator >= 0 && f.numerator <= SEQ_MAX_UBYTE1 ) {
+    if( f.denominator == 1 && f.numerator >= 0 && f.numerator <= 0b01111111 ) {
         this->putOpcode( anchor, seq::Opcode::INT );
         this->putByte( (byte) f.numerator );
     }else{
@@ -1647,7 +1647,7 @@ seq::Stream seq::BufferReader::readAll() {
 }
 
 seq::ByteBuffer seq::BufferReader::getSubBuffer() {
-	return seq::ByteBuffer( this->pointer + this->position + 1, this->last + 1 - this->position );
+	return seq::ByteBuffer( this->pointer + this->position + 1, this->last - this->position );
 }
 
 seq::TokenReader::TokenReader( seq::BufferReader& reader ): reader( reader ) {
@@ -2491,6 +2491,10 @@ std::string seq::Compiler::Token::toString() {
 
 std::vector<byte> seq::Compiler::compile( seq::string code, std::vector<seq::string>* headerData ) {
 	auto tokens = seq::Compiler::tokenize( code );
+
+	// skip empty files
+	if( tokens.empty() ) return std::vector<byte>();
+
 	int offset = seq::Compiler::extractHeaderData(tokens, headerData);
 	auto buffer = seq::Compiler::assembleFunction( tokens, offset, tokens.size(), true );
 
@@ -2652,6 +2656,12 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 
 				case State::Name: // or Tag
 					if( isLetter( c ) ) token += c; else {
+
+						if( c == ':'_b ) {
+							token += c;
+							state = State::Name2;
+							break;
+						}
 
 						if( c == ';'_b ) {
 							token += c;

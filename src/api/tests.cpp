@@ -1355,6 +1355,24 @@ TEST( ce_top_args, {
 
 } );
 
+TEST( ce_namespace, {
+
+		seq::string code = (byte*) (
+				"set foo:bar << 123 \n"
+				"#exit << foo:bar"
+		);
+
+		auto buf = seq::Compiler::compile( code );
+		seq::ByteBuffer bb( buf.data(), buf.size() );
+
+		seq::Executor exe;
+		exe.execute( bb );
+
+		CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
+		CHECK( exe.getResult().Number().getLong(), 123l );
+
+} );
+
 
 
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
