@@ -37,5 +37,6 @@ std::string get_cwd_path();
 std::string get_base_name( std::string path );
 size_t get_path_hash( std::string path );
 std::string get_absolute_path( std::string relative, std::string base );
+std::string get_directory( std::string& path );
 
 #endif /* MODES_HPP_ */
