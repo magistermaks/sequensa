@@ -69,7 +69,7 @@ TEST( buffer_writer_complex, {
     bw.putBool( true, true );
     bw.putNumber( false, (seq::Fraction) {12, 1} );
     bw.putNumber( true, (seq::Fraction) {1, 2} );
-    bw.putNumber( false, (seq::Fraction) {324221312413, 1} );
+    bw.putNumber( false, (seq::Fraction) {1422131241, 1} );
     bw.putString( true, (byte*) "Hello World!" );
     bw.putType( false, seq::DataType::Number );
     bw.putCall( false, seq::type::VMCall::CallType::Return );
@@ -106,7 +106,7 @@ TEST( buffer_writer_complex, {
         seq::TokenReader tr = br.next();
         CHECK( (byte) tr.getDataType(), (byte) seq::DataType::Number );
         CHECK( tr.isAnchored(), false );
-        CHECK( tr.getGeneric().Number().getLong(), (long) 324221312413 );
+        CHECK( tr.getGeneric().Number().getLong(), (long) 1422131241 );
     }
 
     { // string

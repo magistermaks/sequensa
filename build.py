@@ -25,6 +25,7 @@ path = ""
 linker_args = ""
 exe_ext = ""
 lib_ext = ""
+test_path = ""
 
 # palatform dependent settings
 if system_name == "Linux":
@@ -32,11 +33,13 @@ if system_name == "Linux":
     linker_args = " -ldl"
     exe_ext = ""
     lib_ext = ".so"
+    test_path = "./builder-tmp/tests"
 else:
     path = "C:/sequensa"
     linker_args = ""
     exe_ext = ".exe"
     lib_ext = ".dll"
+    test_path = ".\\builder-tmp\\tests.exe"
 
 # define function used to invoke compiler
 def compile( path, args = "" ):
@@ -86,7 +89,7 @@ if args.test:
 
     # execute target
     print( "\nRunning Target..." )
-    os.system( tmp_path + "/tests" + exe_ext )
+    os.system( test_path )
 
     # delete tmp directory and exit
     rem_dir( tmp_path )
@@ -98,7 +101,7 @@ print( "If that dir already exists it will be deleted, do you wish to continue? 
 
 # exit if user did not select 'yes'
 if input() != "y":
-    print( "Instalation aborted!" )
+    print( "\nInstalation aborted!" )
     exit()
 
 # print build status
