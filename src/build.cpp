@@ -191,7 +191,7 @@ void build( ArgParse& argp, Options opt ) {
 		build_tree( vars.at(0), vars.at(1), opt.verbose );
 	}else{
 		std::cout << "Invalid arguments!" << std::endl;
-		std::cout << "Use '-help' for usage help." << std::endl;
+		std::cout << "Use '--help' for usage help." << std::endl;
 	}
 
 }

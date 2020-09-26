@@ -12,13 +12,13 @@ int main( int argc, char **argv ) {
 	ArgParse argp( argc, argv );
 	short mode = 0;
 
-	mode |= argp.hasFlag("help") || argp.hasFlag("h") ? 1 : 0;
-	mode |= argp.hasFlag("build") || argp.hasFlag("b") ? 2 : 0;
-	mode |= argp.hasFlag("run") || argp.hasFlag("r") ? 4 : 0;
+	mode |= argp.hasFlag("--help") || argp.hasFlag("-h") ? 1 : 0;
+	mode |= argp.hasFlag("--build") || argp.hasFlag("-b") ? 2 : 0;
+	mode |= argp.hasFlag("--run") || argp.hasFlag("-r") ? 4 : 0;
 
 	Options options = {0};
-	options.verbose = argp.hasFlag("v");
-	options.force_execution = argp.hasFlag("f");
+	options.verbose = argp.hasFlag("-v");
+	options.force_execution = argp.hasFlag("-f");
 
 	switch( mode ) {
 
@@ -36,7 +36,7 @@ int main( int argc, char **argv ) {
 
 		default:
 			std::cout << "Invalid arguments!" << std::endl;
-			std::cout << "Use '-help' for usage help." << std::endl;
+			std::cout << "Use '--help' for usage help." << std::endl;
 			break;
 
 	}

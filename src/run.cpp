@@ -136,7 +136,6 @@ void run( std::string input, Options opt ) {
 
 	}else{
 		std::cout << "No such file '" << input << "' found!" << std::endl;
-		std::cout << "Use '-help' for usage help." << std::endl;
 		return;
 	}
 
@@ -153,7 +152,7 @@ void run( ArgParse& argp, Options opt ) {
 		run( vars.at(0), opt );
 	}else{
 		std::cout << "Invalid arguments!" << std::endl;
-		std::cout << "Use '-help' for usage help." << std::endl;
+		std::cout << "Use '--help' for usage help." << std::endl;
 	}
 
 }

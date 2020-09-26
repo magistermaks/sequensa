@@ -39,7 +39,7 @@ ArgParse::ArgParse( int argc, char **argv ) {
 			std::string arg( argv[i] );
 
 			if( arg[0] == '-' ) {
-				flags.push_back( arg.substr(1) );
+				flags.push_back( arg );
 			}else{
 				values.push_back( arg );
 			}
