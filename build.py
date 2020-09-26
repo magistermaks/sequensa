@@ -1,5 +1,6 @@
 
 import platform, os, shutil, sys
+from utils import *
 
 system_name = platform.system()
 command = ""
@@ -23,7 +24,18 @@ else:
 
 print( "Sequensa advanced installer v1.0" )
 print( "Platform: " + system_name + ", Selected '" + command + "' compiler." )
-print( "Sequensa will be installed in: " + path )
+
+if test_for_command( command ) == None:
+	print( "\nError: Compiler not found!" )
+
+	if system_name == "Linux":
+		print( " * Try installing it with 'sudo apt install build-essential'" )
+	else:
+		print( " * Try installing it from 'http://mingw.org/'" )
+
+	exit()
+
+print( "\nSequensa will be installed in: " + path )
 print( "If that dir already exists it will be deleted, do you wish to continue? y/n" )
 
 if input() != "y":
@@ -51,30 +63,6 @@ os.mkdir( tmp_path + "/src" )
 os.mkdir( tmp_path + "/src/lib" ) 
 os.mkdir( tmp_path + "/src/std" ) 
 
-# stolen from stackoverflow
-def add_to_path( program_path:str ):
-    if os.name == "nt": # Windows systems
-        import winreg # Allows access to the windows registry
-        import ctypes # Allows interface with low-level C API's
-
-        with winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER) as root: # Get the current user registry
-            with winreg.OpenKey(root, "Environment", 0, winreg.KEY_ALL_ACCESS) as key: # Go to the environment key
-                existing_path_value = winreg.EnumValue(key, 3)[1] # Grab the current path value
-                new_path_value = existing_path_value + program_path + ";" # Takes the current path value and appends the new program path
-                winreg.SetValueEx(key, "PATH", 0, winreg.REG_EXPAND_SZ, new_path_value) # Updated the path with the updated path
-
-            # Tell other processes to update their environment
-            HWND_BROADCAST = 0xFFFF
-            WM_SETTINGCHANGE = 0x1A
-            SMTO_ABORTIFHUNG = 0x0002
-            result = ctypes.c_long()
-            SendMessageTimeoutW = ctypes.windll.user32.SendMessageTimeoutW
-            SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, u"Environment", SMTO_ABORTIFHUNG, 5000, ctypes.byref(result),) 
-    else: # If system is *nix
-        with open(f"{os.getenv('HOME')}/.bashrc", "a") as bash_file:  # Open bashrc file
-            bash_file.write(f'\nexport PATH="{program_path}:$PATH"\n')  # Add program path to Path variable
-        os.system(f". {os.getenv('HOME')}/.bashrc")  # Update bash source
-
 def compile( path, args = "" ):
 	print( "Compiling '" + path + ".cpp' => '" + tmp_path + "/" + path + ".o'" )
 	os.system( command + compiler_args + args + "-o \"" + tmp_path + "/" + path + ".o\" " + path + ".cpp" ) 
@@ -99,7 +87,7 @@ compile( "src/std/math", "-fPIC " )
 
 print( "\nLinking Targets..." )
 
-link( path + "/Sequensa" + exe_ext, ["/src/lib/whereami.o", "/src/main.o", "/src/help.o", "/src/build.o", "/src/run.o", "/src/utils.o"] )
+link( path + "/sequensa" + exe_ext, ["/src/lib/whereami.o", "/src/main.o", "/src/help.o", "/src/build.o", "/src/run.o", "/src/utils.o"] )
 link( path + "/lib/stdio/native" + lib_ext, ["/src/std/stdio.o"], " -shared" )
 link( path + "/lib/math/native" + lib_ext, ["/src/std/math.o"], " -shared" )
 
@@ -113,6 +101,7 @@ if not path in os.environ['PATH']:
 	print( "\nSequensa added to PATH" )
 	print( "Please restart shell for changes to take effect" )
 
+os.link( path + "/sequensa" + exe_ext, path + "/seq" + exe_ext )
 
 print( "\nSequensa installation complete!" )
 
