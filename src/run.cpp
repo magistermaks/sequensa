@@ -3,7 +3,6 @@
 #include "api/SeqAPI.hpp"
 
 #define LIBLOAD_IMPLEMENT
-#define LIBLOAD_LINUX
 #include "lib/libload.hpp"
 
 std::vector<DynamicLibrary> dls;

@@ -3,6 +3,11 @@
 //   by Gregory Pakosz (@gpakosz)
 // https://github.com/gpakosz/whereami
 
+// This library is somewhat broken so I tried to patch it around
+// with help from: https://github.com/Proxmark/proxmark3/issues/217
+// and here: https://eigen.tuxfamily.org/bz/show_bug.cgi?id=125
+// (I fixed it by removing problematic parts)
+
 // in case you want to #include "whereami.c" in a larger compilation unit
 #if !defined(WHEREAMI_H)
 #include "whereami.h"
@@ -55,7 +60,6 @@ extern "C" {
 #pragma warning(push, 3)
 #endif
 #include <windows.h>
-#include <intrin.h>
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #endif
@@ -142,22 +146,9 @@ int WAI_PREFIX(getExecutablePath)(char* out, int capacity, int* dirname_length)
 WAI_NOINLINE WAI_FUNCSPEC
 int WAI_PREFIX(getModulePath)(char* out, int capacity, int* dirname_length)
 {
-  HMODULE module;
-  int length = -1;
-
-#if defined(_MSC_VER)
-#pragma warning(push)
-#pragma warning(disable: 4054)
-#endif
-  if (GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCTSTR)WAI_RETURN_ADDRESS(), &module))
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif
-  {
-    length = WAI_PREFIX(getModulePath_)(module, out, capacity, dirname_length);
-  }
-
-  return length;
+  // Internals removed to fixed MinGW errors
+  // as this function is unused
+  return 0;
 }
 
 #elif defined(__linux__) || defined(__CYGWIN__) || defined(__sun) || defined(WAI_USE_PROC_SELF_EXE)

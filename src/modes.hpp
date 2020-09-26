@@ -11,14 +11,29 @@
 #include "api/SeqAPI.hpp"
 #include "lib/argparse.hpp"
 #include "lib/whereami.h"
+#include "lib/detector.hpp"
 
 // linux only headers
-#include <unistd.h>
-#include <linux/limits.h>
+#ifdef SEQ_LINUX
+#	include <unistd.h>
+#	include <linux/limits.h>
+#	define SEQ_LIB_NAME "native.so"
+#	define LIBLOAD_LINUX
+#	define CWD_MAX_PATH PATH_MAX
+#	define POSIX_GETCWD getcwd
+#endif
+
+// windows only headers
+#ifdef SEQ_WINDOWS
+#	include <windows.h>
+#	include <direct.h>
+#	define SEQ_LIB_NAME "native.dll"
+#	define LIBLOAD_WINDOWS
+#	define CWD_MAX_PATH MAX_PATH
+#	define POSIX_GETCWD _getcwd
+#endif
 
 typedef int (*DynLibInit) (seq::Executor*,seq::FileHeader*);
-
-#define SEQ_LIB_NAME "native.so"
 
 // command line flags
 struct Options {
