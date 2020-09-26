@@ -1,5 +1,13 @@
 
 import os
+import shutil
+
+# just some short-hand
+def rem_dir( pth ):
+    try:
+        shutil.rmtree( pth )
+    except:
+        pass
 
 # stolen from stackoverflow
 # https://stackoverflow.com/a/377028

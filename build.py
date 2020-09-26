@@ -19,6 +19,7 @@ system_name = platform.system()
 command = "g++"
 tmp_path = "./builder-tmp"
 compiler_args = " -O0 -g3 -Wall -c "
+builder_ver = "1.0"
 
 path = ""
 linker_args = ""
@@ -52,7 +53,7 @@ def link( target, paths, args = "" ):
     os.system( command + args + " -o \"" + target + "\" " + x + linker_args ) 
 
 # print basic info
-print( "Sequensa builder v1.0" )
+print( "Sequensa builder v" + builder_ver )
 print( "Platform: " + system_name + ", Selected '" + command + "' compiler." )
 
 # if no compiler avaible exit with error
@@ -68,10 +69,7 @@ if not test_for_command( command + exe_ext ):
 
 # if in "test" mode, compile, link and execute API unit tests
 if args.test:
-    try:
-        shutil.rmtree( tmp_path )
-    except:
-        pass
+    rem_dir( tmp_path )
 
     # prepare directories
     os.mkdir( tmp_path ) 
@@ -91,11 +89,7 @@ if args.test:
     os.system( tmp_path + "/tests" + exe_ext )
 
     # delete tmp directory and exit
-    try:
-        shutil.rmtree( tmp_path );
-    except:
-       pass
-
+    rem_dir( tmp_path )
     exit() 
 
 # warn about target directory
@@ -111,15 +105,8 @@ if input() != "y":
 print( "\nBuilding Targets..." )
 
 # delete directries
-try:
-    shutil.rmtree( path );
-except:
-    pass
-
-try:
-    shutil.rmtree( tmp_path );
-except:
-    pass
+rem_dir( path )
+rem_dir( tmp_path )
 
 # prepare directories
 os.mkdir( path ) 
@@ -153,10 +140,7 @@ link( path + "/lib/math/native" + lib_ext, ["/src/std/math.o"], " -shared" )
 link( path + "/lib/rand/native" + lib_ext, ["/src/std/rand.o"], " -shared" )
 
 # delete tmp directory
-try:
-    shutil.rmtree( tmp_path );
-except:
-    pass
+rem_dir( tmp_path )
 
 # add Sequensa to PATH (if not already present)
 if not path in os.environ['PATH']:
