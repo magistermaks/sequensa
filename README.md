@@ -8,9 +8,9 @@ This repository contains:
  * __Sequensa Standard Libraries__  - shared libraries injected into Sequensa at runtime
  * __Sequensa__  - application used to compile and run Sequensa programs
 
-##### Sequensa API
+#### Sequensa API
 
-The API itself is located in `/src/api/SeqAPI.hpp` and contains basic documentation to get you started
+The API is located in `/src/api/SeqAPI.hpp` and contains all basic documentation to get you started
 
 ```C++
 #define SEQ_IMPLEMENT
