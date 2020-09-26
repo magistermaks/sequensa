@@ -15,8 +15,8 @@ std::string get_exe_path() {
 }
 
 std::string get_cwd_path() {
-	char temp[ PATH_MAX ];
-	return ( getcwd(temp, sizeof(temp)) ? std::string( temp ) : std::string("") );
+	char temp[ CWD_MAX_PATH ];
+	return ( POSIX_GETCWD(temp, sizeof(temp)) ? std::string( temp ) : std::string("") );
 }
 
 std::string get_directory( std::string& path ) {
