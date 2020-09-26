@@ -3,29 +3,29 @@ import platform, os, shutil, sys
 from utils import *
 
 system_name = platform.system()
-command = ""
-path = ""
+command = "g++"
 tmp_path = "./installer-tmp"
 compiler_args = " -O0 -g3 -Wall -c "
+
+path = ""
 linker_args = ""
 exe_ext = ""
 lib_ext = ""
 
 if system_name == "Linux":
-	command = "g++"
 	path = os.getenv('HOME') + "/sequensa"
 	linker_args = " -ldl"
+	exe_ext = ""
 	lib_ext = ".so"
 else:
-	command = "MinGW"
 	path = "C:/sequensa"
-	target_ext = ".exe"
+	exe_ext = "/exe"
 	lib_ext = ".dll"
 
 print( "Sequensa advanced installer v1.0" )
 print( "Platform: " + system_name + ", Selected '" + command + "' compiler." )
 
-if test_for_command( command ) == None:
+if test_for_command( command + exe_ext ) == None:
 	print( "\nError: Compiler not found!" )
 
 	if system_name == "Linux":
@@ -58,6 +58,7 @@ os.mkdir( path )
 os.mkdir( path + "/lib" ) 
 os.mkdir( path + "/lib/stdio" ) 
 os.mkdir( path + "/lib/math" ) 
+os.mkdir( path + "/lib/rand" ) 
 os.mkdir( tmp_path ) 
 os.mkdir( tmp_path + "/src" ) 
 os.mkdir( tmp_path + "/src/lib" ) 
@@ -84,12 +85,14 @@ compile( "src/utils" )
 compile( "src/lib/whereami" )
 compile( "src/std/stdio", "-fPIC " )
 compile( "src/std/math", "-fPIC " )
+compile( "src/std/rand", "-fPIC " )
 
 print( "\nLinking Targets..." )
 
 link( path + "/sequensa" + exe_ext, ["/src/lib/whereami.o", "/src/main.o", "/src/help.o", "/src/build.o", "/src/run.o", "/src/utils.o"] )
 link( path + "/lib/stdio/native" + lib_ext, ["/src/std/stdio.o"], " -shared" )
 link( path + "/lib/math/native" + lib_ext, ["/src/std/math.o"], " -shared" )
+link( path + "/lib/rand/native" + lib_ext, ["/src/std/rand.o"], " -shared" )
 
 try:
 	shutil.rmtree( tmp_path );
@@ -104,8 +107,5 @@ if not path in os.environ['PATH']:
 os.link( path + "/sequensa" + exe_ext, path + "/seq" + exe_ext )
 
 print( "\nSequensa installation complete!" )
-
-
-
 
 
