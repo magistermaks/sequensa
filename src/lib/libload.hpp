@@ -45,7 +45,7 @@
 
 #include <string>
 
-#ifdef LIBLOAD_WIN
+#ifdef LIBLOAD_WINDOWS
 #include <windows.h>
 
 struct __DynLibData {
@@ -85,7 +85,7 @@ class DynamicLibrary {
 
 DynamicLibrary::DynamicLibrary( const char* path ) {
 
-#ifdef LIBLOAD_WIN
+#ifdef LIBLOAD_WINDOWS
 	this->data.handle = LoadLibrary( TEXT(path) );
 	if( !this->data.handle ) this->status = "null handle";
 #endif
@@ -119,8 +119,8 @@ void DynamicLibrary::close() {
 	if( this->isLoaded() ) {
 		this->status = "library unloaded";
 
-#ifdef LIBLOAD_WIN
-		FreeLibrary( this->data.handle )
+#ifdef LIBLOAD_WINDOWS
+		FreeLibrary( this->data.handle );
 #endif
 
 #ifdef LIBLOAD_LINUX
