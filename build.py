@@ -19,7 +19,8 @@ if system_name == "Linux":
 	lib_ext = ".so"
 else:
 	path = "C:/sequensa"
-	exe_ext = "/exe"
+	linker_args = ""
+	exe_ext = ".exe"
 	lib_ext = ".dll"
 
 print( "Sequensa advanced installer v1.0" )
