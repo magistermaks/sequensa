@@ -205,7 +205,7 @@
 #define SEQ_API_STANDARD "2020-07-15"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 0
-#define SEQ_API_VERSION_PATCH 6
+#define SEQ_API_VERSION_PATCH 7
 #define SEQ_API_NAME "SeqAPI"
 
 namespace seq {
@@ -618,6 +618,7 @@ namespace seq {
             int getVersionMajor();
             int getVersionMinor();
             int getVersionPatch();
+            std::map<seq::string, seq::string> getValueMap();
 
         private:
             const byte seq_major;
@@ -1200,6 +1201,10 @@ int seq::FileHeader::getVersionMinor() {
 
 int seq::FileHeader::getVersionPatch() {
 	return (int) this->seq_patch;
+}
+
+std::map<seq::string, seq::string> seq::FileHeader::getValueMap() {
+	return this->properties;
 }
 
 seq::type::Generic::Generic( const DataType _type, bool _anchor ): type( _type ), anchor( _anchor ) {}
