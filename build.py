@@ -117,6 +117,7 @@ os.mkdir( path + "/lib" )
 os.mkdir( path + "/lib/stdio" ) 
 os.mkdir( path + "/lib/math" ) 
 os.mkdir( path + "/lib/rand" ) 
+os.mkdir( path + "/lib/meta" ) 
 os.mkdir( tmp_path ) 
 os.mkdir( tmp_path + "/src" ) 
 os.mkdir( tmp_path + "/src/lib" ) 
@@ -132,6 +133,7 @@ compile( "src/lib/whereami" )
 compile( "src/std/stdio", "-fPIC " )
 compile( "src/std/math", "-fPIC " )
 compile( "src/std/rand", "-fPIC " )
+compile( "src/std/meta", "-fPIC " )
 
 # print build status
 print( "\nLinking Targets..." )
@@ -141,6 +143,7 @@ link( path + "/sequensa" + exe_ext, ["/src/lib/whereami.o", "/src/main.o", "/src
 link( path + "/lib/stdio/native" + lib_ext, ["/src/std/stdio.o"], " -shared" )
 link( path + "/lib/math/native" + lib_ext, ["/src/std/math.o"], " -shared" )
 link( path + "/lib/rand/native" + lib_ext, ["/src/std/rand.o"], " -shared" )
+link( path + "/lib/meta/native" + lib_ext, ["/src/std/meta.o"], " -shared" )
 
 # delete tmp directory
 rem_dir( tmp_path )
