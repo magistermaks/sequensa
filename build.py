@@ -146,8 +146,9 @@ link( path + "/lib/meta/native" + lib_ext, ["/src/std/meta.o"], " -shared" )
 rem_dir( tmp_path )
 
 # add Sequensa to PATH (if not already present)
-if not path in os.environ['PATH']:
-    add_to_path( localize_path( path ) )
+lpath = localize_path( path )
+if not lpath in os.environ['PATH']:
+    add_to_path( lpath )
     print( "\nSequensa added to PATH" )
     print( "Please restart shell for changes to take effect" )
 
