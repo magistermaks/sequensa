@@ -2,6 +2,16 @@
 import os
 import shutil
 
+# localize given path
+def localize_path( pth:str ):
+    if os.name == "nt":
+        pth = pth.replace("/", "\\")
+
+    if pth[-1] == '/':
+        return pth[:-1]
+
+    return pth
+
 # just some short-hand
 def rem_dir( pth ):
     try:

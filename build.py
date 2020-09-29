@@ -25,7 +25,6 @@ path = ""
 linker_args = ""
 exe_ext = ""
 lib_ext = ""
-test_path = ""
 
 # palatform dependent settings
 if system_name == "Linux":
@@ -33,13 +32,11 @@ if system_name == "Linux":
     linker_args = " -ldl"
     exe_ext = ""
     lib_ext = ".so"
-    test_path = "./builder-tmp/tests"
 else:
     path = "C:/sequensa"
     linker_args = ""
     exe_ext = ".exe"
     lib_ext = ".dll"
-    test_path = ".\\builder-tmp\\tests.exe"
 
 # define function used to invoke compiler
 def compile( path, args = "" ):
@@ -89,7 +86,7 @@ if args.test:
 
     # execute target
     print( "\nRunning Target..." )
-    os.system( test_path )
+    os.system( localize_path( tmp_path + "/tests" + exe_ext ) )
 
     # delete tmp directory and exit
     rem_dir( tmp_path )
@@ -150,7 +147,7 @@ rem_dir( tmp_path )
 
 # add Sequensa to PATH (if not already present)
 if not path in os.environ['PATH']:
-    add_to_path( path )
+    add_to_path( localize_path( path ) )
     print( "\nSequensa added to PATH" )
     print( "Please restart shell for changes to take effect" )
 
