@@ -287,7 +287,8 @@ namespace seq {
         Expr   = 9, // maps to: EXP
         Name  = 10, // maps to: VAR DEF
         Flowc = 11, // maps to: FLC
-        Stream = 12 // maps to: SSL
+        Stream = 12,// maps to: SSL
+		Blob = 13	// maps to: ---
     };
 
     enum struct ExprOperator: byte {
@@ -499,6 +500,14 @@ namespace seq {
 
         };
 
+        class Blob: public Generic {
+
+        	public:
+        		Blob( bool anchor );
+        		seq::string toString();
+
+        };
+
     }
 
     class Generic {
@@ -518,6 +527,7 @@ namespace seq {
     		void setAnchor( bool anchor );
 
     		type::Null& Null();
+    		type::Blob& Blob();
 			type::Stream& Stream();
     		type::Flowc& Flowc();
     		type::Expression& Expression();
@@ -910,6 +920,7 @@ seq::type::Generic* seq::util::copyGeneric( seq::type::Generic* entity ) {
 		case seq::DataType::String: return new seq::type::String( *(seq::type::String*) entity );
 		case seq::DataType::Type: return new seq::type::Type( *(seq::type::Type*) entity );
 		case seq::DataType::VMCall: return new seq::type::VMCall( *(seq::type::VMCall*) entity );
+		case seq::DataType::Blob: return new seq::type::Blob( *(seq::type::Blob*) entity );
 	}
 
 	throw seq::InternalError( "Impossible state!" );
@@ -945,6 +956,7 @@ seq::Generic seq::util::numberCast( seq::Generic arg ) {
 	    case seq::DataType::VMCall:
 	    case seq::DataType::Flowc:
 	    case seq::DataType::Func:
+	    case seq::DataType::Blob:
 	    	num = new seq::type::Number( false, 1 );
 	        break;
 
@@ -997,6 +1009,10 @@ seq::Generic seq::util::stringCast( seq::Generic arg ) {
 		case seq::DataType::VMCall:
 		case seq::DataType::Func:
 			str = new seq::type::String( false, "func"_b );
+			break;
+
+		case seq::DataType::Blob:
+			str = new seq::type::String( false, arg.Blob().toString().c_str() );
 			break;
 
 		// invalid casts: (stream, name, expr, arg)
@@ -1381,6 +1397,12 @@ seq::BufferReader& seq::type::Stream::getReader() {
 
 seq::type::Null::Null( bool _anchor ): seq::type::Generic( seq::DataType::Null, _anchor ) {}
 
+seq::type::Blob::Blob( bool _anchor ): seq::type::Generic( seq::DataType::Blob, _anchor ) {}
+
+seq::string seq::type::Blob::toString() {
+	return "blob"_b;
+}
+
 seq::type::Flowc::Flowc( bool _anchor, const std::vector< seq::FlowCondition* > _blocks ): seq::type::Generic( seq::DataType::Flowc, _anchor ), conditions( _blocks ) {}
 
 seq::type::Flowc::Flowc( const seq::type::Flowc& flowc ): seq::type::Generic( seq::DataType::Flowc, flowc.anchor ), conditions( seq::util::copyFlowConditions( flowc.conditions ) ) {}
@@ -1450,6 +1472,10 @@ seq::type::Generic* seq::Generic::getRaw() {
 
 seq::type::Null& seq::Generic::Null() {
 	return *(static_cast<seq::type::Null*>(this->generic));
+}
+
+seq::type::Blob& seq::Generic::Blob() {
+	return *(static_cast<seq::type::Blob*>(this->generic));
 }
 
 seq::type::Stream& seq::Generic::Stream() {
@@ -2189,6 +2215,10 @@ seq::Stream seq::Executor::executeAnchor( seq::Generic entity, seq::Stream& inpu
         return this->executeFlowc( entity.Flowc().getConditions(), input_stream );
     }
 
+    if( type == seq::DataType::Blob ) {
+    	throw seq::RuntimeError( "Invalid '" + seq::util::toStdString( entity.Blob().toString() ) + "' call!" );
+    }
+
     // if not any of the above, simply cast args to anchor
     seq::Stream output_stream;
     for( auto g : input_stream ) {
@@ -2200,8 +2230,13 @@ seq::Stream seq::Executor::executeAnchor( seq::Generic entity, seq::Stream& inpu
 
 seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic right, seq::ExprOperator op, bool anchor ) {
 
-	if( left.getDataType() == seq::DataType::Expr || left.getDataType() == seq::DataType::Arg ) left = this->executeExpr(left);
-	if( right.getDataType() == seq::DataType::Expr || right.getDataType() == seq::DataType::Arg ) right = this->executeExpr(right);
+	{
+		const seq::DataType ldt = left.getDataType();
+		const seq::DataType rdt = right.getDataType();
+
+		if( ldt == seq::DataType::Expr || ldt == seq::DataType::Arg ) left = this->executeExpr(left);
+		if( rdt == seq::DataType::Expr || rdt == seq::DataType::Arg ) right = this->executeExpr(right);
+	}
 
 	// not and binary not use only one argument (right)
 	if( op != seq::ExprOperator::Not && op != seq::ExprOperator::BinaryNot ) {
