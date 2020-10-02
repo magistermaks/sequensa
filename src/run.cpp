@@ -15,17 +15,25 @@ bool load_native_lib( seq::Executor& exe, seq::FileHeader& header, std::string& 
 		int status = 0;
 
 		try{
+
 			status = dl.fetch<DynLibInit>("init")(&exe,&header);
 			dls.push_back( std::move(dl) );
+
 		}catch(...){
+
 			status = -1;
+
 		}
 
 		if( status != 0 ) {
+
 			std::cout << "Failed to load native library from: '" + path + "', error: " << status << "!" << std::endl;
 			return false;
+
 		}else if(v) {
+
 			std::cout << "Successfully loaded native library: '" + path + "'!" << std::endl;
+
 		}
 
 		return true;
@@ -67,9 +75,6 @@ bool load_native_libs( seq::Executor& exe, seq::FileHeader& header, bool v ) {
 			continue;
 		}
 
-		// check for lib in program directory
-		// TODO
-
 		std::cout << "Unable to find native library: '" << segment << "'!" << std::endl;
 		return false;
 
@@ -89,9 +94,11 @@ void run( std::string input, Options opt ) {
 		seq::BufferReader br = bb.getReader();
 		seq::FileHeader header = br.getHeader();
 
+		// validate versions
 		if( !header.checkVersion(SEQ_API_VERSION_MAJOR, SEQ_API_VERSION_MINOR) ) {
+
 			std::cout << "Error! Invalid Sequensa Virtual Machine version!" << std::endl;
-			std::cout << "Program expected: " << header.getVersionMajor() << '.' << header.getVersionMinor() << '.' << header.getVersionPatch() << std::endl;
+			std::cout << "Program expected: " << header.getVersionString() << std::endl;
 
 			// force program execution regardless of version mismatch
 			if( opt.force_execution ) {
@@ -103,8 +110,10 @@ void run( std::string input, Options opt ) {
 		}else{
 
 			if( opt.verbose && !header.checkPatch(SEQ_API_VERSION_PATCH) ) {
+
 				std::cout << "Warning! Invalid Sequensa Virtual Machine version!" << std::endl;
-				std::cout << "Program expected: " << header.getVersionMajor() << '.' << header.getVersionMinor() << '.' << header.getVersionPatch() << std::endl;
+				std::cout << "Program expected: " << header.getVersionString() << std::endl;
+
 			}
 
 		}
@@ -114,12 +123,16 @@ void run( std::string input, Options opt ) {
 			seq::Executor exe;
 
 			if( !load_native_libs( exe, header, opt.verbose ) ) {
+
 				std::cout << "Failed to create virtual environment, start aborted!" << std::endl;
 				return;
+
 			}
 
 			if( opt.verbose ){
+
 				std::cout << "Successfully created virtual environment, starting!" << std::endl;
+
 			}
 
 			exe.execute( br.getSubBuffer() );
@@ -135,8 +148,10 @@ void run( std::string input, Options opt ) {
 		}
 
 	}else{
+
 		std::cout << "No such file '" << input << "' found!" << std::endl;
 		return;
+
 	}
 
 	unload_native_libs();
@@ -149,10 +164,14 @@ void run( ArgParse& argp, Options opt ) {
 	auto vars = argp.getValues();
 
 	if( vars.size() == 1 ) {
+
 		run( vars.at(0), opt );
+
 	}else{
-		std::cout << "Invalid arguments!" << std::endl;
+
+		std::cout << "Expected filename!" << std::endl;
 		std::cout << "Use '--help' for usage help." << std::endl;
+
 	}
 
 }

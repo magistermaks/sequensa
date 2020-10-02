@@ -20,24 +20,32 @@ int main( int argc, char **argv ) {
 	options.verbose = argp.hasFlag("-v");
 	options.force_execution = argp.hasFlag("-f");
 
-	switch( mode ) {
+	try{
 
-		case 1:
-			help( argp, options );
-			break;
+		switch( mode ) {
 
-		case 2:
-			build( argp, options );
-			break;
+			case 1:
+				help( argp, options );
+				break;
 
-		case 4:
-			run( argp, options );
-			break;
+			case 2:
+				build( argp, options );
+				break;
 
-		default:
-			std::cout << "Invalid arguments!" << std::endl;
-			std::cout << "Use '--help' for usage help." << std::endl;
-			break;
+			case 4:
+				run( argp, options );
+				break;
+
+			default:
+				std::cout << "Invalid arguments!" << std::endl;
+				std::cout << "Use '--help' for usage help." << std::endl;
+				break;
+
+		}
+
+	}catch(...){
+
+		std::cout << "Unknown internal error occurred, process terminated!" << std::endl;
 
 	}
 

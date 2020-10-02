@@ -27,7 +27,7 @@ bool build( std::string input, std::vector<seq::byte>* buffer, std::vector<std::
 
 			int s = str.size();
 
-			if( s > 3 && str.at( s - 1 ) == 'q'_b && str.at( s - 2 ) == 's'_b && str.at( s - 3 ) == '.'_b ) {
+			if( s > 3 && str[ s - 1 ] == 'q'_b && str[ s - 2 ] == 's'_b && str[ s - 3 ] == '.'_b ) {
 
 				(*dependencies).push_back( get_absolute_path( seq::util::toStdString(str), base ) );
 
@@ -39,7 +39,9 @@ bool build( std::string input, std::vector<seq::byte>* buffer, std::vector<std::
 
 		}
 
-		std::cout << "Compiled '" << input << "' successfully!" << std::endl;
+		if( v ) {
+			std::cout << "Compiled '" << input << "' successfully!" << std::endl;
+		}
 
 		infile.close();
 		return true;
@@ -72,7 +74,6 @@ bool build_tree( std::string input, std::string output, bool v ) {
 			}
 
 			CompiledUnit unit;
-			size_t hash = get_path_hash( target );
 
 			if( !build( target, &unit.buffer, &unit.dependencies, natives, v ) ){
 				return false;
@@ -81,7 +82,7 @@ bool build_tree( std::string input, std::string output, bool v ) {
 			dependencies->insert( dependencies->end(), unit.dependencies.begin(), unit.dependencies.end() );
 
 			// put compiled unit in unit map
-			(*units)[hash] = std::move( unit );
+			(*units)[ get_path_hash( target ) ] = std::move( unit );
 			done->push_back( target );
 
 		}
@@ -92,18 +93,22 @@ bool build_tree( std::string input, std::string output, bool v ) {
 
 	std::vector<std::string> targets = { get_absolute_path( input, get_cwd_path() ) };
 
+	// build and resolve until there is nothing more to be done (starting with 'input' ^)
 	while( !targets.empty() ) {
 
 		std::vector<std::string> dependencies;
 
 		if( !build_targets( &units, &dependencies, &targets, &done, &natives ) ) {
+
 			return false;
+
 		}
 
-		targets = dependencies;
+		targets = std::move( dependencies );
 
 	}
 
+	// when reversed most dependencies are put into correct order
 	std::reverse(done.begin(), done.end());
 
 	// sort dependencies
@@ -116,10 +121,8 @@ bool build_tree( std::string input, std::string output, bool v ) {
 
 		for( int i = 0; i < s; i ++ ) {
 
-			const auto& file = done.at(i);
-			size_t hash = get_path_hash( file );
-
-			const auto& dependencies = units.at( hash ).dependencies;
+			const auto& file = done[i];
+			const auto& dependencies = units.at( get_path_hash( file ) ).dependencies;
 
 			for( const auto& dept : dependencies ) {
 
@@ -141,10 +144,11 @@ bool build_tree( std::string input, std::string output, bool v ) {
 
 	}
 
-	// save buffers in output file
+	// create output file
 	std::ofstream outfile( output );
 	if( outfile.good() ) {
 
+		// write Sequensa header to file
 		{
 			std::map<seq::string, seq::string> header;
 
@@ -167,11 +171,11 @@ bool build_tree( std::string input, std::string output, bool v ) {
 			outfile.write((char*)arr.data(), arr.size());
 		}
 
-		for( auto& unit : done ) {
+		// write units to output file
+		for( auto& file : done ) {
 
-			size_t hash = get_path_hash( unit );
-			auto& buf = units.at( hash ).buffer;
-			outfile.write((char*)buf.data(), buf.size());
+			auto& buf = units.at( get_path_hash( file ) ).buffer;
+			outfile.write( (char*) buf.data(), buf.size() );
 
 		}
 
@@ -188,10 +192,18 @@ void build( ArgParse& argp, Options opt ) {
 	auto vars = argp.getValues();
 
 	if( vars.size() == 2 ) {
-		build_tree( vars.at(0), vars.at(1), opt.verbose );
+
+		if( !build_tree( vars.at(0), vars.at(1), opt.verbose ) ) {
+
+			std::cout << "Build failed!" << std::endl;
+
+		}
+
 	}else{
-		std::cout << "Invalid arguments!" << std::endl;
+
+		std::cout << "Expected two filenames!" << std::endl;
 		std::cout << "Use '--help' for usage help." << std::endl;
+
 	}
 
 }
