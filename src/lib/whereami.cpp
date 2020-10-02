@@ -143,14 +143,6 @@ int WAI_PREFIX(getExecutablePath)(char* out, int capacity, int* dirname_length)
   return WAI_PREFIX(getModulePath_)(NULL, out, capacity, dirname_length);
 }
 
-WAI_NOINLINE WAI_FUNCSPEC
-int WAI_PREFIX(getModulePath)(char* out, int capacity, int* dirname_length)
-{
-  // Internals removed to fixed MinGW errors
-  // as this function is unused
-  return 0;
-}
-
 #elif defined(__linux__) || defined(__CYGWIN__) || defined(__sun) || defined(WAI_USE_PROC_SELF_EXE)
 
 #include <stdio.h>
@@ -231,126 +223,6 @@ int WAI_PREFIX(getExecutablePath)(char* out, int capacity, int* dirname_length)
 #include <unistd.h>
 #endif
 
-WAI_NOINLINE WAI_FUNCSPEC
-int WAI_PREFIX(getModulePath)(char* out, int capacity, int* dirname_length)
-{
-  int length = -1;
-  FILE* maps = NULL;
-
-  for (int r = 0; r < WAI_PROC_SELF_MAPS_RETRY; ++r)
-  {
-    maps = fopen(WAI_PROC_SELF_MAPS, "r");
-    if (!maps)
-      break;
-
-    for (;;)
-    {
-      char buffer[PATH_MAX < 1024 ? 1024 : PATH_MAX];
-      uint64_t low, high;
-      char perms[5];
-      uint64_t offset;
-      uint32_t major, minor;
-      char path[PATH_MAX];
-      uint32_t inode;
-
-      if (!fgets(buffer, sizeof(buffer), maps))
-        break;
-
-      if (sscanf(buffer, "%" PRIx64 "-%" PRIx64 " %s %" PRIx64 " %x:%x %u %s\n", &low, &high, perms, &offset, &major, &minor, &inode, path) == 8)
-      {
-        uint64_t addr = (uintptr_t)WAI_RETURN_ADDRESS();
-        if (low <= addr && addr <= high)
-        {
-          char* resolved;
-
-          resolved = realpath(path, buffer);
-          if (!resolved)
-            break;
-
-          length = (int)strlen(resolved);
-#if defined(__ANDROID__) || defined(ANDROID)
-          if (length > 4
-              &&buffer[length - 1] == 'k'
-              &&buffer[length - 2] == 'p'
-              &&buffer[length - 3] == 'a'
-              &&buffer[length - 4] == '.')
-          {
-            int fd = open(path, O_RDONLY);
-            if (fd == -1)
-            {
-              length = -1; // retry
-              break;
-            }
-
-            char* begin = (char*)mmap(0, offset, PROT_READ, MAP_SHARED, fd, 0);
-            if (begin == MAP_FAILED)
-            {
-              close(fd);
-              length = -1; // retry
-              break;
-            }
-
-            char* p = begin + offset - 30; // minimum size of local file header
-            while (p >= begin) // scan backwards
-            {
-              if (*((uint32_t*)p) == 0x04034b50UL) // local file header signature found
-              {
-                uint16_t length_ = *((uint16_t*)(p + 26));
-
-                if (length + 2 + length_ < (int)sizeof(buffer))
-                {
-                  memcpy(&buffer[length], "!/", 2);
-                  memcpy(&buffer[length + 2], p + 30, length_);
-                  length += 2 + length_;
-                }
-
-                break;
-              }
-
-              --p;
-            }
-
-            munmap(begin, offset);
-            close(fd);
-          }
-#endif
-          if (length <= capacity)
-          {
-            memcpy(out, resolved, length);
-
-            if (dirname_length)
-            {
-              int i;
-
-              for (i = length - 1; i >= 0; --i)
-              {
-                if (out[i] == '/')
-                {
-                  *dirname_length = i;
-                  break;
-                }
-              }
-            }
-          }
-
-          break;
-        }
-      }
-    }
-
-    fclose(maps);
-    maps = NULL;
-
-    if (length != -1)
-      break;
-  }
-
-  if (maps)
-    fclose(maps);
-
-  return length;
-}
-
 #elif defined(__APPLE__)
 
 #define _DARWIN_BETTER_REALPATH
@@ -408,50 +280,6 @@ int WAI_PREFIX(getExecutablePath)(char* out, int capacity, int* dirname_length)
 
   if (path != buffer1)
     WAI_FREE(path);
-
-  return length;
-}
-
-WAI_NOINLINE WAI_FUNCSPEC
-int WAI_PREFIX(getModulePath)(char* out, int capacity, int* dirname_length)
-{
-  char buffer[PATH_MAX];
-  char* resolved = NULL;
-  int length = -1;
-
-  for(;;)
-  {
-    Dl_info info;
-
-    if (dladdr(WAI_RETURN_ADDRESS(), &info))
-    {
-      resolved = realpath(info.dli_fname, buffer);
-      if (!resolved)
-        break;
-
-      length = (int)strlen(resolved);
-      if (length <= capacity)
-      {
-        memcpy(out, resolved, length);
-
-        if (dirname_length)
-        {
-          int i;
-
-          for (i = length - 1; i >= 0; --i)
-          {
-            if (out[i] == '/')
-            {
-              *dirname_length = i;
-              break;
-            }
-          }
-        }
-      }
-    }
-
-    break;
-  }
 
   return length;
 }
@@ -518,50 +346,6 @@ int WAI_PREFIX(getExecutablePath)(char* out, int capacity, int* dirname_length)
   return length;
 }
 
-WAI_FUNCSPEC
-int WAI_PREFIX(getModulePath)(char* out, int capacity, int* dirname_length)
-{
-  char buffer[PATH_MAX];
-  char* resolved = NULL;
-  int length = -1;
-
-  for(;;)
-  {
-    Dl_info info;
-
-    if (dladdr(WAI_RETURN_ADDRESS(), &info))
-    {
-      resolved = realpath(info.dli_fname, buffer);
-      if (!resolved)
-        break;
-
-      length = (int)strlen(resolved);
-      if (length <= capacity)
-      {
-        memcpy(out, resolved, length);
-
-        if (dirname_length)
-        {
-          int i;
-
-          for (i = length - 1; i >= 0; --i)
-          {
-            if (out[i] == '/')
-            {
-              *dirname_length = i;
-              break;
-            }
-          }
-        }
-      }
-    }
-
-    break;
-  }
-
-  return length;
-}
-
 #elif defined(__DragonFly__) || defined(__FreeBSD__) || \
       defined(__FreeBSD_kernel__) || defined(__NetBSD__)
 
@@ -622,50 +406,6 @@ int WAI_PREFIX(getExecutablePath)(char* out, int capacity, int* dirname_length)
 
   if (path != buffer1)
     WAI_FREE(path);
-
-  return length;
-}
-
-WAI_NOINLINE WAI_FUNCSPEC
-int WAI_PREFIX(getModulePath)(char* out, int capacity, int* dirname_length)
-{
-  char buffer[PATH_MAX];
-  char* resolved = NULL;
-  int length = -1;
-
-  for(;;)
-  {
-    Dl_info info;
-
-    if (dladdr(WAI_RETURN_ADDRESS(), &info))
-    {
-      resolved = realpath(info.dli_fname, buffer);
-      if (!resolved)
-        break;
-
-      length = (int)strlen(resolved);
-      if (length <= capacity)
-      {
-        memcpy(out, resolved, length);
-
-        if (dirname_length)
-        {
-          int i;
-
-          for (i = length - 1; i >= 0; --i)
-          {
-            if (out[i] == '/')
-            {
-              *dirname_length = i;
-              break;
-            }
-          }
-        }
-      }
-    }
-
-    break;
-  }
 
   return length;
 }
