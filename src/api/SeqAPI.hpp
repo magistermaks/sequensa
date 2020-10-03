@@ -1268,29 +1268,29 @@ const bool seq::type::Number::isNatural() {
 
 const seq::Fraction seq::type::Number::getFraction() {
 
-    long sign = ( this->value < 0 ) ? -1 : 1;
-    double number = std::abs( this->value );
-    double whole = std::trunc( number );
-    double decimal = ( number - whole );
-    long long multiplier = 1;
+	long sign = ( this->value < 0 ) ? -1 : 1;
+	double number = std::abs( this->value );
+	double whole = std::trunc( number );
+	double decimal = ( number - whole );
+	unsigned long long multiplier = 1;
 
-    if( decimal > 0 )
-        for( double i = decimal; i > std::floor( i ) + FLT_EPSILON; i = multiplier * decimal )
-            multiplier *= 10;
+	if( decimal > 0 )
+		for( double i = decimal; i > std::floor( i ) + FLT_EPSILON; i = multiplier * decimal )
+			multiplier *= 10;
 
-    long long part = std::round( decimal * multiplier );
-    long hcf = 0;
-    long u = part;
-    long v = multiplier;
+	long long part = std::round( decimal * multiplier );
+	long hcf = 0;
+	long u = part;
+	long v = multiplier;
 
-    while( true ) {
+	while( true ) {
 		if( !(u %= v) ) { hcf = v; break; }
 		if( !(v %= u) ) { hcf = u; break; }
 	}
 
-    multiplier /= hcf;
+	multiplier /= hcf;
 
-    return (seq::Fraction) { (long) (sign * ( (part / hcf) + (whole * multiplier) )), (long) multiplier };
+	return (seq::Fraction) { (long) (sign * ( (part / hcf) + (whole * multiplier) )), multiplier };
 }
 
 byte seq::type::Number::sizeOf( unsigned long value ) {
