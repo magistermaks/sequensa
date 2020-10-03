@@ -204,8 +204,8 @@
 
 #define SEQ_API_STANDARD "2020-07-15"
 #define SEQ_API_VERSION_MAJOR 1
-#define SEQ_API_VERSION_MINOR 0
-#define SEQ_API_VERSION_PATCH 9
+#define SEQ_API_VERSION_MINOR 1
+#define SEQ_API_VERSION_PATCH 0
 #define SEQ_API_NAME "SeqAPI"
 
 namespace seq {
@@ -505,7 +505,7 @@ namespace seq {
         	public:
         		Blob( bool anchor );
         		seq::string toString();
-        		Blob* copy( const Blob& blob );
+        		virtual Blob* copy();
 
         };
 
@@ -921,7 +921,7 @@ seq::type::Generic* seq::util::copyGeneric( seq::type::Generic* entity ) {
 		case seq::DataType::String: return new seq::type::String( *(seq::type::String*) entity );
 		case seq::DataType::Type: return new seq::type::Type( *(seq::type::Type*) entity );
 		case seq::DataType::VMCall: return new seq::type::VMCall( *(seq::type::VMCall*) entity );
-		case seq::DataType::Blob: return new seq::type::Blob( *(seq::type::Blob*) entity );
+		case seq::DataType::Blob: return ((seq::type::Blob*) entity)->copy();
 	}
 
 	throw seq::InternalError( "Impossible state!" );
@@ -1404,8 +1404,8 @@ seq::string seq::type::Blob::toString() {
 	return "blob"_b;
 }
 
-seq::type::Blob* seq::type::Blob::copy( const seq::type::Blob& blob ) {
-	return new seq::type::Blob( blob );
+seq::type::Blob* seq::type::Blob::copy() {
+	return new seq::type::Blob( *this );
 }
 
 seq::type::Flowc::Flowc( bool _anchor, const std::vector< seq::FlowCondition* > _blocks ): seq::type::Generic( seq::DataType::Flowc, _anchor ), conditions( _blocks ) {}

@@ -1373,67 +1373,66 @@ TEST( ce_namespace, {
 
 } );
 
-//TEST( ce_blob, {
-//
-//	// create blob
-//	class Thing: public seq::type::Blob {
-//
-//		public:
-//			Thing( bool _anchor, int a, int b ): seq::type::Blob( _anchor ) {
-//				this->a = a;
-//				this->b = b;
-//			}
-//
-//			seq::type::Blob* copy( const Blob& blob ) {
-//				const Thing* t = (Thing*) &blob;
-//				return new Thing( t->anchor, t->a, t->b );
-//			}
-//
-//			seq::string toString() {
-//				return "blobus"_b;
-//			}
-//
-//			int a;
-//			int b;
-//
-//	};
-//
-//	seq::string code = (byte*) (
-//		"#exit << #unpack << #pack << null"
-//	);
-//
-//	auto buf = seq::Compiler::compile( code );
-//	seq::ByteBuffer bb( buf.data(), buf.size() );
-//
-//	seq::Executor exe;
-//	exe.inject( "pack"_b, [] ( seq::Stream input ) -> seq::Stream {
-//		return seq::Stream {
-//			seq::Generic( new Thing( false, 123, 456 ) )
-//		};
-//	} );
-//
-//	exe.inject( "unpack"_b, [] ( seq::Stream input ) -> seq::Stream {
-//		if( input[0].getDataType() != seq::DataType::Blob ) {
-//			return seq::Stream();
-//		}else{
-//			return seq::Stream {
-//				seq::Generic( new seq::type::Number( false, ((Thing&) input[0].Blob()).a ) ),
-//				seq::Generic( new seq::type::Number( false, ((Thing&) input[0].Blob()).b ) )
-//			};
-//		}
-//	} );
-//
-//	exe.execute( bb );
-//
-//	auto& res = exe.getResults();
-//
-//	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
-//	CHECK( res.at(0).Number().getLong(), 123l );
-//
-//	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Number );
-//	CHECK( res.at(1).Number().getLong(), 456l );
-//
-//} )
+TEST( ce_blob, {
+
+	// create blob
+	class Thing: public seq::type::Blob {
+
+		public:
+			Thing( bool _anchor, int a, int b ): seq::type::Blob( _anchor ) {
+				this->a = a;
+				this->b = b;
+			}
+
+			seq::type::Blob* copy() {
+				return new Thing( this->anchor, this->a, this->b );
+			}
+
+			seq::string toString() {
+				return "blobus"_b;
+			}
+
+			int a;
+			int b;
+
+	};
+
+	seq::string code = (byte*) (
+		"#exit << #unpack << #pack << null"
+	);
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.inject( "pack"_b, [] ( seq::Stream input ) -> seq::Stream {
+		return seq::Stream {
+			seq::Generic( new Thing( false, 123, 456 ) )
+		};
+	} );
+
+	exe.inject( "unpack"_b, [] ( seq::Stream input ) -> seq::Stream {
+		if( input[0].getDataType() != seq::DataType::Blob ) {
+			return seq::Stream();
+		}else{
+			return seq::Stream {
+				seq::Generic( new seq::type::Number( false, ((Thing&) input[0].Blob()).a ) ),
+				seq::Generic( new seq::type::Number( false, ((Thing&) input[0].Blob()).b ) )
+			};
+		}
+	} );
+
+	exe.execute( bb );
+
+	auto& res = exe.getResults();
+
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(0).Number().getLong(), 123l );
+
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(1).Number().getLong(), 456l );
+
+} )
 
 
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
