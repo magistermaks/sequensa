@@ -200,7 +200,7 @@
 #define SEQ_API_STANDARD "2020-07-15"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 2
-#define SEQ_API_VERSION_PATCH 0
+#define SEQ_API_VERSION_PATCH 1
 #define SEQ_API_NAME "SeqAPI"
 
 namespace seq {
@@ -2250,8 +2250,8 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 
 				try{
 					return s.at( index );
-				}catch(...){
-					throw seq::RuntimeError( "Invalid accessor index '" + std::to_string(index) + "' !" );
+				}catch( std::out_of_range& err ){
+					return seq::Generic( new seq::type::Null(anchor) );
 				}
 			}
 
