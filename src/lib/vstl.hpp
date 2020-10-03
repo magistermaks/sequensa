@@ -1,3 +1,32 @@
+
+/*
+ * MIT License
+ *
+ * Copyright (c) 2020 magistermaks
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+/*
+ * VSTL - Very Simple Test Library
+ */
+
 #ifndef VSTL_HPP_INCLUDED
 #define VSTL_HPP_INCLUDED
 
@@ -16,7 +45,7 @@
 #define CHECK_ELSE( value, expected ) for( auto a = value, b = expected; a != b; )
 #define CHECK( value, expected ) CHECK_ELSE( value, expected ) FAIL( "Expected: " + std::to_string( b ) + " got: " + std::to_string( a ) )
 #define REGISTER_EXCEPTION( id, name ) long __vstl_exception__##id = vstl::register_exception( [&] (std::exception_ptr p) -> void { try{ if( p ) std::rethrow_exception(p); } catch( name& e ) { throw vstl::TestFail( e.what() ); } catch ( ... ) {} } )
-#define BEGIN( mode ) int main() { vstl::run( mode ); }
+#define BEGIN( mode ) int main() { return vstl::run( mode ); }
 
 namespace vstl {
 
@@ -48,12 +77,13 @@ namespace vstl {
     std::vector<std::function<void(std::exception_ptr)>> exception_handles;
     int successful_count = 0;
     int failed_count = 0;
-    void run( int mode );
+
+    int run( int mode );
     long register_exception( std::function<void(std::exception_ptr)> handle );
 
 };
 
-void vstl::run( int mode ) {
+int vstl::run( int mode ) {
     for( Test& test : tests ) {
     	if( !test.run( mode ) && mode == VSTL_MODE_STRICT ) {
     		break;
@@ -63,6 +93,13 @@ void vstl::run( int mode ) {
     std::cout << std::endl << "Executed " + std::to_string( vstl::failed_count + vstl::successful_count ) + " tests, " +
         std::to_string( vstl::failed_count ) + " failed, " +
         std::to_string( vstl::successful_count ) + " succeeded." << std::endl;
+
+#ifndef VSTL_RETURN_0
+    return vstl::failed_count;
+#else
+    return 0;
+#endif
+
 }
 
 long vstl::register_exception( std::function<void(std::exception_ptr)> handle ) {
