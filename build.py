@@ -116,6 +116,7 @@ os.mkdir( path + "/lib/math" )
 os.mkdir( path + "/lib/rand" ) 
 os.mkdir( path + "/lib/meta" ) 
 os.mkdir( path + "/lib/utils" ) 
+os.mkdir( path + "/lib/string" ) 
 os.mkdir( tmp_path ) 
 os.mkdir( tmp_path + "/src" ) 
 os.mkdir( tmp_path + "/src/lib" ) 
@@ -133,6 +134,7 @@ compile( "src/std/math", "-fPIC " )
 compile( "src/std/rand", "-fPIC " )
 compile( "src/std/meta", "-fPIC " )
 compile( "src/std/utils", "-fPIC " )
+compile( "src/std/string", "-fPIC " )
 
 # print build status
 print( "\nLinking Targets..." )
@@ -144,6 +146,7 @@ link( path + "/lib/math/native" + lib_ext, ["/src/std/math.o"], " -shared" )
 link( path + "/lib/rand/native" + lib_ext, ["/src/std/rand.o"], " -shared" )
 link( path + "/lib/meta/native" + lib_ext, ["/src/std/meta.o"], " -shared" )
 link( path + "/lib/utils/native" + lib_ext, ["/src/std/utils.o"], " -shared" )
+link( path + "/lib/string/native" + lib_ext, ["/src/std/string.o"], " -shared" )
 
 # delete tmp directory
 rem_dir( tmp_path )
