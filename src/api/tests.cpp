@@ -1440,7 +1440,7 @@ TEST( ce_accessor_operator, {
 
 	seq::string code = (byte*) (
 			"set var << 123 << 456 << 789 \n"
-			"#exit << ( var :: 0 )"
+			"#exit << ( var :: 0 ) << ( var :: 1 ) << ( var :: 2 ) << ( var :: 3 )"
 			);
 
 	auto buf = seq::Compiler::compile( code );
@@ -1449,8 +1449,18 @@ TEST( ce_accessor_operator, {
 	seq::Executor exe;
 	exe.execute( bb );
 
-	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
-	CHECK( exe.getResult().Number().getLong(), 123l );
+	auto& res = exe.getResults();
+
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(0).Number().getLong(), 123l );
+
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(1).Number().getLong(), 456l );
+
+	CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(2).Number().getLong(), 789l );
+
+	CHECK( (byte) res.at(3).getDataType(), (byte) seq::DataType::Null );
 
 } );
 
