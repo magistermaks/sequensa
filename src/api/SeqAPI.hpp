@@ -180,6 +180,7 @@
 #include <vector>
 #include <unordered_map>
 #include <regex>
+#include <cfloat>
 
 #define SEQ_MIN_OPCODE 1
 #define SEQ_MAX_OPCODE 15
@@ -1271,13 +1272,13 @@ const seq::Fraction seq::type::Number::getFraction() {
     double number = std::abs( this->value );
     double whole = std::trunc( number );
     double decimal = ( number - whole );
-    long multiplier = 1;
+    long long multiplier = 1;
 
     if( decimal > 0 )
-        for( double i = decimal; i > floor( i ); i = multiplier * decimal )
+        for( double i = decimal; i > std::floor( i ) + FLT_EPSILON; i = multiplier * decimal )
             multiplier *= 10;
 
-    long part = round( decimal * multiplier );
+    long long part = std::round( decimal * multiplier );
     long hcf = 0;
     long u = part;
     long v = multiplier;
@@ -1289,7 +1290,7 @@ const seq::Fraction seq::type::Number::getFraction() {
 
     multiplier /= hcf;
 
-    return (seq::Fraction) { (long) (sign * ( (part / hcf) + (whole * multiplier) )), multiplier };
+    return (seq::Fraction) { (long) (sign * ( (part / hcf) + (whole * multiplier) )), (long) multiplier };
 }
 
 byte seq::type::Number::sizeOf( unsigned long value ) {
