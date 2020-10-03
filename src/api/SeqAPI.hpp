@@ -2352,7 +2352,7 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 					[&] ( bool f, G a, G b ) { return new seq::type::Number(f, ~ num(b)->getLong() ); },
 					[&] ( bool f, G a, G b ) { return new seq::type::Null(f); },
 			},
-			{ // Accessor
+			{ // Accessor (handled in different place)
 					[&] ( bool f, G a, G b ) { return new seq::type::Null(f); },
 					[&] ( bool f, G a, G b ) { return new seq::type::Null(f); },
 			}
