@@ -179,7 +179,6 @@
 #include <cmath>
 #include <vector>
 #include <unordered_map>
-//#include <algorithm>
 #include <regex>
 
 #define SEQ_MIN_OPCODE 1
@@ -189,7 +188,7 @@
 #define SEQ_MIN_CALL_TYPE 1
 #define SEQ_MAX_CALL_TYPE 6
 #define SEQ_MIN_OPERATOR 1
-#define SEQ_MAX_OPERATOR 20
+#define SEQ_MAX_OPERATOR 21
 #define SEQ_MAX_UBYTE1 255l
 #define SEQ_MAX_UBYTE2 65535l
 #define SEQ_MAX_UBYTE4 4294967295l
@@ -207,7 +206,7 @@
 namespace seq {
 
     /// define "byte" (unsigned char)
-    typedef uint8_t byte;
+    typedef unsigned char byte;
 
     /// define own version of string to fix windows implementation errors
     typedef std::basic_string<byte> string;
@@ -304,7 +303,8 @@ namespace seq {
         BinaryAnd      = 17, // &
         BinaryOr       = 18, // |
         BinaryXor      = 19, // ^
-        BinaryNot      = 20  // ~
+        BinaryNot      = 20, // ~
+		Accessor	   = 21  // ::
     };
 
     /// Simple fraction struct, used by seq::type::Number
@@ -779,6 +779,7 @@ namespace seq {
 
         public:
             void inject( seq::string name, seq::type::Native native );
+            void define( seq::string name, seq::Stream stream );
             StackLevel* getLevel( int level );
             StackLevel* getTopLevel();
             void reset();
@@ -829,7 +830,7 @@ namespace seq {
 					Comma = 14,
 					Colon = 15,
 					Arg = 16,
-					VMC = 17
+					VMCall = 17
     			};
 
     			Token( unsigned int line, long data, bool anchor, Category category, seq::string& raw, seq::string& clean );
@@ -1962,6 +1963,10 @@ void seq::Executor::inject( seq::string name, seq::type::Native native ) {
 	this->natives[ name ] = native;
 }
 
+void seq::Executor::define( seq::string name, seq::Stream stream ) {
+	this->getTopLevel()->setVar( name, stream );
+}
+
 seq::StackLevel* seq::Executor::getLevel( int level ) {
 	try{
 		return &(this->stack.at( level ));
@@ -2236,6 +2241,22 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 		if( rdt == seq::DataType::Expr || rdt == seq::DataType::Arg ) right = this->executeExpr(right);
 	}
 
+	// Handle accessor operator
+	if( op == seq::ExprOperator::Accessor ) {
+
+			if( left.getDataType() == seq::DataType::Name && right.getDataType() == seq::DataType::Number ) {
+				long index = right.Number().getLong();
+				seq::Stream s = this->resolveName( left.Name().getName(), false );
+
+				try{
+					return s.at( index );
+				}catch(...){
+					throw seq::RuntimeError( "Invalid accessor index '" + std::to_string(index) + "' !" );
+				}
+			}
+
+		}
+
 	// not and binary not use only one argument (right)
 	if( op != seq::ExprOperator::Not && op != seq::ExprOperator::BinaryNot ) {
 		if( left.getDataType() != right.getDataType() || left.getDataType() == seq::DataType::Null ) {
@@ -2330,6 +2351,10 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 			{ // BinaryNot
 					[&] ( bool f, G a, G b ) { return new seq::type::Number(f, ~ num(b)->getLong() ); },
 					[&] ( bool f, G a, G b ) { return new seq::type::Null(f); },
+			},
+			{ // Accessor
+					[&] ( bool f, G a, G b ) { return new seq::type::Null(f); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Null(f); },
 			}
 	}};
 
@@ -2359,7 +2384,7 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 
 	}
 
-	throw seq::InternalError( "Invalid operands!" );
+	throw seq::RuntimeError( "Invalid operands!" );
 
 }
 
@@ -2503,7 +2528,7 @@ const bool seq::Compiler::Token::isPrimitive() {
 	if( this->category == seq::Compiler::Token::Category::Number ) return true;
 	if( this->category == seq::Compiler::Token::Category::Type ) return true;
 	if( this->category == seq::Compiler::Token::Category::String ) return true;
-	if( this->category == seq::Compiler::Token::Category::VMC ) return true;
+	if( this->category == seq::Compiler::Token::Category::VMCall ) return true;
 
 	return false;
 }
@@ -2658,6 +2683,7 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 					if( (c == '#'_b && n == '@'_b) || c == '@'_b ) { state = State::Arg; token += c; break; }
 					if( std::find(brackets.begin(), brackets.end(), bind( c, ' ' ) ) != brackets.end() ) { token += c; updateBrackes( c ); next(); break; }
 					if( std::find(brackets.begin(), brackets.end(), bind( c, n ) ) != brackets.end() ) { token += c; token += n; updateBrackes( n ); i ++; next(); break; }
+					if( c == ':'_b && n == ':'_b ) { token += "::"_b; i ++; next(); break; }
 					if( c == ','_b || c == ':'_b ) { token += c; next(); break; }
 
 					std::string msg = "char: '";
@@ -2775,8 +2801,8 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 seq::Compiler::Token seq::Compiler::construct( seq::string raw, unsigned int line ) {
 
 	// setup regex'es and string vectors
-	const static std::vector<std::string> operators = { "+", "-", "/", "*", "**", "%", ">", "<", "=", "!=", ">=", "!>", "<=", "!<", "&&", "||", "^^", "&", "|", "^", "!" };
-	const static std::vector<byte> operator_weights = {  17,  17,  16,  16,   15,  16,  18,  18,  18,   18,   18,   18,   18,   18,   19,   19,   19,  17,  17,  17,  15 };
+	const static std::vector<std::string> operators = { "+", "-", "/", "*", "**", "%", ">", "<", "=", "!=", ">=", "!>", "<=", "!<", "&&", "||", "^^", "&", "|", "^", "!", "::" };
+	const static std::vector<byte> operator_weights = {  17,  17,  16,  16,   15,  16,  18,  18,  18,   18,   18,   18,   18,   18,   19,   19,   19,  17,  17,  17,  15,   20 };
 	const static std::regex regex_arg("^@+$");
 	const static std::regex regex_name("^[a-zA-Z_]{1}[a-zA-Z_0-9]*(:[a-zA-Z_0-9]+)*$");
 	const static std::regex regex_number_1("^\\d+.\\d+$");
@@ -2837,7 +2863,8 @@ seq::Compiler::Token seq::Compiler::construct( seq::string raw, unsigned int lin
 		if( str == "&"_b ) op = seq::ExprOperator::BinaryAnd; else
 		if( str == "|"_b ) op = seq::ExprOperator::BinaryOr; else
 		if( str == "^"_b ) op = seq::ExprOperator::BinaryXor; else
-		if( str == "~"_b ) op = seq::ExprOperator::BinaryNot;
+		if( str == "~"_b ) op = seq::ExprOperator::BinaryNot; else
+		if( str == "::"_b ) op = seq::ExprOperator::Accessor;
 
 		long operatorCode = (long) op;
 		return weight | (operatorCode << 8);
@@ -2846,7 +2873,7 @@ seq::Compiler::Token seq::Compiler::construct( seq::string raw, unsigned int lin
 
 	{ // categorize and create new token
 		auto callType = callTypeFromString( clean );
-		if( callType != 0 ) return make( seq::Compiler::Token::Category::VMC, callType );
+		if( callType != 0 ) return make( seq::Compiler::Token::Category::VMCall, callType );
 
 		auto dataType = dataTypeFromString( clean );
 		if( dataType != 0 ) return make( seq::Compiler::Token::Category::Type, dataType );
@@ -3117,11 +3144,15 @@ std::vector<byte> seq::Compiler::assemblePrimitive( seq::Compiler::Token token )
 				bw.putString(flag, token.getClean().c_str());
 				break;
 
-			case seq::Compiler::Token::Category::VMC: {
+			case seq::Compiler::Token::Category::VMCall: {
 				bw.putCall(flag, (seq::type::VMCall::CallType) token.getData());
 				break;
 			}
 
+			case seq::Compiler::Token::Category::Name:
+				// Name is not a primitive value but this simplifies some things
+				bw.putName( token.getAnchor(), false, token.getClean().c_str() );
+				break;
 
 			default:
 				throw seq::InternalError( "Invalid argument " + token.toString() + "!" );

@@ -526,7 +526,7 @@ TEST( tokenizer_basic, {
 
 	std::vector<seq::Compiler::Token> tokens = seq::Compiler::tokenize( "#exit << 1 << \"Hello\" << 3"_b );
 
-	if( tokens.at(0).getCategory() != seq::Compiler::Token::Category::VMC ) {
+	if( tokens.at(0).getCategory() != seq::Compiler::Token::Category::VMCall ) {
 		FAIL( "Expected 'VMCall' token at index 0, found " + tokens.at(0).toString() );
 	}
 
@@ -563,10 +563,12 @@ TEST( ce_hello_world, {
 
 TEST( ce_hello_world_func, {
 
-	seq::string code = (byte*) ("set var << {\n"
+	seq::string code = (byte*) (
+			"set var << {\n"
 			"	#return << \"Hello World!\"\n"
 			"}\n"
-			"#exit << #var << null\n");
+			"#exit << #var << null\n"
+			);
 
 	auto tokens = seq::Compiler::tokenize( code );
 
@@ -1433,6 +1435,24 @@ TEST( ce_blob, {
 	CHECK( res.at(1).Number().getLong(), 456l );
 
 } )
+
+TEST( ce_accessor_operator, {
+
+	seq::string code = (byte*) (
+			"set var << 123 << 456 << 789 \n"
+			"#exit << ( var :: 0 )"
+			);
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Number );
+	CHECK( exe.getResult().Number().getLong(), 123l );
+
+} );
 
 
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
