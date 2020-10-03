@@ -1454,6 +1454,22 @@ TEST( ce_accessor_operator, {
 
 } );
 
+TEST( c_expression_anchor, {
+
+	seq::string code = (byte*) (
+			"#exit << ( #0 < 1 )"
+			);
+
+	try{
+		seq::Compiler::compile( code );
+	}catch( seq::CompilerError& err ) {
+		return;
+	}
+
+	FAIL( "Expected exception!" )
+
+} )
+
 
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );

@@ -197,10 +197,10 @@
 #define SEQ_TAG_LAST 2
 #define SEQ_TAG_END 4
 
-#define SEQ_API_STANDARD "2020-07-15"
+#define SEQ_API_STANDARD "2020-10-03"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 2
-#define SEQ_API_VERSION_PATCH 1
+#define SEQ_API_VERSION_PATCH 2
 #define SEQ_API_NAME "SeqAPI"
 
 namespace seq {
@@ -3256,7 +3256,15 @@ std::vector<byte> seq::Compiler::assembleFlowc( std::vector<seq::Compiler::Token
 std::vector<byte> seq::Compiler::assembleExpression( std::vector<seq::Compiler::Token>& tokens, int start, int end, bool anchor ) {
 
 	if( end - start == 1 ) {
-		return assemblePrimitive( tokens.at( start ) );
+
+		auto& token = tokens.at( start );
+
+		if( token.getAnchor() ) {
+			throw seq::CompilerError( "anchor", "", "expression", token.getLine() );
+		}
+
+		return assemblePrimitive( token );
+
 	}
 
 	int h = -1;
