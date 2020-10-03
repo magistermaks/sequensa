@@ -174,16 +174,12 @@
 
 #pragma once
 
-#include <inttypes.h>
 #include <exception>
 #include <string>
-#include <math.h>
+#include <cmath>
 #include <vector>
-#include <map>
 #include <unordered_map>
-#include <list>
-#include <functional>
-#include <algorithm>
+//#include <algorithm>
 #include <regex>
 
 #define SEQ_MIN_OPCODE 1
