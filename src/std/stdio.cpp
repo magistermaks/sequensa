@@ -52,6 +52,7 @@ INIT( seq::Executor* exe, seq::FileHeader* head ) {
 	exe->inject( "std:outln"_b, seq_std_outln );
 	exe->inject( "std:in"_b, seq_std_out );
 	exe->inject( "std:flush"_b, seq_std_flush );
+	exe->define( "std:br"_b, { seq::Generic( new seq::type::String( false, "\n"_b ) ) } );
 
 	return INIT_SUCCESS;
 }
