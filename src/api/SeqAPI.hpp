@@ -505,6 +505,7 @@ namespace seq {
         	public:
         		Blob( bool anchor );
         		seq::string toString();
+        		Blob* copy( const Blob& blob );
 
         };
 
@@ -1401,6 +1402,10 @@ seq::type::Blob::Blob( bool _anchor ): seq::type::Generic( seq::DataType::Blob, 
 
 seq::string seq::type::Blob::toString() {
 	return "blob"_b;
+}
+
+seq::type::Blob* seq::type::Blob::copy( const seq::type::Blob& blob ) {
+	return new seq::type::Blob( blob );
 }
 
 seq::type::Flowc::Flowc( bool _anchor, const std::vector< seq::FlowCondition* > _blocks ): seq::type::Generic( seq::DataType::Flowc, _anchor ), conditions( _blocks ) {}
@@ -2341,8 +2346,8 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 
 	}else if( type == seq::DataType::Bool ) {
 
-		G lb = seq::Generic( new seq::type::Number( false, (float) (left.Bool().getBool() ? 1 : 0) ) );
-		G rb = seq::Generic( new seq::type::Number( false, (float) (right.Bool().getBool() ? 1 : 0) ) );
+		G lb = seq::Generic( new seq::type::Number( false, (float) (left.getDataType() == seq::DataType::Bool ? (left.Bool().getBool() ? 1 : 0) : 0) ) );
+		G rb = seq::Generic( new seq::type::Number( false, (float) (right.getDataType() == seq::DataType::Bool ? (right.Bool().getBool() ? 1 : 0) : 0) ) );
 		seq::type::Generic* r = lambdas.at( ((byte) op) - 1 ).at( 0 )( anchor, lb, rb );
 
 		if( r->getDataType() == seq::DataType::Bool ) {
