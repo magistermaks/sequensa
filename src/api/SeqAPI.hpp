@@ -1290,7 +1290,7 @@ const seq::Fraction seq::type::Number::getFraction() {
 
 	multiplier /= hcf;
 
-	return (seq::Fraction) { (long) (sign * ( (part / hcf) + (whole * multiplier) )), multiplier };
+	return (seq::Fraction) { (long) (sign * ( (part / hcf) + (whole * multiplier) )), (long) multiplier };
 }
 
 byte seq::type::Number::sizeOf( unsigned long value ) {
