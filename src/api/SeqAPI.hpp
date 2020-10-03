@@ -189,7 +189,7 @@
 #define SEQ_MIN_OPCODE 1
 #define SEQ_MAX_OPCODE 15
 #define SEQ_MIN_DATA_TYPE 1
-#define SEQ_MAX_DATA_TYPE 12
+#define SEQ_MAX_DATA_TYPE 13
 #define SEQ_MIN_CALL_TYPE 1
 #define SEQ_MAX_CALL_TYPE 6
 #define SEQ_MIN_OPERATOR 1
@@ -232,9 +232,6 @@ namespace std {
     template<> struct hash<seq::string> {
 
         std::size_t operator()(seq::string const& s) const noexcept {
-
-            // This implementation can cause problems for UTF-8 strings on Windows
-            // but it is used only for variable names, with allow only ASCII chars
             return std::hash<std::string>{}( (char*) s.c_str() );
         }
 
