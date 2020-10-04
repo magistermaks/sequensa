@@ -1512,6 +1512,23 @@ TEST( c_fail_stream_ending, {
 
 } );
 
+TEST( c_fail_stream_double, {
+
+	seq::string code = (byte*) (
+			"#exit << \n"
+			"<< 2"
+			);
+
+	try{
+		seq::Compiler::compile( code );
+	}catch( seq::CompilerError& err ) {
+		return;
+	}
+
+	FAIL( "Expected exception!" )
+
+} );
+
 
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
