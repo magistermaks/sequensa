@@ -4,7 +4,7 @@
 
 #define PI 3.14159265
 
-seq::Stream seq_std_sin( seq::Stream input ) {
+seq::Stream seq_std_sin( seq::Stream& input ) {
 	seq::Stream output;
 
 	for( auto& arg : input ) {
@@ -16,7 +16,7 @@ seq::Stream seq_std_sin( seq::Stream input ) {
 	return output;
 }
 
-seq::Stream seq_std_cos( seq::Stream input ) {
+seq::Stream seq_std_cos( seq::Stream& input ) {
 	seq::Stream output;
 
 	for( auto& arg : input ) {
@@ -28,7 +28,7 @@ seq::Stream seq_std_cos( seq::Stream input ) {
 	return output;
 }
 
-seq::Stream seq_std_tan( seq::Stream input ) {
+seq::Stream seq_std_tan( seq::Stream& input ) {
 	seq::Stream output;
 
 	for( auto& arg : input ) {
@@ -40,7 +40,7 @@ seq::Stream seq_std_tan( seq::Stream input ) {
 	return output;
 }
 
-seq::Stream seq_std_sum( seq::Stream input ) {
+seq::Stream seq_std_sum( seq::Stream& input ) {
 	double sum = 0;
 
 	for( auto& arg : input ) {
@@ -56,7 +56,7 @@ seq::Stream seq_std_sum( seq::Stream input ) {
 	return output;
 }
 
-seq::Stream seq_std_abs( seq::Stream input ) {
+seq::Stream seq_std_abs( seq::Stream& input ) {
 	seq::Stream output;
 
 	for( auto& arg : input ) {
@@ -68,7 +68,7 @@ seq::Stream seq_std_abs( seq::Stream input ) {
 	return output;
 }
 
-seq::Stream seq_std_min( seq::Stream input ) {
+seq::Stream seq_std_min( seq::Stream& input ) {
 	const int s = input.size();
 
 	double min = seq::util::numberCast( input.at(0) ).Number().getDouble();
@@ -87,7 +87,7 @@ seq::Stream seq_std_min( seq::Stream input ) {
 	return output;
 }
 
-seq::Stream seq_std_max( seq::Stream input ) {
+seq::Stream seq_std_max( seq::Stream& input ) {
 	const int s = input.size();
 
 	double max = seq::util::numberCast( input.at(0) ).Number().getDouble();
@@ -106,7 +106,7 @@ seq::Stream seq_std_max( seq::Stream input ) {
 	return output;
 }
 
-seq::Stream seq_std_sqrt( seq::Stream input ) {
+seq::Stream seq_std_sqrt( seq::Stream& input ) {
 	seq::Stream output;
 
 	for( auto& arg : input ) {
@@ -124,7 +124,7 @@ seq::Stream seq_std_sqrt( seq::Stream input ) {
 	return output;
 }
 
-seq::Stream seq_std_round( seq::Stream input ) {
+seq::Stream seq_std_round( seq::Stream& input ) {
 	seq::Stream output;
 
 	for( auto& arg : input ) {
@@ -136,7 +136,7 @@ seq::Stream seq_std_round( seq::Stream input ) {
 	return output;
 }
 
-seq::Stream seq_std_floor( seq::Stream input ) {
+seq::Stream seq_std_floor( seq::Stream& input ) {
 	seq::Stream output;
 
 	for( auto& arg : input ) {
@@ -148,7 +148,7 @@ seq::Stream seq_std_floor( seq::Stream input ) {
 	return output;
 }
 
-seq::Stream seq_std_ceil( seq::Stream input ) {
+seq::Stream seq_std_ceil( seq::Stream& input ) {
 	seq::Stream output;
 
 	for( auto& arg : input ) {
@@ -160,7 +160,7 @@ seq::Stream seq_std_ceil( seq::Stream input ) {
 	return output;
 }
 
-seq::Stream seq_std_deg( seq::Stream input ) {
+seq::Stream seq_std_deg( seq::Stream& input ) {
 	seq::Stream output;
 
 	for( auto& arg : input ) {

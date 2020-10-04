@@ -8,7 +8,7 @@ void print_buffer( seq::ByteBuffer& bb ) {
     while( br.hasNext() ) std::cout << (int) br.nextByte() << " ";
 }
 
-seq::Stream native_join_strings( seq::Stream input ) {
+seq::Stream native_join_strings( seq::Stream& input ) {
 	seq::string str;
 
 	for( auto& arg : input ) {
@@ -459,7 +459,7 @@ TEST( executor_hello_world_func, {
 TEST( executor_native, {
 
 	seq::Executor exe;
-	exe.inject( "sum"_b, [] ( seq::Stream input ) -> seq::Stream {
+	exe.inject( "sum"_b, [] ( seq::Stream& input ) -> seq::Stream {
 		double sum = 0;
 		for( auto& arg : input ) {
 			sum += seq::util::numberCast( arg ).Number().getDouble();
@@ -1407,13 +1407,13 @@ TEST( ce_blob, {
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
-	exe.inject( "pack"_b, [] ( seq::Stream input ) -> seq::Stream {
+	exe.inject( "pack"_b, [] ( seq::Stream& input ) -> seq::Stream {
 		return seq::Stream {
 			seq::Generic( new Thing( false, 123, 456 ) )
 		};
 	} );
 
-	exe.inject( "unpack"_b, [] ( seq::Stream input ) -> seq::Stream {
+	exe.inject( "unpack"_b, [] ( seq::Stream& input ) -> seq::Stream {
 		if( input[0].getDataType() != seq::DataType::Blob ) {
 			return seq::Stream();
 		}else{

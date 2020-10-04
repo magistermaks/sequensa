@@ -6,7 +6,7 @@ seq::byte major;
 seq::byte minor;
 seq::byte patch;
 
-seq::Stream seq_std_meta_major( seq::Stream input ) {
+seq::Stream seq_std_meta_major( seq::Stream& input ) {
 	seq::Stream output;
 
 	for( int i = input.size(); i > 0; i -- ) {
@@ -18,7 +18,7 @@ seq::Stream seq_std_meta_major( seq::Stream input ) {
 	return output;
 }
 
-seq::Stream seq_std_meta_minor( seq::Stream input ) {
+seq::Stream seq_std_meta_minor( seq::Stream& input ) {
 	seq::Stream output;
 
 	for( int i = input.size(); i > 0; i -- ) {
@@ -30,7 +30,7 @@ seq::Stream seq_std_meta_minor( seq::Stream input ) {
 	return output;
 }
 
-seq::Stream seq_std_meta_patch( seq::Stream input ) {
+seq::Stream seq_std_meta_patch( seq::Stream& input ) {
 	seq::Stream output;
 
 	for( int i = input.size(); i > 0; i -- ) {
@@ -42,7 +42,7 @@ seq::Stream seq_std_meta_patch( seq::Stream input ) {
 	return output;
 }
 
-seq::Stream seq_std_meta_value( seq::Stream input ) {
+seq::Stream seq_std_meta_value( seq::Stream& input ) {
 	seq::Stream output;
 
 	for( auto& arg : input ) {

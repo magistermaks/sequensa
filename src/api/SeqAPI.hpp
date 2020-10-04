@@ -177,6 +177,7 @@
  *
  * 		#define SEQ_IMPLEMENT - to implement the Sequensa API
  * 		#define SEQ_EXCLUDE_COMPILER - to exclude compiler code from API
+ * 		#define SEQ_PUBLIC_EXECUTOR - make some seq::Executor methods public
  *
  */
 
@@ -211,6 +212,12 @@
 #define SEQ_API_VERSION_MINOR 2
 #define SEQ_API_VERSION_PATCH 2
 #define SEQ_API_NAME "SeqAPI"
+
+#ifdef SEQ_PUBLIC_EXECUTOR
+#	define EXECUTOR_ACCESS public
+#else
+#	define EXECUTOR_ACCESS private
+#endif
 
 namespace seq {
 
@@ -553,7 +560,7 @@ namespace seq {
     namespace type {
 
     	/// define Sequensa native function signature
-        typedef std::vector<seq::Generic>(*Native)(std::vector<seq::Generic>);
+        typedef std::vector<seq::Generic>(*Native)(std::vector<seq::Generic>&);
 
     }
 
@@ -797,7 +804,7 @@ namespace seq {
             seq::Stream& getResults();
             void execute( ByteBuffer bb, seq::Stream args = { seq::Generic( new type::Null( false ) ) } );
 
-        private: // use these methods only if you know what you are doing //
+        EXECUTOR_ACCESS: // use these methods only if you know what you are doing //
             void exit( seq::Stream& stream, byte code );
             Stream executeFunction( BufferReader br, Stream& stream );
             CommandResult executeCommand( TokenReader* br, byte tags );

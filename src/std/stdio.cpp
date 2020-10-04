@@ -2,7 +2,7 @@
 #include "common.hpp"
 #include "iostream"
 
-seq::Stream seq_std_out( seq::Stream input ) {
+seq::Stream seq_std_out( seq::Stream& input ) {
 
 	for( auto& element : input ) {
 
@@ -13,7 +13,7 @@ seq::Stream seq_std_out( seq::Stream input ) {
 	return EMPTY;
 }
 
-seq::Stream seq_std_outln( seq::Stream input ) {
+seq::Stream seq_std_outln( seq::Stream& input ) {
 
 	for( auto& element : input ) {
 
@@ -24,7 +24,7 @@ seq::Stream seq_std_outln( seq::Stream input ) {
 	return EMPTY;
 }
 
-seq::Stream seq_std_in( seq::Stream input ) {
+seq::Stream seq_std_in( seq::Stream& input ) {
 
 	seq::Stream output;
 
@@ -39,7 +39,7 @@ seq::Stream seq_std_in( seq::Stream input ) {
 	return output;
 }
 
-seq::Stream seq_std_flush( seq::Stream input ) {
+seq::Stream seq_std_flush( seq::Stream& input ) {
 
 	std::cout.flags();
 

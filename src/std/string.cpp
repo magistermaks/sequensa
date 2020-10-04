@@ -1,7 +1,7 @@
 
 #include "common.hpp"
 
-seq::Stream seq_std_uppercase( seq::Stream input ) {
+seq::Stream seq_std_uppercase( seq::Stream& input ) {
 
 	seq::Stream output;
 
@@ -16,7 +16,7 @@ seq::Stream seq_std_uppercase( seq::Stream input ) {
 	return output;
 }
 
-seq::Stream seq_std_lowercase( seq::Stream input ) {
+seq::Stream seq_std_lowercase( seq::Stream& input ) {
 
 	seq::Stream output;
 
@@ -31,7 +31,7 @@ seq::Stream seq_std_lowercase( seq::Stream input ) {
 	return output;
 }
 
-seq::Stream seq_std_concat( seq::Stream input ) {
+seq::Stream seq_std_concat( seq::Stream& input ) {
 
 	seq::string str;
 

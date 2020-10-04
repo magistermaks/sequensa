@@ -1,7 +1,7 @@
 
 #include "common.hpp"
 
-seq::Stream seq_std_rand( seq::Stream input ) {
+seq::Stream seq_std_rand( seq::Stream& input ) {
 	seq::Stream output;
 
 	for( int i = input.size(); i > 0; i -- ) {
@@ -13,7 +13,7 @@ seq::Stream seq_std_rand( seq::Stream input ) {
 	return output;
 }
 
-seq::Stream seq_std_srand( seq::Stream input ) {
+seq::Stream seq_std_srand( seq::Stream& input ) {
 	seq::Stream output;
 
 	for( auto& arg : input ) {
