@@ -210,7 +210,7 @@
 #define SEQ_API_STANDARD "2020-10-03"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 2
-#define SEQ_API_VERSION_PATCH 2
+#define SEQ_API_VERSION_PATCH 3
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -2691,7 +2691,7 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 					if( c == '"'_b ) { state = State::String; token += c; break; }
 					if( c == ' '_b || c == '\n'_b || c == '\t'_b ) { break; }
 					if( (c == '#'_b && isLetter( n )) || isLetter( c ) ) { state = State::Name; token += c; break; }
-					if( (c == '<'_b && n == '<'_b) || (c == '>'_b && n == '>'_b) ) { token += c; token += n; i ++; next(); break; }
+					if( c == '<'_b && n == '<'_b ) { token += "<<"_b; i ++; next(); break; }
 					if( (c == '#'_b && isNumber( n )) || isNumber( c ) ) { state = State::Number; token += c; break; }
 					if( std::find(long_operators.begin(), long_operators.end(), bind( c, n )) != long_operators.end() ) { token += c; token += n; i ++; next(); break; }
 					if( std::find(short_operators.begin(), short_operators.end(), c) != short_operators.end() ) { token += c; next(); break; }
@@ -3116,6 +3116,10 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 
 		}
 
+	}
+
+	if( state != State::Stream ) {
+		throw seq::CompilerError( "end of stream", "", "stream", tokens[end].getLine() );
 	}
 
 	std::vector<byte> ret;

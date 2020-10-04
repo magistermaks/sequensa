@@ -1464,7 +1464,7 @@ TEST( ce_accessor_operator, {
 
 } );
 
-TEST( c_expression_anchor, {
+TEST( c_fail_expression_anchor, {
 
 	seq::string code = (byte*) (
 			"#exit << ( #0 < 1 )"
@@ -1478,7 +1478,39 @@ TEST( c_expression_anchor, {
 
 	FAIL( "Expected exception!" )
 
-} )
+} );
+
+TEST( c_fail_empty_identifier, {
+
+	seq::string code = (byte*) (
+			"#exit << #"
+			);
+
+	try{
+		seq::Compiler::compile( code );
+	}catch( seq::CompilerError& err ) {
+		return;
+	}
+
+	FAIL( "Expected exception!" )
+
+} );
+
+TEST( c_fail_stream_ending, {
+
+	seq::string code = (byte*) (
+			"#exit <<"
+			);
+
+	try{
+		seq::Compiler::compile( code );
+	}catch( seq::CompilerError& err ) {
+		return;
+	}
+
+	FAIL( "Expected exception!" )
+
+} );
 
 
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
