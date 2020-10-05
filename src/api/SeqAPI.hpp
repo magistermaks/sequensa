@@ -210,7 +210,7 @@
 #define SEQ_API_STANDARD "2020-10-03"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 2
-#define SEQ_API_VERSION_PATCH 3
+#define SEQ_API_VERSION_PATCH 4
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -577,6 +577,23 @@ namespace seq {
         std::vector<FlowCondition*> copyFlowConditions( std::vector<FlowCondition*> conditions );
         seq::Fraction asFraction( double value );
         seq::DataType toDataType( seq::string str );
+
+//        class TypeFactory {
+//
+//        	public:
+//        		seq::Generic newBool( bool value, bool anchor = false );
+//        		seq::Generic newNumber( double value, bool anchor = false );
+//        		seq::Generic newArg( byte value, bool anchor = false );
+//        		seq::Generic newString( const byte* value, bool anchor = false );
+//        		seq::Generic newType( DataType value, bool anchor = false );
+//        		seq::Generic newVMCall( type::VMCall::CallType value, bool anchor = false );
+//        		seq::Generic newFunction( BufferReader* reader, bool anchor = false );
+//        		seq::Generic newExpression( ExprOperator op, BufferReader* left, BufferReader* right, bool anchor = false );
+//        		seq::Generic newFlowc( const std::vector<FlowCondition*> readers, bool anchor = false );
+//        		seq::Generic newStream( byte tags, BufferReader* reader, bool anchor = false );
+//        		seq::Generic newNull( bool anchor = false );
+//
+//        };
 
     }
 
@@ -2012,10 +2029,13 @@ seq::Stream& seq::Executor::getResults() {
 }
 
 void seq::Executor::execute( seq::ByteBuffer bb, seq::Stream args ) {
-	static seq::Stream exitStream = seq::Stream { seq::Generic( new seq::type::Null( false ) ) };
-
 	try{
-		this->executeFunction( bb.getReader(), args );
+		seq::Stream exitStream = this->executeFunction( bb.getReader(), args );
+
+		if( exitStream.empty() ) {
+			exitStream.push_back( seq::Generic( new seq::type::Null( false ) ) );
+		}
+
 		this->exit( exitStream, 0 );
 	}catch( seq::ExecutorInterrupt& ex ) {
 		// this->result set by the this->exit method
@@ -2273,9 +2293,9 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 
 		}
 
-	// not and binary not use only one argument (right)
+	// 'not' and 'binary not' use only one argument (right)
 	if( op != seq::ExprOperator::Not && op != seq::ExprOperator::BinaryNot ) {
-		if( left.getDataType() != right.getDataType() || left.getDataType() == seq::DataType::Null ) {
+		if( left.getDataType() != right.getDataType() ) {
 			return seq::Generic( new seq::type::Null(anchor) );
 		}
 
@@ -2374,33 +2394,45 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 			}
 	}};
 
-	if( type == seq::DataType::Number ) {
+	switch( type ) {
 
-		return seq::Generic( lambdas.at( ((byte) op) - 1 ).at( 0 )( anchor, left, right ) );
+		case seq::DataType::Number:
+			return seq::Generic( lambdas.at( ((byte) op) - 1 ).at( 0 )( anchor, left, right ) );
 
-	}else if( type == seq::DataType::Bool ) {
+		case seq::DataType::Bool: {
+				G lb = seq::Generic( new seq::type::Number( false, (float) (left.Bool().getBool() ? 1 : 0) ) );
+				G rb = seq::Generic( new seq::type::Number( false, (float) (right.Bool().getBool() ? 1 : 0) ) );
+				seq::type::Generic* r = lambdas.at( ((byte) op) - 1 ).at( 0 )( anchor, lb, rb );
 
-		G lb = seq::Generic( new seq::type::Number( false, (float) (left.getDataType() == seq::DataType::Bool ? (left.Bool().getBool() ? 1 : 0) : 0) ) );
-		G rb = seq::Generic( new seq::type::Number( false, (float) (right.getDataType() == seq::DataType::Bool ? (right.Bool().getBool() ? 1 : 0) : 0) ) );
-		seq::type::Generic* r = lambdas.at( ((byte) op) - 1 ).at( 0 )( anchor, lb, rb );
+				if( r->getDataType() == seq::DataType::Bool ) {
+					return seq::Generic( r );
+				}else{
+					seq::type::Number* r_num = (seq::type::Number*) r;
+					bool val = r_num->getLong() != 0;
+					delete r_num;
 
-		if( r->getDataType() == seq::DataType::Bool ) {
-			return seq::Generic( r );
-		}else{
-			seq::type::Number* r_num = (seq::type::Number*) r;
-			bool val = r_num->getLong() != 0;
-			delete r_num;
+					return seq::Generic( new seq::type::Bool( anchor, val ) );
+				}
 
-			return seq::Generic( new seq::type::Bool( anchor, val ) );
-		}
+			}
 
-	}else if( type == seq::DataType::String ) {
+		case seq::DataType::String:
+			return seq::Generic( lambdas.at( ((byte) op) - 1 ).at( 1 )( anchor, left, right ) );
 
-		return seq::Generic( lambdas.at( ((byte) op) - 1 ).at( 1 )( anchor, left, right ) );
+		case seq::DataType::Type:
+			if( op == seq::ExprOperator::Equal ) return seq::Generic( new seq::type::Bool( false, left.Type().getType() == right.Type().getType() ) );
+			if( op == seq::ExprOperator::NotEqual ) return seq::Generic( new seq::type::Bool( false, left.Type().getType() != right.Type().getType() ) );
+			return seq::Generic( new seq::type::Null(anchor) );
+
+		case seq::DataType::Null:
+			if( op == seq::ExprOperator::Equal ) return seq::Generic( new seq::type::Bool( false, true ) );
+			if( op == seq::ExprOperator::Equal ) return seq::Generic( new seq::type::Bool( false, false ) );
+			return seq::Generic( new seq::type::Null(anchor) );
+
+		default:
+			return seq::Generic( new seq::type::Null(anchor) );
 
 	}
-
-	throw seq::RuntimeError( "Invalid operands!" );
 
 }
 
@@ -2688,6 +2720,7 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 				case State::Start: {
 					if( !token.empty() ) throw seq::InternalError( "Invalid tokenizer state!" );
 					if( c == '/'_b && n == '/'_b ) { i ++; state = State::Comment; break; }
+					if( c == '#'_b && n == '"'_b ) { state = State::String; token += "#\""_b; i ++; break; }
 					if( c == '"'_b ) { state = State::String; token += c; break; }
 					if( c == ' '_b || c == '\n'_b || c == '\t'_b ) { break; }
 					if( (c == '#'_b && isLetter( n )) || isLetter( c ) ) { state = State::Name; token += c; break; }

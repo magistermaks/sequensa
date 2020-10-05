@@ -1529,6 +1529,59 @@ TEST( c_fail_stream_double, {
 
 } );
 
+TEST( ce_value_cast, {
+
+	seq::string code = (byte*) (
+			"#return << #1 << null\n"
+			"#return << #0.5 << null\n"
+			"#return << #\"hi\" << null\n"
+			"#return << #null << 123\n"
+			);
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	auto& res = exe.getResults();
+
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(0).Number().getLong(), 1l );
+
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(1).Number().getDouble(), 0.5 );
+
+	CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::String );
+
+	CHECK( (byte) res.at(3).getDataType(), (byte) seq::DataType::Null );
+
+} );
+
+TEST( ce_expression_new, {
+
+	seq::string code = (byte*) (
+			"#return << ( null = null ) << ( number = bool ) << ( type = type )\n"
+			);
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	auto& res = exe.getResults();
+
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Bool );
+	CHECK( res.at(0).Bool().getBool(), true );
+
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Bool );
+	CHECK( res.at(1).Bool().getBool(), false );
+
+	CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::Bool );
+	CHECK( res.at(2).Bool().getBool(), true );
+
+} );
 
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
