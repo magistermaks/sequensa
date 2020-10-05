@@ -6,7 +6,7 @@ seq::Stream seq_std_out( seq::Stream& input ) {
 
 	for( auto& element : input ) {
 
-		std::cout << (byte*) seq::util::stringCast( element ).String().getString().c_str();
+		std::cout << (seq::byte*) seq::util::stringCast( element ).String().getString().c_str();
 
 	}
 
@@ -17,7 +17,7 @@ seq::Stream seq_std_outln( seq::Stream& input ) {
 
 	for( auto& element : input ) {
 
-		std::cout << (byte*) seq::util::stringCast( element ).String().getString().c_str() << '\n';
+		std::cout << (seq::byte*) seq::util::stringCast( element ).String().getString().c_str() << '\n';
 
 	}
 
@@ -50,9 +50,11 @@ INIT( seq::Executor* exe, seq::FileHeader* head ) {
 
 	exe->inject( "std:out"_b, seq_std_out );
 	exe->inject( "std:outln"_b, seq_std_outln );
-	exe->inject( "std:in"_b, seq_std_out );
+	exe->inject( "std:in"_b, seq_std_in );
 	exe->inject( "std:flush"_b, seq_std_flush );
-	exe->define( "std:br"_b, { seq::Generic( new seq::type::String( false, "\n"_b ) ) } );
+
+	//Investigating strange memory problems (disabled for now)
+	//exe->define( "std:br"_b, { seq::Generic( new seq::type::String( false, "\n"_b ) ) } );
 
 	return INIT_SUCCESS;
 }
