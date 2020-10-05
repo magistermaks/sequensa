@@ -54,28 +54,38 @@ void unload_native_libs() {
 bool load_native_libs( seq::Executor& exe, seq::FileHeader& header, bool v ) {
 
 	std::string path = get_exe_path();
+	path = get_directory( path );
+
 	std::stringstream path_array( seq::util::toStdString( header.getValue("load"_b) ) );
 
 	std::string segment;
 	while( std::getline(path_array, segment, ';') ) {
 
 		// check for lib in compiler directory
-		std::string lib_path = (path + "/lib/" + segment + "/" + SEQ_LIB_NAME);
+		std::string lib_path_1 = (path + "/lib/" + segment + "/" + SEQ_LIB_NAME);
 
-		if( file_exist( lib_path.c_str() ) ) {
-			if( !load_native_lib( exe, header, lib_path, v ) ) return false;
+		if( file_exist( lib_path_1.c_str() ) ) {
+			if( !load_native_lib( exe, header, lib_path_1, v ) ) return false;
 			continue;
 		}
 
 		// check for lib in CWD
-		lib_path = ("./lib/" + segment + "/" + SEQ_LIB_NAME);
+		std::string lib_path_2 = ("./lib/" + segment + "/" + SEQ_LIB_NAME);
 
-		if( file_exist( lib_path.c_str() ) ) {
-			if( !load_native_lib( exe, header, lib_path, v ) ) return false;
+		if( file_exist( lib_path_2.c_str() ) ) {
+			if( !load_native_lib( exe, header, lib_path_2, v ) ) return false;
 			continue;
 		}
 
 		std::cout << "Unable to find native library: '" << segment << "'!" << std::endl;
+
+		if( v ) {
+
+			std::cout << " * Tried: '" << lib_path_1 << "'" << std::endl;
+			std::cout << " * Tried: '" << lib_path_2 << "'" << std::endl;
+
+		}
+
 		return false;
 
 	}
