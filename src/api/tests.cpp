@@ -1610,7 +1610,25 @@ TEST( ce_simple_define, {
 	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Number );
 	CHECK( res.at(1).Number().getLong(), 33l );
 
-} )
+} );
+
+TEST( c_comments, {
+
+	seq::string code = (byte*) (
+			"// test \n"
+			"#exit << #{ \n"
+			"	#return << // test //111 \n"
+			"	// test \n"
+			"} \n"
+			);
+
+	try{
+		seq::Compiler::compile( code );
+	}catch( seq::CompilerError& err ) {
+		FAIL( "Unexpected exception!" )
+	}
+
+} );
 
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
