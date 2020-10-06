@@ -210,7 +210,7 @@
 #define SEQ_API_STANDARD "2020-10-03"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 2
-#define SEQ_API_VERSION_PATCH 5
+#define SEQ_API_VERSION_PATCH 6
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -2714,6 +2714,7 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 
 		// keep line number up-to-date
 		if( c == '\n'_b ) {
+			if( state == State::Comment ) state = State::Start;
 			if( state == State::String ) throw CompilerError( "end of line", "end of string", "", line );
 			next();
 			line ++;
