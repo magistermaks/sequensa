@@ -1630,6 +1630,44 @@ TEST( c_comments, {
 
 } );
 
+TEST( ce_composite_order, {
+
+	// FIXME: MAJOR BUG - invalid stream ordering when using variables
+
+	seq::string code = (byte*) (
+			"set x << 1 \n"
+			"set y << 3 \n"
+			"#exit << 0 << x << 2 << y \n"
+			);
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	auto& res = exe.getResults();
+
+	// res = {0, 2, 3, 1}
+
+	//for( auto& res : exe.getResults() ) {
+	//	std::cout << seq::util::toStdString( seq::util::stringCast( res ).String().getString() ) << " ";
+	//}
+
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(0).Number().getLong(), 0l );
+
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(1).Number().getLong(), 1l );
+
+	CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(2).Number().getLong(), 2l );
+
+	CHECK( (byte) res.at(3).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(3).Number().getLong(), 3l );
+
+} );
+
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
 REGISTER_EXCEPTION( seq_runtime_error, seq::RuntimeError );
