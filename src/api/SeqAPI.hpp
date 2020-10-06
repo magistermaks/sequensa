@@ -290,7 +290,7 @@ namespace seq {
 		String = 4, // maps to: STR
 		Type   = 5, // maps to: TYP
 		VMCall = 6, // maps to: VMC
-		Arg	   = 7, // maps to: ARG
+		Arg    = 7, // maps to: ARG
 		Func   = 8, // maps to: FUN
 		Expr   = 9, // maps to: EXP
 		Name  = 10, // maps to: VAR DEF
@@ -308,12 +308,12 @@ namespace seq {
 		NotLess        = 6, // !<, >=
 		And            = 7, // &&
 		Or             = 8, // ||
-		Xor	           = 9, // ^^
+		Xor            = 9, // ^^
 		Not            = 10, // !
 		Multiplication = 11, // *
-		Division	   = 12, // /
-		Addition	   = 13, // +
-		Subtraction	   = 14, // -
+		Division       = 12, // /
+		Addition       = 13, // +
+		Subtraction    = 14, // -
 		Modulo         = 15, // %
 		Power          = 16, // **
 		BinaryAnd      = 17, // &
