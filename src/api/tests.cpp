@@ -1302,6 +1302,8 @@ TEST( ce_expr_complex_math, {
 
 TEST( ce_expr_complex_logic, {
 
+	// NEW MEMEORY PROBLEM
+
 	seq::string code = (byte*) (
 			"#exit << (\n"
 			"(true || false) && ( true ^^ false ) && !false && !( 1 > 10 )\n"
@@ -1582,6 +1584,33 @@ TEST( ce_expression_new, {
 	CHECK( res.at(2).Bool().getBool(), true );
 
 } );
+
+TEST( ce_simple_define, {
+
+	seq::string code = (byte*) (
+			"#exit << var\n"
+			);
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+
+	exe.define( "var"_b, (seq::Stream) {
+			seq::Generic( new seq::type::Number( false, 12.0 ) ),
+			seq::Generic( new seq::type::Number( false, 33.0 ) )
+	} );
+	exe.execute( bb );
+
+	auto& res = exe.getResults();
+
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(0).Number().getLong(), 12l );
+
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(1).Number().getLong(), 33l );
+
+} )
 
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );

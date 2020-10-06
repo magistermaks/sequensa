@@ -210,7 +210,7 @@
 #define SEQ_API_STANDARD "2020-10-03"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 2
-#define SEQ_API_VERSION_PATCH 4
+#define SEQ_API_VERSION_PATCH 5
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -763,6 +763,7 @@ namespace seq {
     class StackLevel {
 
         public:
+    		StackLevel();
             StackLevel( seq::Generic arg );
             StackLevel( StackLevel&& level );
             seq::Generic getArg();
@@ -811,6 +812,7 @@ namespace seq {
     class Executor {
 
         public:
+    		Executor();
             void inject( seq::string name, seq::type::Native native );
             void define( seq::string name, seq::Stream stream );
             StackLevel* getLevel( int level );
@@ -1917,6 +1919,10 @@ seq::type::Stream* seq::TokenReader::loadStream() {
     return new seq::type::Stream( this->anchor, tags, this->reader.nextBlock( length ) );
 }
 
+seq::StackLevel::StackLevel() {
+    this->arg = seq::Generic();
+}
+
 seq::StackLevel::StackLevel( seq::Generic arg ) {
     this->arg = arg;
 }
@@ -1992,6 +1998,10 @@ bool seq::FlowCondition::validate( seq::Generic arg ) {
 
 seq::CommandResult::CommandResult( seq::CommandResult::ResultType _stt, seq::Stream _acc ): stt( _stt ), acc( _acc ) {}
 
+seq::Executor::Executor() {
+	this->stack.push_back( seq::StackLevel() );
+}
+
 void seq::Executor::inject( seq::string name, seq::type::Native native ) {
 	this->natives[ name ] = native;
 }
@@ -2055,7 +2065,7 @@ void seq::Executor::exit( seq::Stream& stream, byte code ) {
 seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream& input_stream ) {
 
     // push new stack into stack array
-    this->stack.push_back( seq::StackLevel( seq::Generic() ) );
+    this->stack.push_back( seq::StackLevel() );
 
     // accumulator of all returned entities
     seq::Stream acc;
@@ -2199,7 +2209,7 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream& gs ) {
 
             if( name.getDefine() ) { // define variable (set)
 
-                this->stack.back().setVar( name.getName(), acc );
+                this->getTopLevel()->setVar( name.getName(), acc );
                 acc.clear();
 
             }else{ // read variable from stack
@@ -2400,7 +2410,9 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 			return seq::Generic( lambdas.at( ((byte) op) - 1 ).at( 0 )( anchor, left, right ) );
 
 		case seq::DataType::Bool: {
-				G lb = seq::Generic( new seq::type::Number( false, (float) (left.Bool().getBool() ? 1 : 0) ) );
+
+				// Don't touch it again! The bool check for left value is needed for NOT and BINARY NOT
+				G lb = seq::Generic( new seq::type::Number( false, (float) (left.getDataType() == seq::DataType::Bool ? (left.Bool().getBool() ? 1 : 0) : 0) ) );
 				G rb = seq::Generic( new seq::type::Number( false, (float) (right.Bool().getBool() ? 1 : 0) ) );
 				seq::type::Generic* r = lambdas.at( ((byte) op) - 1 ).at( 0 )( anchor, lb, rb );
 
