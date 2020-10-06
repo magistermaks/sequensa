@@ -15,7 +15,7 @@ void help( ArgParse& argp, Options opt ) {
 	std::cout << "  Use -f      to force execution regardless of version mismatch." << std::endl;
 	std::cout << std::endl;
 	std::cout << "Example:" << std::endl;
-	std::cout << "  sequensa --build ./main.sq" << std::endl;
+	std::cout << "  sequensa --build ./main.sq ./main.sqc" << std::endl;
 	std::cout << "  sequensa --run ./main.sqc" << std::endl;
 	std::cout << std::endl;
 	std::cout << "Version:" << std::endl;
