@@ -19,6 +19,7 @@ int main( int argc, char **argv ) {
 	Options options = {0};
 	options.verbose = argp.hasFlag("-v");
 	options.force_execution = argp.hasFlag("-f");
+	options.print_all = argp.hasFlag("-a");
 
 	try{
 

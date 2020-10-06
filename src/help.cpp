@@ -13,6 +13,7 @@ void help( ArgParse& argp, Options opt ) {
 	std::cout << "  Use --run   to execute compiled Sequensa program." << std::endl;
 	std::cout << "  Use -v      to enable verbose mode." << std::endl;
 	std::cout << "  Use -f      to force execution regardless of version mismatch." << std::endl;
+	std::cout << "  Use -a      to print entire exit stream." << std::endl;
 	std::cout << std::endl;
 	std::cout << "Example:" << std::endl;
 	std::cout << "  sequensa --build ./main.sq ./main.sqc" << std::endl;

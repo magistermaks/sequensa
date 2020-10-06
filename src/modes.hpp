@@ -39,6 +39,7 @@ typedef int (*DynLibInit) (seq::Executor*,seq::FileHeader*);
 struct Options {
 	bool verbose: 1;
 	bool force_execution: 1;
+	bool print_all: 1;
 };
 
 void help( ArgParse& argp, Options opt );
