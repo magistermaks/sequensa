@@ -1635,7 +1635,8 @@ TEST( ce_composite_order, {
 	seq::string code = (byte*) (
 			"set x << 1 \n"
 			"set y << 3 \n"
-			"#exit << 0 << x << 2 << y \n"
+			"set z << 4 \n"
+			"#exit << 0 << x << 2 << y << z \n"
 			);
 
 	auto buf = seq::Compiler::compile( code );
@@ -1657,6 +1658,9 @@ TEST( ce_composite_order, {
 
 	CHECK( (byte) res.at(3).getDataType(), (byte) seq::DataType::Number );
 	CHECK( res.at(3).Number().getLong(), 3l );
+
+	CHECK( (byte) res.at(4).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(4).Number().getLong(), 4l );
 
 } );
 
