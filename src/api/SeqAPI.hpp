@@ -210,7 +210,7 @@
 #define SEQ_API_STANDARD "2020-10-03"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 2
-#define SEQ_API_VERSION_PATCH 6
+#define SEQ_API_VERSION_PATCH 7
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -2158,7 +2158,7 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream& gs ) {
 	// iterate over stream entities
 	for( int i = gs.size() - 1; i >= 0; i -- ) {
 
-		seq::Generic g = gs.at( i );
+		seq::Generic& g = gs.at( i );
 		seq::DataType t = g.getDataType();
 
 		// if type is unsolid compute real value
@@ -2215,7 +2215,7 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream& gs ) {
 
 				// append tmp to acc
 				acc.reserve( acc.size() + tmp.size() );
-				acc.insert( acc.end(), tmp.begin(), tmp.end() );
+				acc.insert( acc.begin(), tmp.begin(), tmp.end() );
 			}
 
 			continue;

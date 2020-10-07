@@ -1632,8 +1632,6 @@ TEST( c_comments, {
 
 TEST( ce_composite_order, {
 
-	// FIXME: MAJOR BUG - invalid stream ordering when using variables
-
 	seq::string code = (byte*) (
 			"set x << 1 \n"
 			"set y << 3 \n"
@@ -1647,12 +1645,6 @@ TEST( ce_composite_order, {
 	exe.execute( bb );
 
 	auto& res = exe.getResults();
-
-	// res = {0, 2, 3, 1}
-
-	//for( auto& res : exe.getResults() ) {
-	//	std::cout << seq::util::toStdString( seq::util::stringCast( res ).String().getString() ) << " ";
-	//}
 
 	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
 	CHECK( res.at(0).Number().getLong(), 0l );
