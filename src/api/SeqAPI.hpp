@@ -2158,7 +2158,7 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream& gs ) {
 	// iterate over stream entities
 	for( int i = gs.size() - 1; i >= 0; i -- ) {
 
-		seq::Generic& g = gs.at( i );
+		seq::Generic& g = gs[i];
 		seq::DataType t = g.getDataType();
 
 		// if type is unsolid compute real value
@@ -2404,7 +2404,7 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 	switch( type ) {
 
 		case seq::DataType::Number:
-			return seq::Generic( lambdas.at( ((byte) op) - 1 ).at( 0 )( anchor, left, right ) );
+			return seq::Generic( lambdas.at( ((byte) op) - 1 )[0]( anchor, left, right ) );
 
 		case seq::DataType::Bool: {
 
@@ -2426,7 +2426,7 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 			}
 
 		case seq::DataType::String:
-			return seq::Generic( lambdas.at( ((byte) op) - 1 ).at( 1 )( anchor, left, right ) );
+			return seq::Generic( lambdas.at( ((byte) op) - 1 )[1]( anchor, left, right ) );
 
 		case seq::DataType::Type:
 			if( op == seq::ExprOperator::Equal ) return seq::Generic( new seq::type::Bool( false, left.Type().getType() == right.Type().getType() ) );
@@ -2469,7 +2469,7 @@ seq::Generic seq::Executor::executeExpr( seq::Generic entity ) {
 			return seq::Generic( new seq::type::Null( anchor ) );
 		}
 
-		auto ret = this->stack.at( s ).getArg();
+		auto ret = this->stack[s].getArg();
 		ret.setAnchor(anchor);
 		return ret;
 	}
@@ -2709,8 +2709,8 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 	const int size = code.size();
 	for( int i = 0; i < size; i ++ ) {
 
-		const byte c = code.at(i);
-		const byte n = i + 1 < size ? code.at(i + 1) : '\0'_b;
+		const byte c = code[i];
+		const byte n = i + 1 < size ? code[i+1] : '\0'_b;
 
 		// keep line number up-to-date
 		if( c == '\n'_b ) {
@@ -2984,7 +2984,7 @@ int seq::Compiler::findStreamEnd( std::vector<seq::Compiler::Token>& tokens, int
 	try{
 
 		for( int index = start; index < end; index ++ ) {
-			seq::Compiler::Token& token = tokens.at(index);
+			seq::Compiler::Token& token = tokens[index];
 
 			if( (int) token.getLine() != l ) {
 
@@ -3064,7 +3064,7 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 
 	for( int i = start; i <= end; i ++ ) {
 
-		auto& token = tokens.at(i);
+		auto& token = tokens[i];
 
 		switch( state ) {
 
@@ -3237,7 +3237,7 @@ std::vector<byte> seq::Compiler::assembleFlowc( std::vector<seq::Compiler::Token
 
 	for( ; i < end; i ++ ) {
 
-		seq::Compiler::Token& token = tokens.at( i );
+		seq::Compiler::Token& token = tokens[i];
 
 		if( token.getAnchor() ) {
 			throw seq::CompilerError( "anchor", "", "flow controller", token.getLine() );
@@ -3248,7 +3248,7 @@ std::vector<byte> seq::Compiler::assembleFlowc( std::vector<seq::Compiler::Token
 			if( token.getCategory() == seq::Compiler::Token::Category::Comma ) {
 				expectSeparator = false;
 			}else{
-				throw seq::CompilerError( "token '" + seq::util::toStdString(tokens.at( i ).getRaw()) + "'", "','", "flow controller", tokens.at(i).getLine() );
+				throw seq::CompilerError( "token '" + seq::util::toStdString(token.getRaw()) + "'", "','", "flow controller", tokens.at(i).getLine() );
 			}
 
 		}else{
@@ -3296,7 +3296,7 @@ std::vector<byte> seq::Compiler::assembleFlowc( std::vector<seq::Compiler::Token
 				}
 
 				default:
-					throw seq::CompilerError( "token '" + seq::util::toStdString(tokens.at( i ).getRaw()) + "'", "value or rage", "flow controller", tokens.at(i).getLine() );
+					throw seq::CompilerError( "token '" + seq::util::toStdString(token.getRaw()) + "'", "value or rage", "flow controller", token.getLine() );
 
 			}
 
