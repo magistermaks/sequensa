@@ -1970,6 +1970,9 @@ bool seq::FlowCondition::validate( seq::Generic arg ) {
 						case seq::DataType::Number:
 							return this->a.Number().getDouble() == arg.Number().getDouble();
 
+						case seq::DataType::String:
+							return this->a.String().getString() == arg.String().getString();
+
 						default:
 							return false;
 					}
