@@ -69,6 +69,26 @@ seq::Stream seq_std_meta_value( seq::Stream& input ) {
 	return output;
 }
 
+seq::Stream seq_std_meta_build_time( seq::Stream& input ) {
+	seq::Stream output;
+
+	for( int i = input.size(); i > 0; i -- ) {
+
+		try{
+
+			output.push_back( seq::Generic( new seq::type::Number( false, std::stoi( (char*) values.at( "time"_b ).c_str() ) ) ) );
+
+		}catch( std::out_of_range& err ) {
+
+			output.push_back( seq::Generic( new seq::type::Null( false ) ) );
+
+		}
+
+	}
+
+	return output;
+}
+
 INIT( seq::Executor* exe, seq::FileHeader* head ) {
 
 	if( head == nullptr ) {
@@ -84,6 +104,7 @@ INIT( seq::Executor* exe, seq::FileHeader* head ) {
 	exe->inject( "std:meta:minor"_b, seq_std_meta_minor );
 	exe->inject( "std:meta:patch"_b, seq_std_meta_patch );
 	exe->inject( "std:meta:value"_b, seq_std_meta_patch );
+	exe->inject( "std:meta:build_time"_b, seq_std_meta_build_time );
 
 	return INIT_SUCCESS;
 }
