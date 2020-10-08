@@ -1,0 +1,123 @@
+load "stdio"
+load "rand"
+load "utils"
+load "time"
+
+set print << {
+    set x << x << @
+
+    end; #std:outln << " 1 2 3 " << "+-+-+-+"
+    end; #std:out << "|" << ( x :: 0 ) << "|" << ( x :: 1 ) << "|" << ( x :: 2 ) << "| 1" << std:br << "+-+-+-+" << std:br
+    end; #std:out << "|" << ( x :: 3 ) << "|" << ( x :: 4 ) << "|" << ( x :: 5 ) << "| 2" << std:br << "+-+-+-+" << std:br
+    end; #std:out << "|" << ( x :: 6 ) << "|" << ( x :: 7 ) << "|" << ( x :: 8 ) << "| 3" << std:br << "+-+-+-+" << std:br
+}
+
+set cnt << 9
+set map << #" " << #std:call << 9
+#std:srand << #std:time << null
+#print << map
+
+set input << {
+
+    set read << {
+
+        #std:out << "Select line: "
+        set y << #std:in << null
+        #std:out << "Select row: "
+        set x << #std:in << null
+        #std:out << "\n"
+    
+        set ya << #number << #["1", "2", "3"] << y
+        set xa << #number << #["1", "2", "3"] << x
+
+        #final << #read << #{
+            last; #std:outln << "Invalid!"
+            #return << @
+        } << #[null] << (xa :: 0) << (ya :: 0)
+
+        #final << xa << ya
+
+    }
+
+    set off << #{
+        set p << p << @
+        end; #return << ((p :: 0 - 1) + (p :: 1 - 1) * 3)
+    } << #read << null
+
+    #final << #input << #[false] << (map :: (off :: 0) = " ")
+    #final << off
+
+}
+
+set ai << {
+
+    set off << #{ 
+        #return << (@ % 9)
+    } << #std:rand << null
+
+    #final << #ai << #[false] << (map :: (off :: 0) = " ")
+    #final << off
+
+}
+
+set placer << {
+        
+    #return << #{
+
+        first; set x << 0
+        set f << (x :: 0 = pos :: 0)
+
+        #return << #@@ << #[true] << f
+        #return << #@ << #[false] << f
+        
+        set x << #{
+            #return << (@ + 1)
+        } << x
+
+    } << map
+
+}
+
+set check_win << {
+    
+    set t << ["X", "O"]
+    #final << #t << #(map :: 0) << #[true] << (map :: 0 = map :: 1 && map :: 1 = map :: 2)
+    #final << #t << #(map :: 3) << #[true] << (map :: 3 = map :: 4 && map :: 4 = map :: 5)
+    #final << #t << #(map :: 6) << #[true] << (map :: 6 = map :: 7 && map :: 7 = map :: 8)
+    #final << #t << #(map :: 0) << #[true] << (map :: 0 = map :: 3 && map :: 3 = map :: 6)
+    #final << #t << #(map :: 1) << #[true] << (map :: 1 = map :: 4 && map :: 4 = map :: 7)
+    #final << #t << #(map :: 2) << #[true] << (map :: 2 = map :: 5 && map :: 5 = map :: 8)
+    #final << #t << #(map :: 0) << #[true] << (map :: 0 = map :: 4 && map :: 4 = map :: 8)
+    #final << #t << #(map :: 2) << #[true] << (map :: 2 = map :: 4 && map :: 4 = map :: 6)    
+
+    #final << #{
+        #final << #[" "] << @
+    } << map
+
+    #final << "No one"
+
+}
+
+set play << {
+
+    set pos << #input << null
+    set map << #placer << "X"
+    set cnt << (cnt :: 0 - 1)
+    
+    #{
+        set pos << #ai << null
+        set map << #placer << "O" 
+        set cnt << (cnt :: 0 - 1)
+    } << #[true] << (cnt :: 0 > 0)
+
+    #print << map
+
+    #play << #{
+        #final << #[" "] << @
+        #std:out << @ << " won, game over!" << std:br << std:br
+    } << #check_win << null
+
+}
+
+#exit << #play << null
+
