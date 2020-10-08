@@ -1563,7 +1563,7 @@ TEST( ce_value_cast, {
 TEST( ce_expression_new, {
 
 	seq::string code = (byte*) (
-			"#return << ( null = null ) << ( number = bool ) << ( type = type )\n"
+			"#return << ( null = null ) << ( number = bool ) << ( type = type ) << ( 3 != null )\n"
 			);
 
 	auto buf = seq::Compiler::compile( code );
@@ -1685,6 +1685,30 @@ TEST( ce_flowc_cast, {
 	CHECK( res.at(1).Number().getLong(), 8l );
 
 } );
+
+TEST( ce_accessor_complex, {
+
+	seq::string code = (byte*) (
+			"set v << 2 << 4 << 6 \n"
+			"#exit << (v :: 2 + v :: 1) << (v :: 0 + v :: 1 * 3) \n"
+			);
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	auto& res = exe.getResults();
+
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(0).Number().getLong(), 10l );
+
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(1).Number().getLong(), 14l );
+
+} )
+
 
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
