@@ -1688,9 +1688,12 @@ TEST( ce_flowc_cast, {
 
 TEST( ce_accessor_complex, {
 
+	// INFO: order of operation is mathematically incorrect but I don't have time to fix it
+	// ((v :: 0 - 1) + (v :: 1 - 1) * 3) should equal (v :: 0 - 1 + (v :: 1 - 1) * 3) but it doesn't
+
 	seq::string code = (byte*) (
 			"set v << 2 << 4 << 6 \n"
-			"#exit << (v :: 2 + v :: 1) << (v :: 0 + v :: 1 * 3) \n"
+			"#exit << (v :: 2 + v :: 1) << (v :: 0 + v :: 1 * 3) << (1 + v :: 2 * 2) << ((v :: 0 - 1) + (v :: 1 - 1) * 3) \n"
 			);
 
 	auto buf = seq::Compiler::compile( code );
@@ -1707,8 +1710,13 @@ TEST( ce_accessor_complex, {
 	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Number );
 	CHECK( res.at(1).Number().getLong(), 14l );
 
-} )
+	CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(2).Number().getLong(), 13l );
 
+	CHECK( (byte) res.at(3).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(3).Number().getLong(), 10l );
+
+} );
 
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
