@@ -210,7 +210,7 @@
 #define SEQ_API_STANDARD "2020-10-03"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 2
-#define SEQ_API_VERSION_PATCH 8
+#define SEQ_API_VERSION_PATCH 10
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -766,6 +766,7 @@ namespace seq {
 			seq::Generic getArg();
 			Stream getVar( seq::string& name, bool anchor );
 			void setVar( seq::string& name, Stream value );
+			bool hasVar( seq::string& name );
 			void setArg( seq::Generic arg );
 
 		private:
@@ -829,6 +830,7 @@ namespace seq {
 			Generic executeExprPair( Generic left, Generic right, ExprOperator op, bool anchor );
 			Generic executeExpr( Generic entity );
 			Stream resolveName( string& name, bool anchor );
+			void defineName( string& name, Stream& value );
 			Stream executeFlowc( std::vector<FlowCondition*> fcs, Stream& input_stream );
 			Generic executeCast( Generic cast, Generic arg );
 
@@ -1944,6 +1946,10 @@ seq::Stream seq::StackLevel::getVar( seq::string& name, bool anchor ) {
 	return ret;
 }
 
+bool seq::StackLevel::hasVar( seq::string& name ) {
+	return this->vars.count(name) != 0;
+}
+
 void seq::StackLevel::setVar( seq::string& name, seq::Stream value ) {
 	this->vars[ name ] = value;
 }
@@ -2209,7 +2215,7 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream& gs ) {
 
 			if( name.getDefine() ) { // define variable (set)
 
-				this->getTopLevel()->setVar( name.getName(), acc );
+				this->defineName( name.getName(), acc );
 				acc.clear();
 
 			}else{ // read variable from stack
@@ -2292,7 +2298,7 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 
 			if( left.getDataType() == seq::DataType::Name && right.getDataType() == seq::DataType::Number ) {
 				long index = right.Number().getLong();
-				seq::Stream s = this->resolveName( left.Name().getName(), false );
+				seq::Stream s = this->resolveName( left.Name().getName(), anchor );
 
 				try{
 					return s.at( index );
@@ -2492,6 +2498,24 @@ seq::Stream seq::Executor::resolveName( seq::string& name, bool anchor ) {
 	}
 
 	return seq::Stream();
+
+}
+
+void seq::Executor::defineName( string& name, Stream& value ) {
+
+	for( int i = (int) this->stack.size() - 1; i >= 0; i -- ) {
+		try{
+			auto& level = this->stack.at(i);
+			if( level.hasVar( name ) ) {
+				level.setVar( name, value );
+				return;
+			}
+		} catch (std::out_of_range &err) {
+			continue;
+		}
+	}
+
+	this->getTopLevel()->setVar(name, value);
 
 }
 

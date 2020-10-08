@@ -1718,6 +1718,27 @@ TEST( ce_accessor_complex, {
 
 } );
 
+TEST( ce_accessor_cast, {
+
+	seq::string code = (byte*) (
+			"set v << 7 \n"
+			"#exit << #(v :: 0) << 3 \n"
+			);
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	auto& res = exe.getResults();
+
+	CHECK( res.size(), 1ul );
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(0).Number().getLong(), 7l );
+
+} );
+
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
 REGISTER_EXCEPTION( seq_runtime_error, seq::RuntimeError );
