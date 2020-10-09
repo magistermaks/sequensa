@@ -1739,6 +1739,35 @@ TEST( ce_accessor_cast, {
 
 } );
 
+TEST( ce_embedded_streams, {
+
+	seq::string code = (byte*) (
+			"#exit << (<< 3 << 4) << 5 \n"
+			);
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	auto& res = exe.getResults();
+
+	for( auto& r : res ) {
+		std::cout << (char*) seq::util::stringCast( r ).String().getString().c_str();
+	}
+
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(0).Number().getLong(), 3l );
+
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(1).Number().getLong(), 4l );
+
+	CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(2).Number().getLong(), 5l );
+
+} );
+
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
 REGISTER_EXCEPTION( seq_runtime_error, seq::RuntimeError );

@@ -207,10 +207,10 @@
 #define SEQ_TAG_LAST 2
 #define SEQ_TAG_END 4
 
-#define SEQ_API_STANDARD "2020-10-03"
+#define SEQ_API_STANDARD "2020-10-03-rev2"
 #define SEQ_API_VERSION_MAJOR 1
-#define SEQ_API_VERSION_MINOR 2
-#define SEQ_API_VERSION_PATCH 10
+#define SEQ_API_VERSION_MINOR 3
+#define SEQ_API_VERSION_PATCH 0
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -897,10 +897,10 @@ namespace seq {
 		int findOpening( std::vector<Token>& tokens, int index, Token::Category type );
 		int findClosing( std::vector<Token>& tokens, int index, Token::Category type );
 
-		std::vector<byte> assembleStream( std::vector<Token>& tokens, int start, int end, byte tags );
+		std::vector<byte> assembleStream( std::vector<Token>& tokens, int start, int end, byte tags, bool embedded );
 		std::vector<byte> assemblePrimitive( Token );
 		std::vector<byte> assembleFlowc( std::vector<Token>& tokens, int start, int end, bool anchor );
-		std::vector<byte> assembleExpression( std::vector<Token>& tokens, int start, int end, bool anchor );
+		std::vector<byte> assembleExpression( std::vector<Token>& tokens, int start, int end, bool anchor, bool top );
 		std::vector<byte> assembleFunction( std::vector<Token>& tokens, int start, int end, bool anchor );
 		int extractHeaderData( std::vector<Token>& tokens, std::vector<seq::string>* arrayPtr );
 
@@ -1045,7 +1045,7 @@ seq::Generic seq::util::stringCast( seq::Generic arg ) {
 			break;
 
 		// invalid casts: (stream, name, expr, arg)
-		default: throw seq::InternalError( "Invalid cast!" );
+		default: throw seq::InternalError( "Invalid cast from datatype id: " + std::to_string( (int) arg.getDataType() ) + "!" );
 
 	}
 
@@ -2176,6 +2176,19 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream& gs ) {
 			t = g.getDataType();
 		}
 
+		// handle embedded (nested) streams
+		if( t == seq::DataType::Stream ) {
+			Stream ss = g.Stream().getReader().readAll();
+			seq::CommandResult cr = this->executeStream( ss );
+			if( cr.stt != seq::CommandResult::ResultType::None ) {
+				throw seq::InternalError( "Invalid result of embedded stream!" );
+			}else{
+				acc.reserve( acc.size() + cr.acc.size() );
+				acc.insert( acc.begin(), cr.acc.begin(), cr.acc.end() );
+			}
+			continue;
+		}
+
 		// execute anchored entities
 		if( g.getAnchor() ) {
 
@@ -3072,7 +3085,7 @@ int seq::Compiler::findClosing( std::vector<seq::Compiler::Token>& tokens, int i
 	return index;
 }
 
-std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Token>& tokens, int start, int end, byte tags ) {
+std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Token>& tokens, int start, int end, byte tags, bool embedded ) {
 
 	enum struct State: byte {
 		Start,
@@ -3110,6 +3123,9 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 				}
 
 				if( token.isPrimitive() ) {
+					if( embedded && token.getCategory() == seq::Compiler::Token::Category::VMCall ) {
+						throw seq::CompilerError( "Build in native function '" + std::string( (char*) token.getClean().c_str() ) + "'", "", "embedded stream", token.getLine() );
+					}
 					std::vector<byte> arr1 = assemblePrimitive( token );
 					arr.insert( arr.end(), arr1.begin(), arr1.end() );
 					state = State::Stream;
@@ -3158,7 +3174,7 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 
 			case State::Expression: {
 					int j = findClosing( tokens, i - 1, seq::Compiler::Token::Category::MathBracket ) - 1;
-					auto acc = assembleExpression( tokens, i, j, tokens.at(i - 1).getAnchor() );
+					auto acc = assembleExpression( tokens, i, j, tokens.at(i - 1).getAnchor(), true );
 					arr.insert( arr.end(), acc.begin(), acc.end() );
 					i = j;
 					state = State::Stream;
@@ -3343,7 +3359,15 @@ std::vector<byte> seq::Compiler::assembleFlowc( std::vector<seq::Compiler::Token
 
 }
 
-std::vector<byte> seq::Compiler::assembleExpression( std::vector<seq::Compiler::Token>& tokens, int start, int end, bool anchor ) {
+std::vector<byte> seq::Compiler::assembleExpression( std::vector<seq::Compiler::Token>& tokens, int start, int end, bool anchor, bool top ) {
+
+	if( top && tokens[start].getCategory() == seq::Compiler::Token::Category::Stream ) {
+		if( start + 1 < end - 1 ) {
+			return assembleStream( tokens, start + 1, end - 1, 0, false );
+		}else{
+			throw seq::CompilerError( "end of embedded stream", "", "stream", tokens[start].getLine() );
+		}
+	}
 
 	if( end - start == 1 ) {
 
@@ -3419,8 +3443,8 @@ std::vector<byte> seq::Compiler::assembleExpression( std::vector<seq::Compiler::
 
 	}
 
-	auto lt = assembleExpression( tokens, start + f + 0, j, false );
-	auto rt = assembleExpression( tokens, j + 1, end - f, false );
+	auto lt = assembleExpression( tokens, start + f + 0, j, false, false );
+	auto rt = assembleExpression( tokens, j + 1, end - f, false, false );
 	seq::ExprOperator op = (seq::ExprOperator) (tokens.at(j).getData() >> 8);
 
 	std::vector<byte> arr;
@@ -3452,7 +3476,7 @@ std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::To
 		int j = findStreamEnd( tokens, i, end );
 		if( j != -1 ) {
 
-			auto stream = assembleStream( tokens, i, j, tags );
+			auto stream = assembleStream( tokens, i, j, tags, false );
 			arr.insert( arr.end(), stream.begin(), stream.end() );
 			i = j;
 
