@@ -4,7 +4,7 @@
 #include <thread>
 
 #define MILLIS std::chrono::milliseconds
-#define THREAD( ms ) std::this_thread
+#define THREAD std::this_thread
 
 seq::Stream seq_std_time( seq::Stream& input ) {
 	seq::Stream output;
@@ -26,7 +26,7 @@ seq::Stream seq_std_sleep( seq::Stream& input ) {
 		// Eclipse has some weird problems with parsing std::chrono
 		// But it compiles anyway
 		MILLIS ms { (unsigned long) seq::util::numberCast(arg).Number().getLong() };
-		SLEEPM( ms );
+		THREAD::sleep_for( ms );
 
 	}
 
