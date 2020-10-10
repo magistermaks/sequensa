@@ -1828,7 +1828,7 @@ TEST( ce_set_empty, {
 
 } );
 
-TEST( c_fail_undefined_var, {
+TEST( ce_fail_undefined_var, {
 
 	seq::string code = (byte*) (
 			"#exit << var"
