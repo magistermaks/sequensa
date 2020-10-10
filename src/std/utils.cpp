@@ -22,7 +22,6 @@ INIT( seq::Executor* exe, seq::FileHeader* head ) {
 	exe->inject( "std:call"_b, seq_std_call );
 
 	const seq::Generic value_true = seq::Generic( new seq::type::Bool( false, true ) );
-	const seq::Generic value_false = seq::Generic( new seq::type::Bool( false, false ) );
 
 	exe->define( "std:if"_b, {
 			seq::Generic( new seq::type::Flowc( false, {

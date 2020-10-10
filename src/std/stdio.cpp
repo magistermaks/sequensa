@@ -74,9 +74,18 @@ seq::Stream seq_std_nbinchr( seq::Stream& input ) {
 	for( int i = input.size(); i > 0; i -- ) {
 
 		std::string str;
-		str += nbi_get_char();
+		char chr = nbi_get_char();
 
-		output.push_back( seq::Generic( new seq::type::String( false, (seq::byte*) str.c_str() ) ) );
+		if( chr == -1 ) {
+
+			str += chr;
+			output.push_back( seq::Generic( new seq::type::String( false, (seq::byte*) str.c_str() ) ) );
+
+		}else{
+
+			output.push_back( seq::Generic( new seq::type::Null( false ) ) );
+
+		}
 
 	}
 
