@@ -1753,10 +1753,6 @@ TEST( ce_embedded_streams, {
 
 	auto& res = exe.getResults();
 
-	for( auto& r : res ) {
-		std::cout << (char*) seq::util::stringCast( r ).String().getString().c_str();
-	}
-
 	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
 	CHECK( res.at(0).Number().getLong(), 3l );
 
@@ -1767,6 +1763,48 @@ TEST( ce_embedded_streams, {
 	CHECK( res.at(2).Number().getLong(), 5l );
 
 } );
+
+TEST( ce_type_cast, {
+
+	seq::string code = (byte*) (
+			"#exit << #string << #type << 3.14 \n"
+			);
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	auto& res = exe.getResults();
+
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::String );
+	CHECK_ELSE( res.at(0).String().getString(), seq::string( (byte*) "type" ) ) {
+		FAIL( "Invalid string!" );
+	}
+
+} )
+
+TEST( ce_nested_stream_native, {
+
+	seq::string code = (byte*) (
+			"set var << (<< exit) << 1 \n"
+			"#var << 2"
+			);
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	auto& res = exe.getResults();
+
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(0).Number().getLong(), 1l );
+
+} )
+
 
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );

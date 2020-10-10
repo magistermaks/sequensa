@@ -210,7 +210,7 @@
 #define SEQ_API_STANDARD "2020-10-10"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 4
-#define SEQ_API_VERSION_PATCH 0
+#define SEQ_API_VERSION_PATCH 1
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -825,7 +825,7 @@ namespace seq {
 			Stream executeFunction( BufferReader br, Stream& stream );
 			CommandResult executeCommand( TokenReader* br, byte tags );
 			CommandResult executeStream( Stream& stream );
-			Stream executeAnchor( Generic entity, Stream& input_stream );
+			CommandResult executeAnchor( Generic entity, Stream& input_stream );
 			Generic executeExprPair( Generic left, Generic right, ExprOperator op, bool anchor );
 			Generic executeExpr( Generic entity );
 			Stream resolveName( string& name, bool anchor );
@@ -985,6 +985,7 @@ seq::Generic seq::util::numberCast( seq::Generic arg ) {
 		case seq::DataType::Flowc:
 		case seq::DataType::Func:
 		case seq::DataType::Blob:
+		case seq::DataType::Type:
 			num = new seq::type::Number( false, 1 );
 			break;
 
@@ -1041,6 +1042,10 @@ seq::Generic seq::util::stringCast( seq::Generic arg ) {
 
 		case seq::DataType::Blob:
 			str = new seq::type::String( false, arg.Blob().toString().c_str() );
+			break;
+
+		case seq::DataType::Type:
+			str = new seq::type::String( false, "type"_b );
 			break;
 
 		// invalid casts: (stream, name, expr, arg)
@@ -2206,13 +2211,18 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream& gs ) {
 			}else{
 
 				// execute anchor and save result in acc
-				acc = this->executeAnchor( g, acc );
+				seq::CommandResult cr = this->executeAnchor( g, acc );
+				if( cr.stt == seq::CommandResult::ResultType::None ) {
+					acc = cr.acc;
+				}else{
+					return cr;
+				}
 				continue;
 
 			}
 		}
 
-		// if entity is a variable
+		// if entity is a (unanchored) variable
 		if( t == seq::DataType::Name ) {
 			auto& name = g.Name();
 
@@ -2240,7 +2250,7 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream& gs ) {
 	return CommandResult( seq::CommandResult::ResultType::None, acc );
 }
 
-seq::Stream seq::Executor::executeAnchor( seq::Generic entity, seq::Stream& input_stream ) {
+seq::CommandResult seq::Executor::executeAnchor( seq::Generic entity, seq::Stream& input_stream ) {
 
 	seq::DataType type = entity.getDataType();
 
@@ -2251,13 +2261,13 @@ seq::Stream seq::Executor::executeAnchor( seq::Generic entity, seq::Stream& inpu
 
 		// test if name refers to native function, and if so execute it
 		try{
-			return this->natives.at( name.getName() )( input_stream );
+			return CommandResult( seq::CommandResult::ResultType::None, this->natives.at( name.getName() )( input_stream ) );
 		} catch (std::out_of_range &ignore) {
 
 			// if it isn't native, try finding it on the stack
 			seq::Stream s = this->resolveName( name.getName(), true );
 			s.insert( s.end(), input_stream.begin(), input_stream.end() );
-			return this->executeStream( s ).acc;
+			return this->executeStream( s );
 
 		}
 
@@ -2265,12 +2275,12 @@ seq::Stream seq::Executor::executeAnchor( seq::Generic entity, seq::Stream& inpu
 
 	// execute anchored function
 	if( type == seq::DataType::Func ) {
-		return this->executeFunction( entity.Function().getReader(), input_stream );
+		return CommandResult( seq::CommandResult::ResultType::None, this->executeFunction( entity.Function().getReader(), input_stream ) );
 	}
 
 	// execute anchored flowc
 	if( type == seq::DataType::Flowc ) {
-		return this->executeFlowc( entity.Flowc().getConditions(), input_stream );
+		return CommandResult( seq::CommandResult::ResultType::None, this->executeFlowc( entity.Flowc().getConditions(), input_stream ) );
 	}
 
 	if( type == seq::DataType::Blob ) {
@@ -2282,7 +2292,7 @@ seq::Stream seq::Executor::executeAnchor( seq::Generic entity, seq::Stream& inpu
 	for( auto g : input_stream ) {
 		output_stream.push_back( this->executeCast( entity, g ) );
 	}
-	return output_stream;
+	return CommandResult( seq::CommandResult::ResultType::None, output_stream );
 
 }
 
@@ -2555,6 +2565,9 @@ seq::Generic seq::Executor::executeCast( seq::Generic cast, seq::Generic arg ) {
 		// type cast:
 		case seq::DataType::Type: {
 			switch( cast.Type().getType() ) {
+
+				case seq::DataType::Type:
+					return seq::Generic( new seq::type::Type( false, arg.getDataType() ) );
 
 				case seq::DataType::Bool:
 					return seq::util::boolCast( arg );
@@ -3351,7 +3364,7 @@ std::vector<byte> seq::Compiler::assembleFlowc( std::vector<seq::Compiler::Token
 std::vector<byte> seq::Compiler::assembleExpression( std::vector<seq::Compiler::Token>& tokens, int start, int end, bool anchor, bool top ) {
 
 	if( top && tokens[start].getCategory() == seq::Compiler::Token::Category::Stream ) {
-		if( start + 1 < end - 1 ) {
+		if( start + 1 < end ) {
 			return assembleStream( tokens, start + 1, end - 1, 0, false );
 		}else{
 			throw seq::CompilerError( "end of embedded stream", "", "stream", tokens[start].getLine() );
