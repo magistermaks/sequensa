@@ -4,6 +4,7 @@ load "utils"
 load "time"
 
 set print << {
+    first; set x
     set x << x << @
 
     end; #std:outln << " 1 2 3 " << "+-+-+-+"
@@ -40,6 +41,7 @@ set input << {
     }
 
     set off << #{
+        first; set p
         set p << p << @
         end; #return << ((p :: 0 - 1) + (p :: 1 - 1) * 3)
     } << #read << null
