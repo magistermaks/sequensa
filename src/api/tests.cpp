@@ -1688,12 +1688,13 @@ TEST( ce_flowc_cast, {
 
 TEST( ce_accessor_complex, {
 
-	// INFO: order of operation is mathematically incorrect but I don't have time to fix it
-	// ((v :: 0 - 1) + (v :: 1 - 1) * 3) should equal (v :: 0 - 1 + (v :: 1 - 1) * 3) but it doesn't
+	// - INFO: order of operation is mathematically incorrect but I don't have time to fix it
+	// - ((v :: 0 - 1) + (v :: 1 - 1) * 3) should equal (v :: 0 - 1 + (v :: 1 - 1) * 3) but it doesn't
+	// UPDATE: tried fixing it in 1.4.4 but I'm not sure if it didn't break something else
 
 	seq::string code = (byte*) (
 			"set v << 2 << 4 << 6 \n"
-			"#exit << (v :: 2 + v :: 1) << (v :: 0 + v :: 1 * 3) << (1 + v :: 2 * 2) << ((v :: 0 - 1) + (v :: 1 - 1) * 3) \n"
+			"#exit << (v :: 2 + v :: 1) << (v :: 0 + v :: 1 * 3) << (1 + v :: 2 * 2) << (v :: 0 - 1 + (v :: 1 - 1) * 3) \n"
 			);
 
 	auto buf = seq::Compiler::compile( code );

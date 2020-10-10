@@ -210,7 +210,7 @@
 #define SEQ_API_STANDARD "2020-10-10"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 4
-#define SEQ_API_VERSION_PATCH 3
+#define SEQ_API_VERSION_PATCH 4
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -2903,8 +2903,9 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 seq::Compiler::Token seq::Compiler::construct( seq::string raw, unsigned int line ) {
 
 	// setup regex'es and string vectors
+	// bigger operator weight -> evaluated first
 	const static std::vector<std::string> operators = { "+", "-", "/", "*", "**", "%", ">", "<", "=", "!=", ">=", "!>", "<=", "!<", "&&", "||", "^^", "&", "|", "^", "!", "::" };
-	const static std::vector<byte> operator_weights = {  17,  17,  16,  16,   15,  16,  18,  18,  18,   18,   18,   18,   18,   18,   19,   19,   19,  17,  17,  17,  15,   14 };
+	const static std::vector<byte> operator_weights = {  17,  16,  14,  15,   13,  14,  16,  16,  16,   16,   16,   16,   16,   16,   17,   17,   17,  15,  15,  15,  13,   12 };
 	const static std::regex regex_arg("^@+$");
 	const static std::regex regex_name("^[a-zA-Z_]{1}[a-zA-Z_0-9]*(:[a-zA-Z_0-9]+)*$");
 	const static std::regex regex_number_1("^\\d+.\\d+$");
