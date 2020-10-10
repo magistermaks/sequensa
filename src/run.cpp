@@ -168,7 +168,13 @@ void run( std::string input, Options opt ) {
 
 		}catch( seq::RuntimeError& err ) {
 
-			std::cout << "Runtime exception!" << std::endl;
+			std::cout << "Runtime error!" << std::endl;
+			std::cout << err.what() << (opt.verbose ? " (" + input + ")" : "") << std::endl;
+			return;
+
+		}catch( seq::InternalError& err ) {
+
+			std::cout << "Internal error!" << std::endl;
 			std::cout << err.what() << (opt.verbose ? " (" + input + ")" : "") << std::endl;
 			return;
 
