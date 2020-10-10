@@ -210,7 +210,7 @@
 #define SEQ_API_STANDARD "2020-10-10"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 4
-#define SEQ_API_VERSION_PATCH 2
+#define SEQ_API_VERSION_PATCH 3
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -3128,8 +3128,9 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 					if( embedded && token.getCategory() == seq::Compiler::Token::Category::VMCall ) {
 						throw seq::CompilerError( "Build in native function '" + std::string( (char*) token.getClean().c_str() ) + "'", "", "embedded stream", token.getLine() );
 					}
-					std::vector<byte> arr1 = assemblePrimitive( token );
-					arr.insert( arr.end(), arr1.begin(), arr1.end() );
+
+					auto buf = assemblePrimitive( token );
+					bw.putBuffer( buf );
 					state = State::Stream;
 					break;
 				}
@@ -3166,8 +3167,8 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 
 			case State::Function: {
 					int j = findClosing( tokens, i - 1, seq::Compiler::Token::Category::FuncBracket ) - 1;
-					auto acc = assembleFunction( tokens, i, j, tokens.at(i - 1).getAnchor() );
-					arr.insert( arr.end(), acc.begin(), acc.end() );
+					auto buf = assembleFunction( tokens, i, j, tokens.at(i - 1).getAnchor() );
+					bw.putBuffer(buf);
 					i = j;
 					state = State::Stream;
 					break;
@@ -3176,8 +3177,8 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 
 			case State::Expression: {
 					int j = findClosing( tokens, i - 1, seq::Compiler::Token::Category::MathBracket ) - 1;
-					auto acc = assembleExpression( tokens, i, j, tokens.at(i - 1).getAnchor(), true );
-					arr.insert( arr.end(), acc.begin(), acc.end() );
+					auto buf = assembleExpression( tokens, i, j, tokens.at(i - 1).getAnchor(), true );
+					bw.putBuffer(buf);
 					i = j;
 					state = State::Stream;
 					break;
@@ -3186,8 +3187,8 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 
 			case State::Flowc: {
 					int j = findClosing( tokens, i - 1, seq::Compiler::Token::Category::FlowBracket ) - 1;
-					auto acc = assembleFlowc( tokens, i, j, tokens.at(i - 1).getAnchor() );
-					arr.insert( arr.end(), acc.begin(), acc.end() );
+					auto buf = assembleFlowc( tokens, i, j, tokens.at(i - 1).getAnchor() );
+					bw.putBuffer(buf);
 					i = j;
 					state = State::Stream;
 					break;
@@ -3309,8 +3310,8 @@ std::vector<byte> seq::Compiler::assembleFlowc( std::vector<seq::Compiler::Token
 							if( tokens.at( i + 2 ).getAnchor() ) {
 								throw seq::CompilerError( "anchor", "", "flow controller", token.getLine() );
 							}else{
-								std::vector<byte> arr1 = assemblePrimitive( token );
-								std::vector<byte> arr2 = assemblePrimitive( tokens.at( i + 2 ) );
+								auto arr1 = assemblePrimitive( token );
+								auto arr2 = assemblePrimitive( tokens.at( i + 2 ) );
 								arr1.reserve( arr1.size() + arr2.size() );
 								arr1.insert( arr1.end(), arr2.begin(), arr2.end() );
 								arr.push_back( arr1 );
@@ -3459,6 +3460,7 @@ std::vector<byte> seq::Compiler::assembleExpression( std::vector<seq::Compiler::
 std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::Token>& tokens, int start, int end, bool anchor ) {
 
 	std::vector<byte> arr;
+	seq::BufferWriter bw( arr );
 
 	if( end - start < 2 ) {
 		throw seq::CompilerError( "end of scope", "stream", "function", tokens.at(start).getLine() );
@@ -3478,8 +3480,8 @@ std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::To
 		int j = findStreamEnd( tokens, i, end );
 		if( j != -1 ) {
 
-			auto stream = assembleStream( tokens, i, j, tags, false );
-			arr.insert( arr.end(), stream.begin(), stream.end() );
+			auto buf = assembleStream( tokens, i, j, tags, false );
+			bw.putBuffer(buf);
 			i = j;
 
 		}else{
@@ -3489,8 +3491,8 @@ std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::To
 	}
 
 	std::vector<byte> ret;
-	seq::BufferWriter bw( ret );
-	bw.putFunc(anchor, arr);
+	seq::BufferWriter bw2( ret );
+	bw2.putFunc(anchor, arr);
 
 	return ret;
 }
