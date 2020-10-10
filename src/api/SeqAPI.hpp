@@ -196,7 +196,7 @@
 #define SEQ_MIN_DATA_TYPE 1
 #define SEQ_MAX_DATA_TYPE 13
 #define SEQ_MIN_CALL_TYPE 1
-#define SEQ_MAX_CALL_TYPE 6
+#define SEQ_MAX_CALL_TYPE 5
 #define SEQ_MIN_OPERATOR 1
 #define SEQ_MAX_OPERATOR 21
 #define SEQ_MAX_UBYTE1 255l
@@ -207,9 +207,9 @@
 #define SEQ_TAG_LAST 2
 #define SEQ_TAG_END 4
 
-#define SEQ_API_STANDARD "2020-10-03-rev2"
+#define SEQ_API_STANDARD "2020-10-10"
 #define SEQ_API_VERSION_MAJOR 1
-#define SEQ_API_VERSION_MINOR 3
+#define SEQ_API_VERSION_MINOR 4
 #define SEQ_API_VERSION_PATCH 0
 #define SEQ_API_NAME "SeqAPI"
 
@@ -424,8 +424,7 @@ namespace seq {
 					Break = 2,
 					Exit = 3,
 					Again = 4,
-					Emit = 5,
-					Final = 6
+					Final = 5
 				};
 
 				VMCall( bool anchor, CallType value );
@@ -797,8 +796,8 @@ namespace seq {
 				Break = 2,
 				Exit = 3,
 				Again = 4,
-				None = 5,
-				Final = 6
+				Final = 5,
+				None = 6,
 			};
 
 			CommandResult( ResultType stt, Stream acc );
@@ -2192,21 +2191,12 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream& gs ) {
 		// execute anchored entities
 		if( g.getAnchor() ) {
 
-			// handle native function "emit"
-			if( t == seq::DataType::VMCall && g.VMCall().getCall() == seq::type::VMCall::CallType::Emit ) {
-				if( acc.size() == 0 ) {
-					acc.push_back( seq::Generic( new seq::type::Null( false ) ) );
-				}
-
-				continue;
-			}
-
 			// if acc is empty there is nothing to execute - skip
 			if( acc.size() == 0 ) {
 				continue;
 			}
 
-			// if entity is a VM Call other than "emit"
+			// if entity is a VM Call
 			if( t == seq::DataType::VMCall ) {
 
 				// get VMCall type and using a hacky way cast it to ResultType, then return
@@ -2919,7 +2909,6 @@ seq::Compiler::Token seq::Compiler::construct( seq::string raw, unsigned int lin
 		if( str == "break"_b ) return (byte) seq::type::VMCall::CallType::Break;
 		if( str == "exit"_b ) return (byte) seq::type::VMCall::CallType::Exit;
 		if( str == "again"_b ) return (byte) seq::type::VMCall::CallType::Again;
-		if( str == "emit"_b ) return (byte) seq::type::VMCall::CallType::Emit;
 		if( str == "final"_b ) return (byte) seq::type::VMCall::CallType::Final;
 		return 0;
 	};
