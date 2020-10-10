@@ -1783,7 +1783,7 @@ TEST( ce_type_cast, {
 		FAIL( "Invalid string!" );
 	}
 
-} )
+} );
 
 TEST( ce_nested_stream_native, {
 
@@ -1803,7 +1803,7 @@ TEST( ce_nested_stream_native, {
 	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
 	CHECK( res.at(0).Number().getLong(), 1l );
 
-} )
+} );
 
 TEST( ce_set_empty, {
 
@@ -1825,7 +1825,29 @@ TEST( ce_set_empty, {
 	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
 	CHECK( res.at(0).Number().getLong(), 42l );
 
-} )
+} );
+
+TEST( c_fail_undefined_var, {
+
+	seq::string code = (byte*) (
+			"#exit << var"
+			);
+
+	try{
+
+		auto buf = seq::Compiler::compile( code );
+		seq::ByteBuffer bb( buf.data(), buf.size() );
+
+		seq::Executor exe;
+		exe.execute( bb );
+
+	}catch( seq::RuntimeError& err ) {
+		return;
+	}
+
+	FAIL( "Expected exception!" )
+
+} );
 
 
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );

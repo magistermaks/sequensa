@@ -210,7 +210,7 @@
 #define SEQ_API_STANDARD "2020-10-10"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 4
-#define SEQ_API_VERSION_PATCH 1
+#define SEQ_API_VERSION_PATCH 2
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -2510,7 +2510,7 @@ seq::Stream seq::Executor::resolveName( seq::string& name, bool anchor ) {
 		}
 	}
 
-	return seq::Stream();
+	throw seq::RuntimeError( "Referenced undefined symbol: '" + seq::util::toStdString(name) + "'" );
 
 }
 
