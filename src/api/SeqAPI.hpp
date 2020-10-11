@@ -210,7 +210,7 @@
 #define SEQ_API_STANDARD "2020-10-10"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 4
-#define SEQ_API_VERSION_PATCH 5
+#define SEQ_API_VERSION_PATCH 6
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -3005,7 +3005,8 @@ seq::Compiler::Token seq::Compiler::construct( seq::string raw, unsigned int lin
 		if( str == "|"_b ) op = seq::ExprOperator::BinaryOr; else
 		if( str == "^"_b ) op = seq::ExprOperator::BinaryXor; else
 		if( str == "~"_b ) op = seq::ExprOperator::BinaryNot; else
-		if( str == "::"_b ) op = seq::ExprOperator::Accessor;
+		if( str == "::"_b ) op = seq::ExprOperator::Accessor; else
+			throw seq::InternalError( "Invalid state!" );
 
 		long operatorCode = (long) op;
 		return weight | (operatorCode << 8);
