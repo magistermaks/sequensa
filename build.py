@@ -10,15 +10,17 @@ import argparse
 from utils import *
 
 # parse cl args
-parser = argparse.ArgumentParser(description='Sequensa build system')
+parser = argparse.ArgumentParser( description="Sequensa build system" )
 parser.add_argument( "--test", help="Run Sequensa API unit tests", action="store_true" )
+parser.add_argument( "--na", help="Don't create 'sq' alias", action="store_true" )
+parser.add_argument( "--np", help="Don't attempt to add sequensa to PATH", action="store_true" )
 args = parser.parse_args()
 
 # palatform independent settings
 system_name = platform.system()
 command = "g++"
 tmp_path = "./builder-tmp"
-compiler_args = " -O0 -g3 -Wall -c "
+compiler_args = " -O3 -g3 -Wall -c "
 builder_ver = "1.0"
 
 path = ""
@@ -155,14 +157,16 @@ link( path + "/lib/time/native" + lib_ext, ["/src/std/time.o"], " -shared" )
 rem_dir( tmp_path )
 
 # add Sequensa to PATH (if not already present)
-lpath = localize_path( path )
-if not lpath in os.environ['PATH']:
-    add_to_path( lpath )
-    print( "\nSequensa added to PATH" )
-    print( "Please restart shell for changes to take effect" )
+if not args.np:
+    lpath = localize_path( path )
+    if not lpath in os.environ['PATH']:
+        add_to_path( lpath )
+        print( "\nSequensa added to PATH" )
+        print( "Please restart shell for changes to take effect" )
 
 # create alias for "sequensa"
-os.link( path + "/sequensa" + exe_ext, path + "/seq" + exe_ext )
+if not args.na:
+    os.link( path + "/sequensa" + exe_ext, path + "/sq" + exe_ext )
 
 # print done and exit
 print( "\nSequensa installation complete!" )
