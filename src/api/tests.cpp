@@ -1734,7 +1734,7 @@ TEST( ce_accessor_cast, {
 
 	auto& res = exe.getResults();
 
-	CHECK( res.size(), 1ul );
+	CHECK( (long) res.size(), 1l );
 	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
 	CHECK( res.at(0).Number().getLong(), 7l );
 

@@ -1,7 +1,32 @@
 
 #include "common.hpp"
-#include <chrono>
-#include <thread>
+#include "../lib/detector.hpp"
+
+#ifdef SEQ_WINDOWS
+#	include <windows.h>
+#endif
+
+void ms_sleep( long miliseconds ) {
+
+#ifdef SEQ_LINUX
+	struct timespec req, rem;
+
+	if(miliseconds > 999) {
+		req.tv_sec = (int)(miliseconds / 1000);
+		req.tv_nsec = (miliseconds - ((long)req.tv_sec * 1000)) * 1000000;
+	} else {
+		req.tv_sec = 0;
+		req.tv_nsec = miliseconds * 1000000;
+	}
+
+	nanosleep(&req , &rem);
+#endif
+
+#ifdef SEQ_WINDOWS
+	Sleep( miliseconds );
+#endif
+
+}
 
 #define MILLIS std::chrono::milliseconds
 #define THREAD std::this_thread
@@ -23,10 +48,7 @@ seq::Stream seq_std_sleep( seq::Stream& input ) {
 
 	for( auto& arg : input ) {
 
-		// Eclipse has some weird problems with parsing std::chrono
-		// But it compiles anyway
-		MILLIS ms { (unsigned long) seq::util::numberCast(arg).Number().getLong() };
-		THREAD::sleep_for( ms );
+		ms_sleep( (unsigned long) seq::util::numberCast(arg).Number().getLong() );
 
 	}
 
