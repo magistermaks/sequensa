@@ -11,7 +11,7 @@ seq::Stream seq_std_time( seq::Stream& input ) {
 
 	for( int i = input.size(); i > 0; i -- ) {
 
-		output.push_back( seq::Generic( new seq::type::Number( false, std::time(0) ) ) );
+		output.push_back( seq::util::newNumber( std::time(0) ) );
 
 	}
 

@@ -11,7 +11,7 @@ seq::Stream seq_std_meta_major( seq::Stream& input ) {
 
 	for( int i = input.size(); i > 0; i -- ) {
 
-		output.push_back( seq::Generic( new seq::type::Number( false, (int) major ) ) );
+		output.push_back( seq::util::newNumber( (int) major ) );
 
 	}
 
@@ -23,7 +23,7 @@ seq::Stream seq_std_meta_minor( seq::Stream& input ) {
 
 	for( int i = input.size(); i > 0; i -- ) {
 
-		output.push_back( seq::Generic( new seq::type::Number( false, (int) minor ) ) );
+		output.push_back( seq::util::newNumber( (int) minor ) );
 
 	}
 
@@ -35,7 +35,7 @@ seq::Stream seq_std_meta_patch( seq::Stream& input ) {
 
 	for( int i = input.size(); i > 0; i -- ) {
 
-		output.push_back( seq::Generic( new seq::type::Number( false, (int) patch ) ) );
+		output.push_back( seq::util::newNumber( (int) patch ) );
 
 	}
 
@@ -49,18 +49,18 @@ seq::Stream seq_std_meta_value( seq::Stream& input ) {
 
 		if( arg.getDataType() != seq::DataType::String ) {
 
-			output.push_back( seq::Generic( new seq::type::Null( false ) ) );
+			output.push_back( seq::util::newNull() );
 			continue;
 
 		}
 
 		try{
 
-			output.push_back( seq::Generic( new seq::type::String( false, values.at( arg.String().getString().c_str() ).c_str() ) ) );
+			output.push_back( seq::util::newString(  values.at( arg.String().getString().c_str() ).c_str() ) );
 
 		}catch( std::out_of_range& err ) {
 
-			output.push_back( seq::Generic( new seq::type::Null( false ) ) );
+			output.push_back( seq::util::newNull() );
 
 		}
 
@@ -76,11 +76,11 @@ seq::Stream seq_std_meta_build_time( seq::Stream& input ) {
 
 		try{
 
-			output.push_back( seq::Generic( new seq::type::Number( false, std::stoi( (char*) values.at( "time"_b ).c_str() ) ) ) );
+			output.push_back( seq::util::newNumber( std::stoi( (char*) values.at( "time"_b ).c_str() ) ) );
 
 		}catch( std::out_of_range& err ) {
 
-			output.push_back( seq::Generic( new seq::type::Null( false ) ) );
+			output.push_back( seq::util::newNull() );
 
 		}
 

@@ -9,7 +9,7 @@ seq::Stream seq_std_call( seq::Stream& input ) {
 		long val = seq::util::numberCast(arg).Number().getLong();
 
 		while( val --> 0 ) {
-			output.push_back( seq::Generic( new seq::type::Null( false ) ) );
+			output.push_back( seq::util::newNull() );
 		}
 
 	}
@@ -21,12 +21,12 @@ INIT( seq::Executor* exe, seq::FileHeader* head ) {
 
 	exe->inject( "std:call"_b, seq_std_call );
 
-	const seq::Generic value_true = seq::Generic( new seq::type::Bool( false, true ) );
+	const seq::Generic value_true = seq::util::newBool( true );
 
 	exe->define( "std:if"_b, {
-			seq::Generic( new seq::type::Flowc( false, {
+			seq::util::newFlowc( {
 					new seq::FlowCondition( seq::FlowCondition::Type::Value, value_true, value_true )
-			} ) )
+			} )
 	} );
 
 	return INIT_SUCCESS;

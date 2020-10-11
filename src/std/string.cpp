@@ -9,7 +9,7 @@ seq::Stream seq_std_uppercase( seq::Stream& input ) {
 
 		std::string str = (char*) seq::util::stringCast( arg ).String().getString().c_str();
 		std::transform(str.begin(), str.end(), str.begin(), toupper);
-		output.push_back( seq::Generic( new seq::type::String( false, (seq::byte*) str.c_str() ) ) );
+		output.push_back( seq::util::newString( (seq::byte*) str.c_str() ) );
 
 	}
 
@@ -24,7 +24,7 @@ seq::Stream seq_std_lowercase( seq::Stream& input ) {
 
 		std::string str = (char*) seq::util::stringCast( arg ).String().getString().c_str();
 		std::transform(str.begin(), str.end(), str.begin(), tolower);
-		output.push_back( seq::Generic( new seq::type::String( false, (seq::byte*) str.c_str() ) ) );
+		output.push_back( seq::util::newString( (seq::byte*) str.c_str() ) );
 
 	}
 
@@ -41,7 +41,7 @@ seq::Stream seq_std_concat( seq::Stream& input ) {
 
 	}
 
-	return { seq::Generic( new seq::type::String( false, str.c_str() ) ) };
+	return { seq::util::newString( str.c_str() ) };
 }
 
 seq::Stream seq_std_split( seq::Stream& input ) {
@@ -58,7 +58,7 @@ seq::Stream seq_std_split( seq::Stream& input ) {
 
 			pos = str2.find(delim, prev);
 			if(pos == std::string::npos) pos = str2.length();
-			output.push_back( seq::Generic( new seq::type::String( false, str2.substr(prev, pos-prev).c_str() ) ) );
+			output.push_back( seq::util::newString( str2.substr(prev, pos-prev).c_str() ) );
 			prev = pos + delim.length();
 
 		} while( pos < str2.size() && prev < str2.size() );

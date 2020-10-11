@@ -9,7 +9,7 @@ seq::Stream seq_std_sin( seq::Stream& input ) {
 
 	for( auto& arg : input ) {
 
-		output.push_back( seq::Generic( new seq::type::Number( false, std::sin( seq::util::numberCast( arg ).Number().getDouble() ) ) ) );
+		output.push_back( seq::util::newNumber( std::sin( seq::util::numberCast( arg ).Number().getDouble() ) ) );
 
 	}
 
@@ -21,7 +21,7 @@ seq::Stream seq_std_cos( seq::Stream& input ) {
 
 	for( auto& arg : input ) {
 
-		output.push_back( seq::Generic( new seq::type::Number( false, std::cos( seq::util::numberCast( arg ).Number().getDouble() ) ) ) );
+		output.push_back( seq::util::newNumber( std::cos( seq::util::numberCast( arg ).Number().getDouble() ) ) );
 
 	}
 
@@ -33,7 +33,7 @@ seq::Stream seq_std_tan( seq::Stream& input ) {
 
 	for( auto& arg : input ) {
 
-		output.push_back( seq::Generic( new seq::type::Number( false, std::tan( seq::util::numberCast( arg ).Number().getDouble() ) ) ) );
+		output.push_back( seq::util::newNumber( std::tan( seq::util::numberCast( arg ).Number().getDouble() ) ) );
 
 	}
 
@@ -50,7 +50,7 @@ seq::Stream seq_std_sum( seq::Stream& input ) {
 	}
 
 	seq::Stream output {
-		 seq::Generic( new seq::type::Number( false, sum ) )
+		seq::util::newNumber( sum )
 	};
 
 	return output;
@@ -61,7 +61,7 @@ seq::Stream seq_std_abs( seq::Stream& input ) {
 
 	for( auto& arg : input ) {
 
-		output.push_back( seq::Generic( new seq::type::Number( false, std::abs( seq::util::numberCast( arg ).Number().getDouble() ) ) ) );
+		output.push_back( seq::util::newNumber( std::abs( seq::util::numberCast( arg ).Number().getDouble() ) ) );
 
 	}
 
@@ -81,7 +81,7 @@ seq::Stream seq_std_min( seq::Stream& input ) {
 	}
 
 	seq::Stream output {
-		 seq::Generic( new seq::type::Number( false, min ) )
+		 seq::util::newNumber( min )
 	};
 
 	return output;
@@ -100,7 +100,7 @@ seq::Stream seq_std_max( seq::Stream& input ) {
 	}
 
 	seq::Stream output {
-		seq::Generic( new seq::type::Number( false, max ) )
+		seq::util::newNumber( max )
 	};
 
 	return output;
@@ -114,9 +114,9 @@ seq::Stream seq_std_sqrt( seq::Stream& input ) {
 		double num = seq::util::numberCast( arg ).Number().getDouble();
 
 		if( num < 0 ) {
-			output.push_back( seq::Generic( new seq::type::Null( false ) ) );
+			output.push_back( seq::util::newNull() );
 		}else{
-			output.push_back( seq::Generic( new seq::type::Number( false, std::sqrt( num ) ) ) );
+			output.push_back( seq::util::newNumber( std::sqrt( num ) ) );
 		}
 
 	}
@@ -129,7 +129,7 @@ seq::Stream seq_std_round( seq::Stream& input ) {
 
 	for( auto& arg : input ) {
 
-		output.push_back( seq::Generic( new seq::type::Number( false, std::round( seq::util::numberCast( arg ).Number().getDouble() ) ) ) );
+		output.push_back( seq::util::newNumber( std::round( seq::util::numberCast( arg ).Number().getDouble() ) ) );
 
 	}
 
@@ -141,7 +141,7 @@ seq::Stream seq_std_floor( seq::Stream& input ) {
 
 	for( auto& arg : input ) {
 
-		output.push_back( seq::Generic( new seq::type::Number( false, std::floor( seq::util::numberCast( arg ).Number().getDouble() ) ) ) );
+		output.push_back( seq::util::newNumber( std::floor( seq::util::numberCast( arg ).Number().getDouble() ) ) );
 
 	}
 
@@ -153,7 +153,7 @@ seq::Stream seq_std_ceil( seq::Stream& input ) {
 
 	for( auto& arg : input ) {
 
-		output.push_back( seq::Generic( new seq::type::Number( false, std::ceil( seq::util::numberCast( arg ).Number().getDouble() ) ) ) );
+		output.push_back( seq::util::newNumber( std::ceil( seq::util::numberCast( arg ).Number().getDouble() ) ) );
 
 	}
 
@@ -165,7 +165,7 @@ seq::Stream seq_std_deg( seq::Stream& input ) {
 
 	for( auto& arg : input ) {
 
-		output.push_back( seq::Generic( new seq::type::Number( false, (PI / 180.0) * seq::util::numberCast( arg ).Number().getDouble() ) ) );
+		output.push_back( seq::util::newNumber( (PI / 180.0) * seq::util::numberCast( arg ).Number().getDouble() ) );
 
 	}
 

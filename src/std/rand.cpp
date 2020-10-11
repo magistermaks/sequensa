@@ -6,7 +6,7 @@ seq::Stream seq_std_rand( seq::Stream& input ) {
 
 	for( int i = input.size(); i > 0; i -- ) {
 
-		output.push_back( seq::Generic( new seq::type::Number( false, rand() ) ) );
+		output.push_back( seq::util::newNumber( rand() ) );
 
 	}
 

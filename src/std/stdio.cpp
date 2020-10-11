@@ -22,7 +22,7 @@ seq::Stream seq_std_outln( seq::Stream& input ) {
 
 	for( auto& element : input ) {
 
-		std::cout << (seq::byte*) seq::util::stringCast( element ).String().getString().c_str() << '\n';
+		std::cout << (seq::byte*) seq::util::stringCast( element ).String().getString().c_str() << std::endl;
 
 	}
 
@@ -37,7 +37,7 @@ seq::Stream seq_std_in( seq::Stream& input ) {
 
 		std::string str;
 		std::cin >> str;
-		output.push_back( seq::Generic( new seq::type::String( false, (seq::byte*) str.c_str() ) ) );
+		output.push_back( seq::util::newString( (seq::byte*) str.c_str() ) );
 
 	}
 
@@ -60,7 +60,7 @@ seq::Stream seq_std_inchr( seq::Stream& input ) {
 		std::string str;
 		str += nbi_std_input();
 
-		output.push_back( seq::Generic( new seq::type::String( false, (seq::byte*) str.c_str() ) ) );
+		output.push_back( seq::util::newString( (seq::byte*) str.c_str() ) );
 
 	}
 
@@ -79,11 +79,11 @@ seq::Stream seq_std_nbinchr( seq::Stream& input ) {
 		if( chr != -1 ) {
 
 			str += chr;
-			output.push_back( seq::Generic( new seq::type::String( false, (seq::byte*) str.c_str() ) ) );
+			output.push_back( seq::util::newString( (seq::byte*) str.c_str() ) );
 
 		}else{
 
-			output.push_back( seq::Generic( new seq::type::Null( false ) ) );
+			output.push_back( seq::util::newNull() );
 
 		}
 
