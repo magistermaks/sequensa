@@ -210,7 +210,7 @@
 #define SEQ_API_STANDARD "2020-10-10"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 4
-#define SEQ_API_VERSION_PATCH 4
+#define SEQ_API_VERSION_PATCH 5
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -577,22 +577,17 @@ namespace seq {
 		seq::Fraction asFraction( double value );
 		seq::DataType toDataType( seq::string str );
 
-//		class TypeFactory {
-//
-//			public:
-//				seq::Generic newBool( bool value, bool anchor = false );
-//				seq::Generic newNumber( double value, bool anchor = false );
-//				seq::Generic newArg( byte value, bool anchor = false );
-//				seq::Generic newString( const byte* value, bool anchor = false );
-//				seq::Generic newType( DataType value, bool anchor = false );
-//				seq::Generic newVMCall( type::VMCall::CallType value, bool anchor = false );
-//				seq::Generic newFunction( BufferReader* reader, bool anchor = false );
-//				seq::Generic newExpression( ExprOperator op, BufferReader* left, BufferReader* right, bool anchor = false );
-//				seq::Generic newFlowc( const std::vector<FlowCondition*> readers, bool anchor = false );
-//				seq::Generic newStream( byte tags, BufferReader* reader, bool anchor = false );
-//				seq::Generic newNull( bool anchor = false );
-//
-//		};
+		seq::Generic newBool( bool value, bool anchor = false );
+		seq::Generic newNumber( double value, bool anchor = false );
+		seq::Generic newArg( byte value, bool anchor = false );
+		seq::Generic newString( const byte* value, bool anchor = false );
+		seq::Generic newType( DataType value, bool anchor = false );
+		seq::Generic newVMCall( type::VMCall::CallType value, bool anchor = false );
+		seq::Generic newFunction( BufferReader* reader, bool anchor = false );
+		seq::Generic newExpression( ExprOperator op, BufferReader* left, BufferReader* right, bool anchor = false );
+		seq::Generic newFlowc( const std::vector<FlowCondition*> readers, bool anchor = false );
+		seq::Generic newStream( byte tags, BufferReader* reader, bool anchor = false );
+		seq::Generic newNull( bool anchor = false );
 
 	}
 
@@ -1076,6 +1071,50 @@ seq::DataType seq::util::toDataType( seq::string str ) {
 	if( str == "string"_b ) return seq::DataType::String;
 	if( str == "type"_b ) return seq::DataType::Type;
 	throw seq::InternalError( "Invalid argument!" );
+}
+
+inline seq::Generic seq::util::newBool( bool value, bool anchor ) {
+	return seq::Generic( new seq::type::Bool( anchor, value ) );
+}
+
+inline seq::Generic seq::util::newNumber( double value, bool anchor ) {
+	return seq::Generic( new seq::type::Number( anchor, value ) );
+}
+
+inline seq::Generic seq::util::newArg( byte value, bool anchor ) {
+	return seq::Generic( new seq::type::Arg( anchor, value ) );
+}
+
+inline seq::Generic seq::util::newString( const byte* value, bool anchor ) {
+	return seq::Generic( new seq::type::String( anchor, value ) );
+}
+
+inline seq::Generic seq::util::newType( DataType value, bool anchor ) {
+	return seq::Generic( new seq::type::Type( anchor, value ) );
+}
+
+inline seq::Generic seq::util::newVMCall( type::VMCall::CallType value, bool anchor ) {
+	return seq::Generic( new seq::type::VMCall( anchor, value ) );
+}
+
+inline seq::Generic seq::util::newFunction( BufferReader* reader, bool anchor ) {
+	return seq::Generic( new seq::type::Function( anchor, reader ) );
+}
+
+inline seq::Generic seq::util::newExpression( ExprOperator op, BufferReader* left, BufferReader* right, bool anchor ) {
+	return seq::Generic( new seq::type::Expression( anchor, op, left, right ) );
+}
+
+inline seq::Generic seq::util::newFlowc( const std::vector<FlowCondition*> readers, bool anchor ) {
+	return seq::Generic( new seq::type::Flowc( anchor, readers ) );
+}
+
+inline seq::Generic seq::util::newStream( byte tags, BufferReader* reader, bool anchor ) {
+	return seq::Generic( new seq::type::Stream( anchor, tags, reader ) );
+}
+
+inline seq::Generic seq::util::newNull( bool anchor ) {
+	return seq::Generic( new seq::type::Null( anchor ) );
 }
 
 seq::BufferWriter::BufferWriter( std::vector<byte>& _buffer ): buffer( _buffer ) {}
