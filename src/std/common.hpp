@@ -6,9 +6,15 @@
 #define SEQ_EXCLUDE_COMPILER
 #include "../api/SeqAPI.hpp"
 
+#ifdef _WIN32
+#	define __SEQ_DECLSPEC __declspec(dllexport)
+#else
+#	define __SEQ_DECLSPEC
+#endif
+
 #define INIT_SUCCESS 0
 #define INIT_ERROR 1
-#define INIT extern "C" int init
+#define INIT extern "C" __SEQ_DECLSPEC int init
 #define EMPTY seq::Stream()
 
 #undef SEQ_EXCLUDE_COMPILER
