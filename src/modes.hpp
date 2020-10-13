@@ -2,6 +2,8 @@
 #ifndef MODES_HPP_
 #define MODES_HPP_
 
+#define SQ_VER "1.0"
+
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -21,6 +23,7 @@
 #	define LIBLOAD_LINUX
 #	define CWD_MAX_PATH PATH_MAX
 #	define POSIX_GETCWD getcwd
+#	define SQ_TARGET "linux"
 #endif
 
 // windows only headers
@@ -31,6 +34,7 @@
 #	define LIBLOAD_WINDOWS
 #	define CWD_MAX_PATH MAX_PATH
 #	define POSIX_GETCWD _getcwd
+#	define SQ_TARGET "windows"
 #endif
 
 typedef int (*DynLibInit) (seq::Executor*,seq::FileHeader*);

@@ -2,9 +2,6 @@
 #include "modes.hpp"
 #include "api/SeqAPI.hpp"
 
-#define SQ_VER "1.0"
-#define SQ_TARGET "linux"
-
 void help( ArgParse& argp, Options opt ) {
 
 	std::cout << "Options:" << std::endl;
