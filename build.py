@@ -20,7 +20,7 @@ args = parser.parse_args()
 system_name = platform.system()
 command = "g++"
 tmp_path = "./builder-tmp"
-compiler_args = " -O3 -g3 -Wall -c "
+compiler_args = " -O3 -g0 -Wall -c "
 builder_ver = "1.0"
 
 path = ""
@@ -74,9 +74,14 @@ if args.test:
     rem_dir( tmp_path )
 
     # prepare directories
-    os.mkdir( tmp_path ) 
-    os.mkdir( tmp_path + "/src" ) 
-    os.mkdir( tmp_path + "/src/api" ) 
+    try:
+        os.mkdir( tmp_path ) 
+        os.mkdir( tmp_path + "/src" ) 
+        os.mkdir( tmp_path + "/src/api" ) 
+    except:
+        print( "\nFailed to prepare directory structure!" )
+        print( " * Try checking installer permissions" )
+        exit()
 
     # compile target
     print( "\nBuilding Target..." )
@@ -111,19 +116,24 @@ rem_dir( path )
 rem_dir( tmp_path )
 
 # prepare directories
-os.mkdir( path ) 
-os.mkdir( path + "/lib" ) 
-os.mkdir( path + "/lib/stdio" ) 
-os.mkdir( path + "/lib/math" ) 
-os.mkdir( path + "/lib/rand" ) 
-os.mkdir( path + "/lib/meta" ) 
-os.mkdir( path + "/lib/utils" ) 
-os.mkdir( path + "/lib/string" ) 
-os.mkdir( path + "/lib/time" ) 
-os.mkdir( tmp_path ) 
-os.mkdir( tmp_path + "/src" ) 
-os.mkdir( tmp_path + "/src/lib" ) 
-os.mkdir( tmp_path + "/src/std" ) 
+try:
+    os.mkdir( path ) 
+    os.mkdir( path + "/lib" ) 
+    os.mkdir( path + "/lib/stdio" ) 
+    os.mkdir( path + "/lib/math" ) 
+    os.mkdir( path + "/lib/rand" ) 
+    os.mkdir( path + "/lib/meta" ) 
+    os.mkdir( path + "/lib/utils" ) 
+    os.mkdir( path + "/lib/string" ) 
+    os.mkdir( path + "/lib/time" ) 
+    os.mkdir( tmp_path ) 
+    os.mkdir( tmp_path + "/src" ) 
+    os.mkdir( tmp_path + "/src/lib" ) 
+    os.mkdir( tmp_path + "/src/std" )
+except:
+    print( "\nFailed to prepare directory structure!" )
+    print( " * Try checking installer permissions" )
+    exit()
 
 # compile all Sequensa files
 compile( "src/main" )
