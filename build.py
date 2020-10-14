@@ -14,19 +14,26 @@ parser = argparse.ArgumentParser( description="Sequensa build system" )
 parser.add_argument( "--test", help="Run Sequensa API unit tests", action="store_true" )
 parser.add_argument( "--na", help="Don't create 'sq' alias", action="store_true" )
 parser.add_argument( "--np", help="Don't attempt to add sequensa to PATH", action="store_true" )
+parser.add_argument( "--dev", help="Compile in debug mode", action="store_true" )
 args = parser.parse_args()
 
 # palatform independent settings
 system_name = platform.system()
 command = "g++"
 tmp_path = "./builder-tmp"
-compiler_args = " -O3 -g0 -Wall -c "
 builder_ver = "1.0"
 
 path = ""
 linker_args = ""
 exe_ext = ""
 lib_ext = ""
+compiler_args = ""
+
+# set compiler args
+if args.dev:
+    compiler_args = " -O0 -g3 -Wall -c "
+else:
+    compiler_args = " -O3 -g0 -Wall -c "
 
 # palatform dependent settings
 if system_name == "Linux":
