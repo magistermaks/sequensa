@@ -1,4 +1,8 @@
 
+// Simple Brainfuck interpreter
+// ++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.
+// Most BF programs don't work as this implementation is quite buggy, I will fix it later
+
 load "stdio"
 load "string"
 load "utils"
