@@ -18,11 +18,10 @@ parser.add_argument( "--dev", help="Compile in debug mode", action="store_true" 
 args = parser.parse_args()
 
 # palatform independent settings
-system_name = platform.system()
 command = "g++"
 tmp_path = "./builder-tmp"
-builder_ver = "1.0"
 
+system_name = platform.system()
 path = ""
 linker_args = ""
 exe_ext = ""
@@ -62,7 +61,7 @@ def link( target, paths, args = "" ):
     os.system( command + args + " -o \"" + target + "\" " + x + linker_args ) 
 
 # print basic info
-print( "Sequensa builder v" + builder_ver )
+print( "Sequensa builder v1.0" )
 print( "Platform: " + system_name + ", Selected '" + command + "' compiler." )
 
 # if no compiler avaible exit with error
