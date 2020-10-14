@@ -1,5 +1,7 @@
 ## Sequensa
 
+__Status:__  Fixing bugs
+
 Read more about Sequensa programming language [here](http://darktree.net/projects/sequensa/)  
 Learn how to compile/install Sequensa [here](./COMPILE.md)
 
