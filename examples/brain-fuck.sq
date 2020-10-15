@@ -1,7 +1,7 @@
 
 // Simple Brainfuck interpreter
 // ++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.
-// Most BF programs don't work as this implementation is quite buggy, I will fix it later
+// Some BF programs don't work as this implementation is quite buggy, I will fix it later
 
 load "stdio"
 load "string"
@@ -19,17 +19,17 @@ load "utils"
 	
 	set modify << {
 		first; set x << 0
-		set f << ((x :: 0) = (pos :: 0))
+		set f << (x :: 0 = pos :: 0)
 		set x << (x :: 0 + 1)
 				
 		#return << #(val :: 0) << #[true] << f
-		#return << #number << #@ << #[false] << f
+		#return << #@ << #[false] << f
 	}
 	
 	set find << {
 		first; set cnt << 0
 		first; set ofc << off
-		set cch << (prog :: (ofc :: 0))
+		set cch << (prog :: ofc :: 0)
 		
 		#{
 			set cnt << (cnt :: 0 - 1)
@@ -39,67 +39,64 @@ load "utils"
 			set cnt << (cnt :: 0 + 1)
 		} << #[ "[" ] << cch
 		
-		//#std:out << "Find status: cnt=" << cnt << " ofc=" << ofc << " cch=" << cch << std:br
-		
-		set ofc << (ofc :: 0 + @)
-		
 		#exit << #{
 			#std:out << "\n"
-			#return << #std:concat << "Unmached bracket at pos: " << #string << off
+			#return << #std:concat << "Unmached bracket at pos: " << off
 		} << #[null] << cch
+		
+		set ofc << (ofc :: 0 + @)
 		#final << #ofc << #[0] << cnt
 		#again << @
 	}
 	
 	#exit << #{
-	
-		set chr << (prog :: (off :: 0))
-		set run << @
+		
+		set chr << (prog :: off :: 0)
 		
 		#{
 			#{
 				set off << @
-			} << #find << #1 << #[true] << (mem :: (pos :: 0) = 0)
+			} << #find << #1 << #[0] << (mem :: pos :: 0)
 		} << #[ "[" ] << chr
 		
 		#{
 			#{
 				set off << (@ + 1)
-			} << #find << #(0 - 1) << #[false] << (mem :: (pos :: 0) = 0)
+			} << #find << #-1 << #[false] << (mem :: pos :: 0 = 0)
 		} << #[ "]" ] << chr
 		
 		#{ 
 			set pos << (pos :: 0 + 1) 
 			#{
 				set mem << mem << 0
-			} << #[null] << (mem :: (pos :: 0))
+			} << #[null] << (mem :: pos :: 0)
 		} << #[ ">" ] << chr
 		
 		#{ 
 			set pos << (pos :: 0 - 1) 
 			#{
 				set pos << 0
-			} << #[null] << (mem :: (pos :: 0))
+			} << #[null] << (mem :: pos :: 0)
 		} << #[ "<" ] << chr
 		
 		#{ 
 			set val << #{
 				#final << #0 << #[true] << (@ > 255)
 				#final << @
-			} << (mem :: (pos :: 0) + 1)
+			} << (mem :: pos :: 0 + 1)
 			set mem << #modify << mem
 		} << #[ "+" ] << chr
 		
 		#{ 
 			set val << #{
-				#final << #255 << #[true] << (@ < 0) << null
+				#final << #255 << #[true] << (@ < 0)
 				#final << @
-			} << (mem :: (pos :: 0) - 1)
+			} << (mem :: pos :: 0 - 1)
 			set mem << #modify << mem
 		} << #[ "-" ] << chr
 		
 		#{ 
-			#std:out << #std:from_code << (mem :: (pos :: 0))
+			#std:out << #std:from_code << (mem :: pos :: 0)
 		} << #[ "." ] << chr
 		
 		#{ 
@@ -113,13 +110,8 @@ load "utils"
 			#return << "Reached end of input"
 		} << #[null] << chr
 		
-		//#std:out << "Status: pos=" << pos << " val=" << (mem :: (pos :: 0)) << " off=" << off << " mem=" << (
-		//	<< #{
-		//		#return << @ << ","
-		//	} << mem
-		//) << std:br 
-		#again << #[true] << run
+		#again << @
 
-	} << true
+	} << null
 
 } << null

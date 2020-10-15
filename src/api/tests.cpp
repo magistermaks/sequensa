@@ -1853,7 +1853,7 @@ TEST( ce_fail_undefined_var, {
 TEST( ce_negative_numbers, {
 
 	seq::string code = (byte*) (
-			"#exit << -1"
+			"#exit << -1 << #-2 << 0"
 			);
 
 	auto buf = seq::Compiler::compile( code );
@@ -1866,6 +1866,9 @@ TEST( ce_negative_numbers, {
 
 	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
 	CHECK( res.at(0).Number().getLong(), -1l );
+
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(1).Number().getLong(), -2l );
 
 } );
 
