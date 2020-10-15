@@ -147,21 +147,25 @@ void run( std::string input, Options opt ) {
 
 			exe.execute( br.getSubBuffer() );
 
-			std::cout << "Exit value: ";
+			if( !opt.print_none ) {
 
-			if( opt.print_all ) {
+				std::cout << "Exit value: ";
 
-				for( auto& res : exe.getResults() ) {
+				if( opt.print_all ) {
 
-					std::cout << seq::util::toStdString( seq::util::stringCast( res ).String().getString() ) << " ";
+					for( auto& res : exe.getResults() ) {
+
+						std::cout << seq::util::toStdString( seq::util::stringCast( res ).String().getString() ) << " ";
+
+					}
+
+					std::cout << std::endl;
+
+				}else{
+
+					std::cout << exe.getResultString() << std::endl;
 
 				}
-
-				std::cout << std::endl;
-
-			}else{
-
-				std::cout << exe.getResultString() << std::endl;
 
 			}
 

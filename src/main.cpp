@@ -20,6 +20,14 @@ int main( int argc, char **argv ) {
 	options.verbose = argp.hasFlag("-v");
 	options.force_execution = argp.hasFlag("-f");
 	options.print_all = argp.hasFlag("-a");
+	options.print_none = argp.hasFlag("-n");
+
+	if( options.print_all && options.print_none ) {
+
+		std::cout << "Unable to combine '-a' and '-n'!" << std::endl;
+		return 0;
+
+	}
 
 	try{
 
