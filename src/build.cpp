@@ -164,6 +164,7 @@ bool build_tree( std::string input, std::string output, bool v ) {
 			header["api"_b] = (seq::byte*) SEQ_API_NAME;
 			header["std"_b] = (seq::byte*) SEQ_API_STANDARD;
 			header["time"_b] = (seq::byte*) std::to_string( std::time(0) ).c_str();
+			header["sys"_b] = (seq::byte*) SQ_TARGET;
 
 			std::vector<seq::byte> arr;
 			seq::BufferWriter bw(arr);

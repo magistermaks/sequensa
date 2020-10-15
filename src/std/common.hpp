@@ -8,8 +8,10 @@
 
 #ifdef _WIN32
 #	define __SEQ_DECLSPEC __declspec(dllexport)
+#	define SQ_SYSTEM "windows"
 #else
 #	define __SEQ_DECLSPEC
+#	define SQ_SYSTEM "linux"
 #endif
 
 #define INIT_SUCCESS 0
