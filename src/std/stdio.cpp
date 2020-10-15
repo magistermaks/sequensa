@@ -46,7 +46,7 @@ seq::Stream seq_std_in( seq::Stream& input ) {
 
 seq::Stream seq_std_flush( seq::Stream& input ) {
 
-	std::cout.flags();
+	std::cout << std::flush;
 
 	return EMPTY;
 }
