@@ -1846,7 +1846,8 @@ seq::type::Number* seq::TokenReader::loadNumber() {
 
 		if( !d ) throw seq::InternalError( "Invalid denominator! size: " + std::to_string( (int) b ) + " value: " + std::to_string( (int) d ) );
 
-		return new seq::type::Number( this->anchor, (n & (1ul << ((unsigned long) a * 8ul - 1ul))) ? -n : n, d );
+		unsigned long s = (1ul << ((unsigned long) a * 8ul - 1ul));
+		return new seq::type::Number( this->anchor, (n & s) ? -(s ^ n) : n, d );
 
 	}else{
 
@@ -2728,6 +2729,7 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 		Name2,
 		Number,
 		Number2,
+		NumberSign,
 		Arg
 	};
 
@@ -2818,6 +2820,7 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 					if( (c == '#'_b && isLetter( n )) || isLetter( c ) ) { state = State::Name; token += c; break; }
 					if( c == '<'_b && n == '<'_b ) { token += "<<"_b; i ++; next(); break; }
 					if( (c == '#'_b && isNumber( n )) || isNumber( c ) ) { state = State::Number; token += c; break; }
+					if( (c == '-'_b && isNumber( n )) || (c == '#'_b && n == '-'_b) ) { state = State::NumberSign; token += c; break; }
 					if( std::find(long_operators.begin(), long_operators.end(), bind( c, n )) != long_operators.end() ) { token += c; token += n; i ++; next(); break; }
 					if( std::find(short_operators.begin(), short_operators.end(), c) != short_operators.end() ) { token += c; next(); break; }
 					if( c == '!'_b ) { token += "null"_b; next(); token += c; next(); break; }
@@ -2916,6 +2919,13 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 					}
 					break;
 
+				case State::NumberSign:
+					if( c == '-'_b ) token += c; else {
+						state = State::Number;
+						flag = true;
+					}
+					break;
+
 				case State::Arg:
 					if( c == '@'_b ) token += c; else {
 						state = State::Start;
@@ -2947,8 +2957,8 @@ seq::Compiler::Token seq::Compiler::construct( seq::string raw, unsigned int lin
 	const static std::vector<byte> operator_weights = {  17,  16,  14,  15,   13,  14,  16,  16,  16,   16,   16,   16,   16,   16,   17,   17,   17,  15,  15,  15,  13,   12 };
 	const static std::regex regex_arg("^@+$");
 	const static std::regex regex_name("^[a-zA-Z_]{1}[a-zA-Z_0-9]*(:[a-zA-Z_0-9]+)*$");
-	const static std::regex regex_number_1("^\\d+.\\d+$");
-	const static std::regex regex_number_2("^\\d+$");
+	const static std::regex regex_number_1("^-{0,1}\\d+.\\d+$");
+	const static std::regex regex_number_2("^-{0,1}\\d+$");
 
 	const bool anchor = raw.front() == '#'_b;
 	seq::string clean = anchor ? raw.substr(1) : raw;
