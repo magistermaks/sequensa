@@ -210,7 +210,7 @@
 #define SEQ_API_STANDARD "2020-10-10"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 4
-#define SEQ_API_VERSION_PATCH 7
+#define SEQ_API_VERSION_PATCH 8
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -930,23 +930,27 @@ long seq::util::whole( double val ) {
 }
 
 seq::type::Generic* seq::util::copyGeneric( seq::type::Generic* entity ) {
-	switch( entity->getDataType() ) {
-		case seq::DataType::Arg: return new seq::type::Arg( *(seq::type::Arg*) entity );
-		case seq::DataType::Bool: return new seq::type::Bool( *(seq::type::Bool*) entity );
-		case seq::DataType::Expr: return new seq::type::Expression( *(seq::type::Expression*) entity );
-		case seq::DataType::Flowc: return new seq::type::Flowc( *(seq::type::Flowc*) entity );
-		case seq::DataType::Func: return new seq::type::Function( *(seq::type::Function*) entity );
-		case seq::DataType::Name: return new seq::type::Name( *(seq::type::Name*) entity );
-		case seq::DataType::Null: return new seq::type::Null( *(seq::type::Null*) entity );
-		case seq::DataType::Number: return new seq::type::Number( *(seq::type::Number*) entity );
-		case seq::DataType::Stream: return new seq::type::Stream( *(seq::type::Stream*) entity );
-		case seq::DataType::String: return new seq::type::String( *(seq::type::String*) entity );
-		case seq::DataType::Type: return new seq::type::Type( *(seq::type::Type*) entity );
-		case seq::DataType::VMCall: return new seq::type::VMCall( *(seq::type::VMCall*) entity );
-		case seq::DataType::Blob: return ((seq::type::Blob*) entity)->copy();
-	}
 
-	throw seq::InternalError( "Impossible state!" );
+	typedef seq::type::Generic G;
+	typedef G* (*copyFunc)( G* );
+	static copyFunc copyFuncArr[ SEQ_MAX_DATA_TYPE ] = {
+			/* 1  Bool   */ [] (G* entity) -> G* { return new seq::type::Bool( *(seq::type::Bool*) entity ); },
+			/* 2  Null   */ [] (G* entity) -> G* { return new seq::type::Null( *(seq::type::Null*) entity ); },
+			/* 3  Number */ [] (G* entity) -> G* { return new seq::type::Number( *(seq::type::Number*) entity ); },
+			/* 4  String */ [] (G* entity) -> G* { return new seq::type::String( *(seq::type::String*) entity ); },
+			/* 5  Type   */ [] (G* entity) -> G* { return new seq::type::Type( *(seq::type::Type*) entity ); },
+			/* 6  VMCall */ [] (G* entity) -> G* { return new seq::type::VMCall( *(seq::type::VMCall*) entity ); },
+			/* 7  Arg    */ [] (G* entity) -> G* { return new seq::type::Arg( *(seq::type::Arg*) entity ); },
+			/* 8  Func   */ [] (G* entity) -> G* { return new seq::type::Function( *(seq::type::Function*) entity ); },
+			/* 9  Expr   */ [] (G* entity) -> G* { return new seq::type::Expression( *(seq::type::Expression*) entity ); },
+			/* 10 Name   */ [] (G* entity) -> G* { return new seq::type::Name( *(seq::type::Name*) entity ); },
+			/* 11 Flowc  */ [] (G* entity) -> G* { return new seq::type::Flowc( *(seq::type::Flowc*) entity ); },
+			/* 12 Stream */ [] (G* entity) -> G* { return new seq::type::Stream( *(seq::type::Stream*) entity ); },
+			/* 13 Blob   */ [] (G* entity) -> G* { return ((seq::type::Blob*) entity)->copy(); }
+	};
+
+	return copyFuncArr[((seq::byte) entity->getDataType()) - 1]( entity );
+
 }
 
 seq::Generic seq::util::numberCast( seq::Generic arg ) {
@@ -1769,21 +1773,27 @@ seq::TokenReader::TokenReader( seq::BufferReader& reader ): reader( reader ) {
 	this->anchor = (bool) ( header & 0b10000000 );
 	this->type = getDataType( this->header );
 
-	switch( this->type ) {
-		case seq::DataType::Bool: this->generic = seq::Generic( this->loadBool() ); break;
-		case seq::DataType::Null: this->generic = seq::Generic( new seq::type::Null( this->anchor ) ); break;
-		case seq::DataType::Number: this->generic = seq::Generic( this->loadNumber() ); break;
-		case seq::DataType::String: this->generic = seq::Generic( this->loadString() ); break;
-		case seq::DataType::Type: this->generic = seq::Generic( this->loadType() ); break;
-		case seq::DataType::VMCall: this->generic = seq::Generic( this->loadCall() ); break;
-		case seq::DataType::Arg: this->generic = seq::Generic( this->loadArg() ); break;
-		case seq::DataType::Func: this->generic = seq::Generic( this->loadFunc() ); break;
-		case seq::DataType::Expr: this->generic = seq::Generic( this->loadExpr() ); break;
-		case seq::DataType::Name: this->generic = seq::Generic( this->loadName() ); break;
-		case seq::DataType::Flowc: this->generic = seq::Generic( this->loadFlowc() ); break;
-		case seq::DataType::Stream: this->generic = seq::Generic( this->loadStream() ); break;
-		default: throw seq::InternalError( "Invalid data type!" );
-	}
+	typedef seq::type::Generic G;
+	typedef seq::TokenReader TR;
+	typedef G* (*loadFunc)( TR* );
+
+	static loadFunc loadFuncArr[ SEQ_MAX_DATA_TYPE ] = {
+		/* 1  Bool   */ [] (TR* tr) -> G* { return tr->loadBool(); },
+		/* 2  Null   */ [] (TR* tr) -> G* { return new seq::type::Null( tr->anchor ); },
+		/* 3  Number */ [] (TR* tr) -> G* { return tr->loadNumber(); },
+		/* 4  String */ [] (TR* tr) -> G* { return tr->loadString(); },
+		/* 5  Type   */ [] (TR* tr) -> G* { return tr->loadType(); },
+		/* 6  VMCall */ [] (TR* tr) -> G* { return tr->loadCall(); },
+		/* 7  Arg    */ [] (TR* tr) -> G* { return tr->loadArg(); },
+		/* 8  Func   */ [] (TR* tr) -> G* { return tr->loadFunc(); },
+		/* 9  Expr   */ [] (TR* tr) -> G* { return tr->loadExpr(); },
+		/* 10 Name   */ [] (TR* tr) -> G* { return tr->loadName(); },
+		/* 11 Flowc  */ [] (TR* tr) -> G* { return tr->loadFlowc(); },
+		/* 12 Stream */ [] (TR* tr) -> G* { return tr->loadStream(); },
+		/* 13 Blob   */ [] (TR* tr) -> G* { return nullptr; }
+	};
+
+	this->generic = seq::Generic( loadFuncArr[((seq::byte) this->type) - 1]( this ) );
 }
 
 seq::Generic& seq::TokenReader::getGeneric() {
@@ -1792,20 +1802,26 @@ seq::Generic& seq::TokenReader::getGeneric() {
 
 seq::DataType seq::TokenReader::getDataType( byte header ) {
 
-	// its ugly but much faster than mapping it with switch-case
-	if( header >= SEQ_MIN_OPCODE && header <= SEQ_MAX_OPCODE ) {
-		byte id = header;
-		if( header > 1 ) { // BLT BLF
-			id --;
-			if( header > 4 ) { // NUM INT
-				id --;
-				if( header > 12 ) { // VAR DEF
-					id--;
-				}
-			}
-		}
+	static seq::DataType dataTypeMap[ SEQ_MAX_OPCODE ] = {
+		/* 1  BLT */ seq::DataType::Bool,
+		/* 2  BLF */ seq::DataType::Bool,
+		/* 3  NIL */ seq::DataType::Null,
+		/* 4  NUM */ seq::DataType::Number,
+		/* 5  INT */ seq::DataType::Number,
+		/* 6  STR */ seq::DataType::String,
+		/* 7  TYP */ seq::DataType::Type,
+		/* 8  VMC */ seq::DataType::VMCall,
+		/* 9  ARG */ seq::DataType::Arg,
+		/* 10 FUN */ seq::DataType::Func,
+		/* 11 EXP */ seq::DataType::Expr,
+		/* 12 VAR */ seq::DataType::Name,
+		/* 13 DEF */ seq::DataType::Name,
+		/* 14 FLC */ seq::DataType::Flowc,
+		/* 15 SSL */ seq::DataType::Stream
+	};
 
-		return (seq::DataType) id;
+	if( header >= SEQ_MIN_OPCODE && header <= SEQ_MAX_OPCODE ) {
+		return (seq::DataType) dataTypeMap[header - 1];
 	}else{
 		throw seq::InternalError( "Unknown head opcode! base: " + std::to_string( (int) header ) );
 	}
@@ -1884,8 +1900,6 @@ seq::type::Name* seq::TokenReader::loadName() {
 	seq::string str;
 	for( byte i = 0; true; i ++ ) {
 		byte b = this->reader.nextByte();
-		if( !(std::isalnum((int) b) || (b == '_'_b) || (b == ':'_b) || (b == '\0'_b)) ) throw seq::InternalError( "Invalid char in name! code: " + std::to_string( (int) b ) );
-		if( i > 128 ) throw seq::InternalError( "Too long name!" );
 		if( b ) str.push_back( b ); else break;
 	}
 
@@ -1981,13 +1995,16 @@ seq::Generic seq::StackLevel::getArg() {
 
 seq::Stream seq::StackLevel::getVar( seq::string& name, bool anchor ) {
 	seq::Stream ret;
-	for( auto& g : this->vars.at( name ) ) {
-		seq::Generic ng = seq::Generic( g );
+	auto& vars = this->vars.at( name );
+	ret.reserve( vars.size() );
+
+	for( auto& g : vars ) {
+		seq::Generic ng( g );
 		ng.setAnchor( anchor );
 		ret.push_back( ng );
 	}
 
-	return ret;
+	return std::move(ret);
 }
 
 bool seq::StackLevel::hasVar( seq::string& name ) {
@@ -2189,8 +2206,7 @@ seq::CommandResult seq::Executor::executeCommand( seq::TokenReader* tr, byte tag
 	if( tr->getDataType() == seq::DataType::Stream ) {
 
 		// execute stream if stream tags match current state
-		auto generic = tr->getGeneric();
-		auto& stream = generic.Stream();
+		auto& stream = tr->getGeneric().Stream();
 
 		if( stream.machesTags( tags ) ) {
 			seq::Stream s = stream.getReader().readAll();
@@ -2226,10 +2242,9 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream& gs ) {
 			seq::CommandResult cr = this->executeStream( ss );
 			if( cr.stt != seq::CommandResult::ResultType::None ) {
 				throw seq::InternalError( "Invalid result of embedded stream!" );
-			}else{
-				acc.reserve( acc.size() + cr.acc.size() );
-				acc.insert( acc.begin(), cr.acc.begin(), cr.acc.end() );
 			}
+
+			acc.insert( acc.begin(), cr.acc.begin(), cr.acc.end() );
 			continue;
 		}
 
@@ -2276,7 +2291,6 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream& gs ) {
 				auto tmp = this->resolveName( name.getName(), name.getAnchor() );
 
 				// append tmp to acc
-				acc.reserve( acc.size() + tmp.size() );
 				acc.insert( acc.begin(), tmp.begin(), tmp.end() );
 			}
 
@@ -2287,7 +2301,7 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream& gs ) {
 		acc.insert( acc.begin(), g );
 	}
 
-	return CommandResult( seq::CommandResult::ResultType::None, acc );
+	return CommandResult( seq::CommandResult::ResultType::None, std::move(acc) );
 }
 
 seq::CommandResult seq::Executor::executeAnchor( seq::Generic entity, seq::Stream& input_stream ) {
@@ -2329,10 +2343,10 @@ seq::CommandResult seq::Executor::executeAnchor( seq::Generic entity, seq::Strea
 
 	// if not any of the above, simply cast args to anchor
 	seq::Stream output_stream;
-	for( auto g : input_stream ) {
+	for( auto& g : input_stream ) {
 		output_stream.push_back( this->executeCast( entity, g ) );
 	}
-	return CommandResult( seq::CommandResult::ResultType::None, output_stream );
+	return CommandResult( seq::CommandResult::ResultType::None, std::move(output_stream) );
 
 }
 
@@ -2544,7 +2558,7 @@ seq::Stream seq::Executor::resolveName( seq::string& name, bool anchor ) {
 
 	for( int i = (int) this->stack.size() - 1; i >= 0; i -- ) {
 		try{
-			return this->stack.at(i).getVar( name, anchor );
+			return std::move( this->stack.at(i).getVar( name, anchor ) );
 		} catch (std::out_of_range &err) {
 			continue;
 		}
@@ -2584,7 +2598,7 @@ seq::Stream seq::Executor::executeFlowc( std::vector<seq::FlowCondition*> fcs, s
 		}
 	}
 
-	return acc;
+	return std::move(acc);
 }
 
 seq::Generic seq::Executor::executeCast( seq::Generic cast, seq::Generic arg ) {
@@ -3443,7 +3457,7 @@ std::vector<byte> seq::Compiler::assembleExpression( std::vector<seq::Compiler::
 
 	for( int i = start; i < end; i ++ ) {
 
-		auto& token = tokens.at( i );
+		auto& token = tokens[ i ];
 
 		if( token.getCategory() == seq::Compiler::Token::Category::MathBracket ) {
 
@@ -3468,7 +3482,7 @@ std::vector<byte> seq::Compiler::assembleExpression( std::vector<seq::Compiler::
 
 		for( int i = start; i < end; i ++ ) {
 
-			auto& token = tokens.at( i );
+			auto& token = tokens[ i ];
 
 			if( token.getCategory() == seq::Compiler::Token::Category::MathBracket ) {
 				l += token.getData();
@@ -3557,7 +3571,7 @@ int seq::Compiler::extractHeaderData( std::vector<Token>& tokens, std::vector<se
 		const int size = tokens.size();
 
 		for( int i = 0; i < size; i ++ ) {
-			auto& token = tokens.at(i);
+			auto& token = tokens[ i ];
 
 			if( l != (int) token.getLine() ) {
 
@@ -3569,7 +3583,7 @@ int seq::Compiler::extractHeaderData( std::vector<Token>& tokens, std::vector<se
 						throw seq::CompilerError( "token " + seq::util::toStdString( token.getRaw() ), "load statement", "header", l );
 					}
 
-					auto& token2 = tokens.at( i + 1 );
+					auto& token2 = tokens[ i + 1 ];
 
 					if( token2.getCategory() != seq::Compiler::Token::Category::String || token2.getAnchor() ) {
 						throw seq::CompilerError( "token " + seq::util::toStdString( token.getRaw() ), "load statement", "header", l );

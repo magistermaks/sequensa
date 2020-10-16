@@ -1,6 +1,8 @@
 
 #define SEQ_IMPLEMENT
 #include "SeqAPI.hpp"
+
+#define VSTL_TEST_COUNT 1024
 #include "../lib/vstl.hpp"
 
 void print_buffer( seq::ByteBuffer& bb ) {
@@ -20,9 +22,7 @@ seq::Stream native_join_strings( seq::Stream& input ) {
 	}
 	input.clear();
 
-	seq::Stream acc;
-	acc.push_back( seq::Generic( new seq::type::String( false, str.c_str() ) ) );
-	return acc;
+	return { seq::Generic( new seq::type::String( false, str.c_str() ) ) };
 }
 
 
