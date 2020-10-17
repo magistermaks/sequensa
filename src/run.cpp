@@ -96,7 +96,7 @@ bool load_native_libs( seq::Executor& exe, seq::FileHeader& header, bool v ) {
 
 void run( std::string input, Options opt ) {
 
-	std::ifstream infile( input );
+	std::ifstream infile( input, std::ios::binary );
 	if( infile.good() ) {
 
 		std::vector<seq::byte> buffer( (std::istreambuf_iterator<char>(infile) ), (std::istreambuf_iterator<char>() ));
