@@ -210,7 +210,7 @@
 #define SEQ_API_STANDARD "2020-10-10"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 4
-#define SEQ_API_VERSION_PATCH 9
+#define SEQ_API_VERSION_PATCH 10
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -356,9 +356,9 @@ namespace seq {
 
 			public:
 				virtual ~Generic() {}
-				inline const DataType getDataType() const noexcept;
-				inline bool getAnchor() const noexcept;
-				inline void setAnchor( bool anchor ) noexcept;
+				const DataType getDataType() const noexcept;
+				const bool getAnchor() const noexcept;
+				void setAnchor( bool anchor ) noexcept;
 		};
 
 		class Bool: public Generic {
@@ -531,9 +531,9 @@ namespace seq {
 			Generic& operator= ( const Generic& generic );
 			Generic& operator= ( Generic&& generic ) noexcept;
 
-			inline const DataType getDataType() const noexcept;
-			inline bool getAnchor() const noexcept;
-			inline void setAnchor( bool anchor ) noexcept;
+			const DataType getDataType() const noexcept;
+			bool getAnchor() const noexcept;
+			void setAnchor( bool anchor ) noexcept;
 
 			type::Null& Null();
 			type::Blob& Blob();
@@ -565,29 +565,29 @@ namespace seq {
 
 	namespace util {
 
-		constexpr inline byte packTags( const long pos, const long end ) noexcept;
-		inline std::string toStdString( const seq::string str ) noexcept;
-		inline seq::string toSeqString( const std::string str ) noexcept;
-		constexpr inline long whole( const double val ) noexcept;
+		constexpr byte packTags( const long pos, const long end ) noexcept;
+		std::string toStdString( const seq::string str ) noexcept;
+		seq::string toSeqString( const std::string str ) noexcept;
+		constexpr long whole( const double val ) noexcept;
 		type::Generic* copyGeneric( const type::Generic* entity );
 		seq::Generic numberCast( seq::Generic arg );
 		seq::Generic boolCast( seq::Generic arg );
 		seq::Generic stringCast( seq::Generic arg );
 		std::vector<FlowCondition*> copyFlowConditions( const std::vector<FlowCondition*> conditions );
-		inline seq::Fraction asFraction( const double value );
+		seq::Fraction asFraction( const double value );
 		seq::DataType toDataType( const seq::string str );
 
-		inline seq::Generic newBool( bool value, bool anchor = false ) noexcept;
-		inline seq::Generic newNumber( double value, bool anchor = false ) noexcept;
-		inline seq::Generic newArg( byte value, bool anchor = false ) noexcept;
-		inline seq::Generic newString( const byte* value, bool anchor = false ) noexcept;
-		inline seq::Generic newType( DataType value, bool anchor = false ) noexcept;
-		inline seq::Generic newVMCall( type::VMCall::CallType value, bool anchor = false ) noexcept;
-		inline seq::Generic newFunction( BufferReader* reader, bool anchor = false ) noexcept;
-		inline seq::Generic newExpression( ExprOperator op, BufferReader* left, BufferReader* right, bool anchor = false ) noexcept;
-		inline seq::Generic newFlowc( const std::vector<FlowCondition*> readers, bool anchor = false ) noexcept;
-		inline seq::Generic newStream( byte tags, BufferReader* reader, bool anchor = false ) noexcept;
-		inline seq::Generic newNull( bool anchor = false ) noexcept;
+		seq::Generic newBool( bool value, bool anchor = false ) noexcept;
+		seq::Generic newNumber( double value, bool anchor = false ) noexcept;
+		seq::Generic newArg( byte value, bool anchor = false ) noexcept;
+		seq::Generic newString( const byte* value, bool anchor = false ) noexcept;
+		seq::Generic newType( DataType value, bool anchor = false ) noexcept;
+		seq::Generic newVMCall( type::VMCall::CallType value, bool anchor = false ) noexcept;
+		seq::Generic newFunction( BufferReader* reader, bool anchor = false ) noexcept;
+		seq::Generic newExpression( ExprOperator op, BufferReader* left, BufferReader* right, bool anchor = false ) noexcept;
+		seq::Generic newFlowc( const std::vector<FlowCondition*> readers, bool anchor = false ) noexcept;
+		seq::Generic newStream( byte tags, BufferReader* reader, bool anchor = false ) noexcept;
+		seq::Generic newNull( bool anchor = false ) noexcept;
 
 	}
 
@@ -917,11 +917,11 @@ constexpr inline byte seq::util::packTags( const long pos, const long end ) noex
 	return tags;
 }
 
-inline std::string seq::util::toStdString( const seq::string str ) noexcept {
+std::string seq::util::toStdString( const seq::string str ) noexcept {
 	return std::string( (char*) str.c_str() );
 }
 
-inline seq::string seq::util::toSeqString( const std::string str ) noexcept {
+seq::string seq::util::toSeqString( const std::string str ) noexcept {
 	return seq::string( (byte*) str.c_str() );
 }
 
@@ -1308,7 +1308,7 @@ std::map<seq::string, seq::string> seq::FileHeader::getValueMap() {
 
 seq::type::Generic::Generic( const DataType _type, bool _anchor ): type( _type ), anchor( _anchor ) {}
 
-inline bool seq::type::Generic::getAnchor() const noexcept {
+inline const bool seq::type::Generic::getAnchor() const noexcept {
 	return this->anchor;
 }
 
