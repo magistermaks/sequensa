@@ -210,7 +210,7 @@
 #define SEQ_API_STANDARD "2020-10-10"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 4
-#define SEQ_API_VERSION_PATCH 8
+#define SEQ_API_VERSION_PATCH 9
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -356,9 +356,9 @@ namespace seq {
 
 			public:
 				virtual ~Generic() {}
-				const DataType getDataType();
-				bool getAnchor();
-				void setAnchor( bool anchor );
+				inline const DataType getDataType() const noexcept;
+				inline bool getAnchor() const noexcept;
+				inline void setAnchor( bool anchor ) noexcept;
 		};
 
 		class Bool: public Generic {
@@ -531,9 +531,9 @@ namespace seq {
 			Generic& operator= ( const Generic& generic );
 			Generic& operator= ( Generic&& generic ) noexcept;
 
-			const DataType getDataType();
-			bool getAnchor();
-			void setAnchor( bool anchor );
+			inline const DataType getDataType() const noexcept;
+			inline bool getAnchor() const noexcept;
+			inline void setAnchor( bool anchor ) noexcept;
 
 			type::Null& Null();
 			type::Blob& Blob();
@@ -565,29 +565,29 @@ namespace seq {
 
 	namespace util {
 
-		byte packTags( long pos, long end );
-		std::string toStdString( seq::string str );
-		seq::string toSeqString( std::string str );
-		long whole( double val );
-		type::Generic* copyGeneric( type::Generic* entity );
+		constexpr inline byte packTags( const long pos, const long end ) noexcept;
+		inline std::string toStdString( const seq::string str ) noexcept;
+		inline seq::string toSeqString( const std::string str ) noexcept;
+		constexpr inline long whole( const double val ) noexcept;
+		type::Generic* copyGeneric( const type::Generic* entity );
 		seq::Generic numberCast( seq::Generic arg );
 		seq::Generic boolCast( seq::Generic arg );
 		seq::Generic stringCast( seq::Generic arg );
-		std::vector<FlowCondition*> copyFlowConditions( std::vector<FlowCondition*> conditions );
-		seq::Fraction asFraction( double value );
-		seq::DataType toDataType( seq::string str );
+		std::vector<FlowCondition*> copyFlowConditions( const std::vector<FlowCondition*> conditions );
+		inline seq::Fraction asFraction( const double value );
+		seq::DataType toDataType( const seq::string str );
 
-		seq::Generic newBool( bool value, bool anchor = false );
-		seq::Generic newNumber( double value, bool anchor = false );
-		seq::Generic newArg( byte value, bool anchor = false );
-		seq::Generic newString( const byte* value, bool anchor = false );
-		seq::Generic newType( DataType value, bool anchor = false );
-		seq::Generic newVMCall( type::VMCall::CallType value, bool anchor = false );
-		seq::Generic newFunction( BufferReader* reader, bool anchor = false );
-		seq::Generic newExpression( ExprOperator op, BufferReader* left, BufferReader* right, bool anchor = false );
-		seq::Generic newFlowc( const std::vector<FlowCondition*> readers, bool anchor = false );
-		seq::Generic newStream( byte tags, BufferReader* reader, bool anchor = false );
-		seq::Generic newNull( bool anchor = false );
+		inline seq::Generic newBool( bool value, bool anchor = false ) noexcept;
+		inline seq::Generic newNumber( double value, bool anchor = false ) noexcept;
+		inline seq::Generic newArg( byte value, bool anchor = false ) noexcept;
+		inline seq::Generic newString( const byte* value, bool anchor = false ) noexcept;
+		inline seq::Generic newType( DataType value, bool anchor = false ) noexcept;
+		inline seq::Generic newVMCall( type::VMCall::CallType value, bool anchor = false ) noexcept;
+		inline seq::Generic newFunction( BufferReader* reader, bool anchor = false ) noexcept;
+		inline seq::Generic newExpression( ExprOperator op, BufferReader* left, BufferReader* right, bool anchor = false ) noexcept;
+		inline seq::Generic newFlowc( const std::vector<FlowCondition*> readers, bool anchor = false ) noexcept;
+		inline seq::Generic newStream( byte tags, BufferReader* reader, bool anchor = false ) noexcept;
+		inline seq::Generic newNull( bool anchor = false ) noexcept;
 
 	}
 
@@ -706,10 +706,10 @@ namespace seq {
 
 		public:
 			BufferReader( byte* buffer, long first, long last );
-			byte nextByte();
-			byte peekByte();
-			bool hasNext();
-			TokenReader next();
+			const byte nextByte() noexcept;
+			const byte peekByte() noexcept;
+			const bool hasNext() noexcept;
+			TokenReader next() noexcept;
 			BufferReader* nextBlock( long length );
 			long nextInt();
 			FileHeader getHeader();
@@ -907,7 +907,7 @@ using seq::byte;
 
 #ifdef SEQ_IMPLEMENT
 
-byte seq::util::packTags( long pos, long end ) {
+constexpr inline byte seq::util::packTags( const long pos, const long end ) noexcept {
 	byte tags = 0;
 
 	tags |= ( ( pos == 0 ) ? SEQ_TAG_FIRST : 0 );
@@ -917,38 +917,39 @@ byte seq::util::packTags( long pos, long end ) {
 	return tags;
 }
 
-std::string seq::util::toStdString( seq::string str ) {
+inline std::string seq::util::toStdString( const seq::string str ) noexcept {
 	return std::string( (char*) str.c_str() );
 }
 
-seq::string seq::util::toSeqString( std::string str ) {
+inline seq::string seq::util::toSeqString( const std::string str ) noexcept {
 	return seq::string( (byte*) str.c_str() );
 }
 
-long seq::util::whole( double val ) {
+constexpr inline long seq::util::whole( const double val ) noexcept {
 	return (long) val;
 }
 
-seq::type::Generic* seq::util::copyGeneric( seq::type::Generic* entity ) {
+seq::type::Generic* seq::util::copyGeneric( const seq::type::Generic* entity ) {
 
 	typedef seq::type::Generic G;
-	typedef G* (*copyFunc)( G* );
+	typedef G* (*copyFunc)( const G* );
 	static copyFunc copyFuncArr[ SEQ_MAX_DATA_TYPE ] = {
-			/* 1  Bool   */ [] (G* entity) -> G* { return new seq::type::Bool( *(seq::type::Bool*) entity ); },
-			/* 2  Null   */ [] (G* entity) -> G* { return new seq::type::Null( *(seq::type::Null*) entity ); },
-			/* 3  Number */ [] (G* entity) -> G* { return new seq::type::Number( *(seq::type::Number*) entity ); },
-			/* 4  String */ [] (G* entity) -> G* { return new seq::type::String( *(seq::type::String*) entity ); },
-			/* 5  Type   */ [] (G* entity) -> G* { return new seq::type::Type( *(seq::type::Type*) entity ); },
-			/* 6  VMCall */ [] (G* entity) -> G* { return new seq::type::VMCall( *(seq::type::VMCall*) entity ); },
-			/* 7  Arg    */ [] (G* entity) -> G* { return new seq::type::Arg( *(seq::type::Arg*) entity ); },
-			/* 8  Func   */ [] (G* entity) -> G* { return new seq::type::Function( *(seq::type::Function*) entity ); },
-			/* 9  Expr   */ [] (G* entity) -> G* { return new seq::type::Expression( *(seq::type::Expression*) entity ); },
-			/* 10 Name   */ [] (G* entity) -> G* { return new seq::type::Name( *(seq::type::Name*) entity ); },
-			/* 11 Flowc  */ [] (G* entity) -> G* { return new seq::type::Flowc( *(seq::type::Flowc*) entity ); },
-			/* 12 Stream */ [] (G* entity) -> G* { return new seq::type::Stream( *(seq::type::Stream*) entity ); },
-			/* 13 Blob   */ [] (G* entity) -> G* { return ((seq::type::Blob*) entity)->copy(); }
+			/* 1  Bool   */ [] (const G* entity) -> G* { return new seq::type::Bool( *(seq::type::Bool*) entity ); },
+			/* 2  Null   */ [] (const G* entity) -> G* { return new seq::type::Null( *(seq::type::Null*) entity ); },
+			/* 3  Number */ [] (const G* entity) -> G* { return new seq::type::Number( *(seq::type::Number*) entity ); },
+			/* 4  String */ [] (const G* entity) -> G* { return new seq::type::String( *(seq::type::String*) entity ); },
+			/* 5  Type   */ [] (const G* entity) -> G* { return new seq::type::Type( *(seq::type::Type*) entity ); },
+			/* 6  VMCall */ [] (const G* entity) -> G* { return new seq::type::VMCall( *(seq::type::VMCall*) entity ); },
+			/* 7  Arg    */ [] (const G* entity) -> G* { return new seq::type::Arg( *(seq::type::Arg*) entity ); },
+			/* 8  Func   */ [] (const G* entity) -> G* { return new seq::type::Function( *(seq::type::Function*) entity ); },
+			/* 9  Expr   */ [] (const G* entity) -> G* { return new seq::type::Expression( *(seq::type::Expression*) entity ); },
+			/* 10 Name   */ [] (const G* entity) -> G* { return new seq::type::Name( *(seq::type::Name*) entity ); },
+			/* 11 Flowc  */ [] (const G* entity) -> G* { return new seq::type::Flowc( *(seq::type::Flowc*) entity ); },
+			/* 12 Stream */ [] (const G* entity) -> G* { return new seq::type::Stream( *(seq::type::Stream*) entity ); },
+			/* 13 Blob   */ [] (const G* entity) -> G* { return ((seq::type::Blob*) entity)->copy(); }
 	};
 
+	// this may fail if given entity has incorrect DataType
 	return copyFuncArr[((seq::byte) entity->getDataType()) - 1]( entity );
 
 }
@@ -1055,21 +1056,22 @@ seq::Generic seq::util::stringCast( seq::Generic arg ) {
 	return seq::Generic( str );
 }
 
-std::vector<seq::FlowCondition*> seq::util::copyFlowConditions( std::vector<seq::FlowCondition*> conditions ) {
+std::vector<seq::FlowCondition*> seq::util::copyFlowConditions( const std::vector<seq::FlowCondition*> conditions ) {
 	std::vector<seq::FlowCondition*> list;
-	for( auto condition : conditions ) {
+	list.reserve( conditions.size() );
+
+	for( const seq::FlowCondition* condition : conditions ) {
 		list.push_back( new seq::FlowCondition( *condition ) );
 	}
 
 	return list;
 }
 
-seq::Fraction seq::util::asFraction( double value ) {
-	seq::type::Number num( false, value );
-	return num.getFraction();
+inline seq::Fraction seq::util::asFraction( const double value ) {
+	return seq::type::Number( false, value ).getFraction();
 }
 
-seq::DataType seq::util::toDataType( seq::string str ) {
+seq::DataType seq::util::toDataType( const seq::string str ) {
 	if( str == "number"_b ) return seq::DataType::Number;
 	if( str == "bool"_b ) return seq::DataType::Bool;
 	if( str == "string"_b ) return seq::DataType::String;
@@ -1077,47 +1079,47 @@ seq::DataType seq::util::toDataType( seq::string str ) {
 	throw seq::InternalError( "Invalid argument!" );
 }
 
-inline seq::Generic seq::util::newBool( bool value, bool anchor ) {
+inline seq::Generic seq::util::newBool( bool value, bool anchor ) noexcept {
 	return seq::Generic( new seq::type::Bool( anchor, value ) );
 }
 
-inline seq::Generic seq::util::newNumber( double value, bool anchor ) {
+inline seq::Generic seq::util::newNumber( double value, bool anchor ) noexcept {
 	return seq::Generic( new seq::type::Number( anchor, value ) );
 }
 
-inline seq::Generic seq::util::newArg( byte value, bool anchor ) {
+inline seq::Generic seq::util::newArg( byte value, bool anchor ) noexcept {
 	return seq::Generic( new seq::type::Arg( anchor, value ) );
 }
 
-inline seq::Generic seq::util::newString( const byte* value, bool anchor ) {
+inline seq::Generic seq::util::newString( const byte* value, bool anchor ) noexcept {
 	return seq::Generic( new seq::type::String( anchor, value ) );
 }
 
-inline seq::Generic seq::util::newType( DataType value, bool anchor ) {
+inline seq::Generic seq::util::newType( DataType value, bool anchor ) noexcept {
 	return seq::Generic( new seq::type::Type( anchor, value ) );
 }
 
-inline seq::Generic seq::util::newVMCall( type::VMCall::CallType value, bool anchor ) {
+inline seq::Generic seq::util::newVMCall( type::VMCall::CallType value, bool anchor ) noexcept {
 	return seq::Generic( new seq::type::VMCall( anchor, value ) );
 }
 
-inline seq::Generic seq::util::newFunction( BufferReader* reader, bool anchor ) {
+inline seq::Generic seq::util::newFunction( BufferReader* reader, bool anchor ) noexcept {
 	return seq::Generic( new seq::type::Function( anchor, reader ) );
 }
 
-inline seq::Generic seq::util::newExpression( ExprOperator op, BufferReader* left, BufferReader* right, bool anchor ) {
+inline seq::Generic seq::util::newExpression( ExprOperator op, BufferReader* left, BufferReader* right, bool anchor ) noexcept {
 	return seq::Generic( new seq::type::Expression( anchor, op, left, right ) );
 }
 
-inline seq::Generic seq::util::newFlowc( const std::vector<FlowCondition*> readers, bool anchor ) {
+inline seq::Generic seq::util::newFlowc( const std::vector<FlowCondition*> readers, bool anchor ) noexcept {
 	return seq::Generic( new seq::type::Flowc( anchor, readers ) );
 }
 
-inline seq::Generic seq::util::newStream( byte tags, BufferReader* reader, bool anchor ) {
+inline seq::Generic seq::util::newStream( byte tags, BufferReader* reader, bool anchor ) noexcept {
 	return seq::Generic( new seq::type::Stream( anchor, tags, reader ) );
 }
 
-inline seq::Generic seq::util::newNull( bool anchor ) {
+inline seq::Generic seq::util::newNull( bool anchor ) noexcept {
 	return seq::Generic( new seq::type::Null( anchor ) );
 }
 
@@ -1306,15 +1308,15 @@ std::map<seq::string, seq::string> seq::FileHeader::getValueMap() {
 
 seq::type::Generic::Generic( const DataType _type, bool _anchor ): type( _type ), anchor( _anchor ) {}
 
-bool seq::type::Generic::getAnchor() {
+inline bool seq::type::Generic::getAnchor() const noexcept {
 	return this->anchor;
 }
 
-void seq::type::Generic::setAnchor( bool anchor ) {
+inline void seq::type::Generic::setAnchor( bool anchor ) noexcept {
 	this->anchor = anchor;
 }
 
-const seq::DataType seq::type::Generic::getDataType() {
+inline const seq::DataType seq::type::Generic::getDataType() const noexcept {
 	return this->type;
 }
 
@@ -1534,15 +1536,15 @@ seq::Generic& seq::Generic::operator= ( Generic&& generic ) noexcept {
 	return *this;
 }
 
-const seq::DataType seq::Generic::getDataType() {
+inline const seq::DataType seq::Generic::getDataType() const noexcept {
 	return this->generic->getDataType();
 }
 
-bool seq::Generic::getAnchor() {
+inline bool seq::Generic::getAnchor() const noexcept {
 	return this->generic->getAnchor();
 }
 
-void seq::Generic::setAnchor( bool anchor ) {
+inline void seq::Generic::setAnchor( bool anchor ) noexcept {
 	return this->generic->setAnchor( anchor );
 }
 
@@ -1664,21 +1666,21 @@ seq::BufferReader::BufferReader( byte* buffer, long first, long last ) {
 	this->last = last;
 }
 
-byte seq::BufferReader::peekByte() {
+const byte seq::BufferReader::peekByte() noexcept {
 	if( this->position >= this->last ) return 0;
 	return this->pointer[ this->position + 1 ];
 }
 
-byte seq::BufferReader::nextByte() {
+const byte seq::BufferReader::nextByte() noexcept {
 	if( this->position >= this->last ) return 0;
 	return this->pointer[ ++ this->position ];
 }
 
-bool seq::BufferReader::hasNext() {
+const bool seq::BufferReader::hasNext() noexcept {
 	return ( this->position < this->last );
 }
 
-seq::TokenReader seq::BufferReader::next() {
+seq::TokenReader seq::BufferReader::next() noexcept {
 	return seq::TokenReader( *this );
 }
 
