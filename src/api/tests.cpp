@@ -2,7 +2,7 @@
 #define SEQ_IMPLEMENT
 #include "SeqAPI.hpp"
 
-//#define VSTL_TEST_COUNT 1024
+//#define VSTL_TEST_COUNT 1000
 #include "../lib/vstl.hpp"
 
 void print_buffer( seq::ByteBuffer& bb ) {

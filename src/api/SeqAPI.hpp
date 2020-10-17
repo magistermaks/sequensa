@@ -210,7 +210,7 @@
 #define SEQ_API_STANDARD "2020-10-10"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 5
-#define SEQ_API_VERSION_PATCH 0
+#define SEQ_API_VERSION_PATCH 1
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -2537,9 +2537,11 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 
 seq::Generic seq::Executor::executeExpr( seq::Generic entity ) {
 
+	// get entity properties
 	seq::DataType type = entity.getDataType();
 	bool anchor = entity.getAnchor();
 
+	// if given entity is an expression pass it to executeExprPair
 	if( type == seq::DataType::Expr ) {
 		auto& expr = entity.Expression();
 
@@ -2550,53 +2552,71 @@ seq::Generic seq::Executor::executeExpr( seq::Generic entity ) {
 		return this->executeExprPair( left, right, op, anchor );
 	}
 
+	// if it is simple argument resolve it's value
 	if( type == seq::DataType::Arg ) {
 		auto& arg = entity.Arg();
 
+		// get stack level to which the argument is referring
 		long s = (long) this->stack.size() - 1L - (long) arg.getLevel();
 
+		// according to Sequensa specification
+		// if argument reference is invalid null should be returned instead
 		if( s < 0 ) {
 			return seq::Generic( new seq::type::Null( anchor ) );
 		}
 
+		// return stack argument
 		auto ret = this->stack[s].getArg();
 		ret.setAnchor(anchor);
 		return ret;
 	}
 
+	// else: return unchanged
 	return entity;
 
 }
 
 seq::Stream seq::Executor::resolveName( seq::string& name, bool anchor ) {
 
+	// iterate stack levels in search of the specified variable
 	for( int i = (int) this->stack.size() - 1; i >= 0; i -- ) {
+
 		try{
 			return std::move( this->stack.at(i).getVar( name, anchor ) );
 		} catch (std::out_of_range &err) {
 			continue;
 		}
+
 	}
 
+	// if symbol wasn't found throw runtime exception
 	throw seq::RuntimeError( "Referenced undefined symbol: '" + seq::util::toStdString(name) + "'" );
 
 }
 
 void seq::Executor::defineName( string& name, Stream& value ) {
 
+	// iterate stack levels in search of the specified variable
 	for( int i = (int) this->stack.size() - 1; i >= 0; i -- ) {
+
 		try{
+
 			auto& level = this->stack.at(i);
+
+			// when it's found modify current value
 			if( level.hasVar( name ) ) {
 				level.setVar( name, value );
 				return;
 			}
+
 		} catch (std::out_of_range &err) {
 			continue;
 		}
+
 	}
 
-	this->getTopLevel()->setVar(name, value);
+	// if symbol wasn't found create new variable in top stack level
+	getTopLevel()->setVar(name, value);
 
 }
 
@@ -2605,13 +2625,18 @@ seq::Stream seq::Executor::executeFlowc( std::vector<seq::FlowCondition*> fcs, s
 	seq::Stream acc;
 
 	for( seq::Generic& arg : input_stream ) {
+
+		// check if arg satisfies flowc conditions
 		for( seq::FlowCondition* fc : fcs ) {
 			if( fc->validate( arg ) ) {
 				acc.push_back( arg );
+				break;
 			}
 		}
+
 	}
 
+	// return matching entities
 	return std::move(acc);
 }
 
