@@ -145,7 +145,7 @@ bool build_tree( std::string input, std::string output, bool v ) {
 	}
 
 	// create output file
-	std::ofstream outfile( output );
+	std::ofstream outfile( output, std::ios::binary );
 	if( outfile.good() ) {
 
 		// write Sequensa header to file
