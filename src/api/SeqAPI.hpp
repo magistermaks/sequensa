@@ -210,7 +210,7 @@
 #define SEQ_API_STANDARD "2020-10-10"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 4
-#define SEQ_API_VERSION_PATCH 10
+#define SEQ_API_VERSION_PATCH 11
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -1996,7 +1996,7 @@ seq::Generic seq::StackLevel::getArg() {
 }
 
 seq::Stream seq::StackLevel::getVar( seq::string& name, bool anchor ) {
-	seq::Stream ret;
+	static seq::Stream ret;
 	auto& vars = this->vars.at( name );
 	ret.reserve( vars.size() );
 
@@ -2087,7 +2087,7 @@ seq::StackLevel* seq::Executor::getLevel( int level ) {
 	}
 }
 
-seq::StackLevel* seq::Executor::getTopLevel() {
+inline seq::StackLevel* seq::Executor::getTopLevel() {
 	return &(this->stack.back());
 }
 
@@ -2199,7 +2199,7 @@ seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream& 
 	this->stack.pop_back();
 
 	// return all accumulated entities
-	return acc;
+	return std::move(acc);
 }
 
 seq::CommandResult seq::Executor::executeCommand( seq::TokenReader* tr, byte tags ) {
@@ -2270,7 +2270,7 @@ seq::CommandResult seq::Executor::executeStream( seq::Stream& gs ) {
 				// execute anchor and save result in acc
 				seq::CommandResult cr = this->executeAnchor( g, acc );
 				if( cr.stt == seq::CommandResult::ResultType::None ) {
-					acc = cr.acc;
+					acc = std::move(cr.acc);
 				}else{
 					return cr;
 				}
