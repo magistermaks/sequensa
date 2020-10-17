@@ -192,7 +192,7 @@
 #include <cfloat>
 
 #define SEQ_MIN_OPCODE 1
-#define SEQ_MAX_OPCODE 15
+#define SEQ_MAX_OPCODE 16
 #define SEQ_MIN_DATA_TYPE 1
 #define SEQ_MAX_DATA_TYPE 13
 #define SEQ_MIN_CALL_TYPE 1
@@ -209,8 +209,8 @@
 
 #define SEQ_API_STANDARD "2020-10-10"
 #define SEQ_API_VERSION_MAJOR 1
-#define SEQ_API_VERSION_MINOR 4
-#define SEQ_API_VERSION_PATCH 11
+#define SEQ_API_VERSION_MINOR 5
+#define SEQ_API_VERSION_PATCH 0
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -279,7 +279,8 @@ namespace seq {
 		VAR = 12, // VAR [ASCI...] [NULL] ;
 		DEF = 13, // DEF [ASCI...] [NULL] ;
 		FLC = 14, // FLC [SIZE] [[SIZE] [BODY...]...] ;
-		SSL = 15  // SSL [TAGS] [HEAD] [TAIL...] [BODY...] ;
+		SSL = 15, // SSL [TAGS] [HEAD] [TAIL...] [BODY...] ;
+		FNE = 16  // FNE [HEAD] [TAIL...] [BODY...] ;
 	};
 
 	/// Sequensa data types
@@ -450,13 +451,15 @@ namespace seq {
 		class Function: public Generic {
 
 			public:
-				Function( bool anchor, BufferReader* reader );
+				Function( bool anchor, BufferReader* reader, bool end );
 				Function( const Function& func );
 				~Function();
 				BufferReader& getReader();
+				const bool hasEnd() noexcept;
 
 			private:
 				BufferReader* reader;
+				const bool end;
 		};
 
 		class Expression: public Generic {
@@ -583,7 +586,7 @@ namespace seq {
 		seq::Generic newString( const byte* value, bool anchor = false ) noexcept;
 		seq::Generic newType( DataType value, bool anchor = false ) noexcept;
 		seq::Generic newVMCall( type::VMCall::CallType value, bool anchor = false ) noexcept;
-		seq::Generic newFunction( BufferReader* reader, bool anchor = false ) noexcept;
+		seq::Generic newFunction( BufferReader* reader, bool end, bool anchor = false ) noexcept;
 		seq::Generic newExpression( ExprOperator op, BufferReader* left, BufferReader* right, bool anchor = false ) noexcept;
 		seq::Generic newFlowc( const std::vector<FlowCondition*> readers, bool anchor = false ) noexcept;
 		seq::Generic newStream( byte tags, BufferReader* reader, bool anchor = false ) noexcept;
@@ -736,7 +739,7 @@ namespace seq {
 			void putType( bool anchor, DataType type );
 			void putCall( bool anchor, type::VMCall::CallType type );
 			void putName( bool anchor, bool define, const byte* name );
-			void putFunc( bool anchor, std::vector<byte>& buffer );
+			void putFunc( bool anchor, std::vector<byte>& buffer, bool end );
 			void putExpr( bool anchor, ExprOperator op, std::vector<byte>& left, std::vector<byte>& right );
 			void putFlowc( bool anchor, std::vector<std::vector<byte>>& buffers );
 			void putStream( bool anchor, byte tags, std::vector<byte>& buf );
@@ -817,7 +820,7 @@ namespace seq {
 
 		EXECUTOR_ACCESS: // use these methods only if you know what you are doing //
 			void exit( seq::Stream& stream, byte code );
-			Stream executeFunction( BufferReader br, Stream& stream );
+			Stream executeFunction( BufferReader br, Stream& stream, bool end );
 			CommandResult executeCommand( TokenReader* br, byte tags );
 			CommandResult executeStream( Stream& stream );
 			CommandResult executeAnchor( Generic entity, Stream& input_stream );
@@ -1103,8 +1106,8 @@ inline seq::Generic seq::util::newVMCall( type::VMCall::CallType value, bool anc
 	return seq::Generic( new seq::type::VMCall( anchor, value ) );
 }
 
-inline seq::Generic seq::util::newFunction( BufferReader* reader, bool anchor ) noexcept {
-	return seq::Generic( new seq::type::Function( anchor, reader ) );
+inline seq::Generic seq::util::newFunction( BufferReader* reader, bool end, bool anchor ) noexcept {
+	return seq::Generic( new seq::type::Function( anchor, reader, end ) );
 }
 
 inline seq::Generic seq::util::newExpression( ExprOperator op, BufferReader* left, BufferReader* right, bool anchor ) noexcept {
@@ -1203,8 +1206,8 @@ void seq::BufferWriter::putName( bool anchor, bool define, const byte* name ) {
 	this->putString( name );
 }
 
-void seq::BufferWriter::putFunc( bool anchor, std::vector<byte>& buf ) {
-	this->putOpcode( anchor, seq::Opcode::FUN );
+void seq::BufferWriter::putFunc( bool anchor, std::vector<byte>& buf, bool end ) {
+	this->putOpcode( anchor, (end ? seq::Opcode::FNE : seq::Opcode::FUN) );
 	long buffer_size = buf.size();
 	byte h = seq::type::Number::sizeOf( buffer_size );
 	this->putHead( h, 0 );
@@ -1410,9 +1413,9 @@ seq::string& seq::type::Name::getName() {
 	return this->name;
 }
 
-seq::type::Function::Function( bool _anchor, seq::BufferReader* _reader ): seq::type::Generic( seq::DataType::Func, _anchor ), reader( _reader ) {}
+seq::type::Function::Function( bool _anchor, seq::BufferReader* _reader, bool _end ): seq::type::Generic( seq::DataType::Func, _anchor ), reader( _reader ), end( _end ) {}
 
-seq::type::Function::Function( const seq::type::Function& func ): seq::type::Generic( seq::DataType::Func, func.anchor ), reader( new seq::BufferReader( *(func.reader) ) ) {}
+seq::type::Function::Function( const seq::type::Function& func ): seq::type::Generic( seq::DataType::Func, func.anchor ), reader( new seq::BufferReader( *(func.reader) ) ), end( func.end ) {}
 
 seq::type::Function::~Function() {
 	delete this->reader;
@@ -1420,6 +1423,10 @@ seq::type::Function::~Function() {
 
 seq::BufferReader& seq::type::Function::getReader() {
 	return *(this->reader);
+}
+
+inline const bool seq::type::Function::hasEnd() noexcept {
+	return this->end;
 }
 
 seq::type::Expression::Expression( bool _anchor, seq::ExprOperator _op, seq::BufferReader* _left, seq::BufferReader* _right ): seq::type::Generic( seq::DataType::Expr, _anchor ), op( _op ), left( _left ), right( _right ) {}
@@ -1819,7 +1826,8 @@ seq::DataType seq::TokenReader::getDataType( byte header ) {
 		/* 12 VAR */ seq::DataType::Name,
 		/* 13 DEF */ seq::DataType::Name,
 		/* 14 FLC */ seq::DataType::Flowc,
-		/* 15 SSL */ seq::DataType::Stream
+		/* 15 SSL */ seq::DataType::Stream,
+		/* 16 FNE */ seq::DataType::Func
 	};
 
 	if( header >= SEQ_MIN_OPCODE && header <= SEQ_MAX_OPCODE ) {
@@ -1911,7 +1919,7 @@ seq::type::Name* seq::TokenReader::loadName() {
 seq::type::Function* seq::TokenReader::loadFunc() {
 	long length = this->reader.nextInt();
 	if( !length ) throw seq::InternalError( "Invalid function size!" );
-	return new seq::type::Function( this->anchor, this->reader.nextBlock( length ) );
+	return new seq::type::Function( this->anchor, this->reader.nextBlock( length ), this->header == (byte) seq::Opcode::FNE );
 }
 
 seq::type::Expression* seq::TokenReader::loadExpr() {
@@ -2109,7 +2117,7 @@ seq::Stream& seq::Executor::getResults() {
 
 void seq::Executor::execute( seq::ByteBuffer bb, seq::Stream args ) {
 	try{
-		seq::Stream exitStream = this->executeFunction( bb.getReader(), args );
+		seq::Stream exitStream = this->executeFunction( bb.getReader(), args, true );
 
 		if( exitStream.empty() ) {
 			exitStream.push_back( seq::Generic( new seq::type::Null( false ) ) );
@@ -2131,7 +2139,7 @@ void seq::Executor::exit( seq::Stream& stream, byte code ) {
 	throw seq::ExecutorInterrupt( code );
 }
 
-seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream& input_stream ) {
+seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream& input_stream, bool end ) {
 
 	// push new stack into stack array
 	this->stack.push_back( seq::StackLevel() );
@@ -2139,8 +2147,11 @@ seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream& 
 	// accumulator of all returned entities
 	seq::Stream acc;
 
+	// turn end flag into offset
+	int o = (end ? 0 : -1);
+
 	// execute scope for each input_stream element
-	for ( long i = 0; i <= (long) input_stream.size(); i ++ ) {
+	for ( long i = 0; i <= (long) input_stream.size() + o; i ++ ) {
 
 		const long size = input_stream.size();
 		const byte tags = seq::util::packTags( i, size );
@@ -2331,7 +2342,8 @@ seq::CommandResult seq::Executor::executeAnchor( seq::Generic entity, seq::Strea
 
 	// execute anchored function
 	if( type == seq::DataType::Func ) {
-		return CommandResult( seq::CommandResult::ResultType::None, this->executeFunction( entity.Function().getReader(), input_stream ) );
+		auto& func = entity.Function();
+		return CommandResult( seq::CommandResult::ResultType::None, this->executeFunction( func.getReader(), input_stream, func.hasEnd() ) );
 	}
 
 	// execute anchored flowc
@@ -2719,7 +2731,7 @@ std::vector<byte> seq::Compiler::compile( seq::string code, std::vector<seq::str
 	// skip empty files
 	if( tokens.empty() ) return std::vector<byte>();
 
-	int offset = seq::Compiler::extractHeaderData(tokens, headerData);
+	int offset = seq::Compiler::extractHeaderData( tokens, headerData );
 	auto buffer = seq::Compiler::assembleFunction( tokens, offset, tokens.size(), true );
 
 	// get rid of the first function opcode
@@ -3528,6 +3540,7 @@ std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::To
 
 	std::vector<byte> arr;
 	seq::BufferWriter bw( arr );
+	bool hasEndTag = false;
 
 	if( end - start < 2 ) {
 		throw seq::CompilerError( "end of scope", "stream", "function", tokens.at(start).getLine() );
@@ -3539,6 +3552,11 @@ std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::To
 
 		if( tokens.at(i).getCategory() == seq::Compiler::Token::Category::Tag ) {
 			tags = tokens.at(i).getData();
+
+			if( tags == SEQ_TAG_END ) {
+				hasEndTag = true;
+			}
+
 			if( (++ i) >= end ) {
 				throw seq::CompilerError( "end of input", "start of stream", "function", tokens.at(i).getLine() );
 			}
@@ -3559,7 +3577,7 @@ std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::To
 
 	std::vector<byte> ret;
 	seq::BufferWriter bw2( ret );
-	bw2.putFunc(anchor, arr);
+	bw2.putFunc( anchor, arr, hasEndTag );
 
 	return ret;
 }

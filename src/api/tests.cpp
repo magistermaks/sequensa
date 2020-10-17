@@ -164,7 +164,7 @@ TEST( buffer_writer_function, {
 
     std::vector<byte> arr;
     seq::BufferWriter bw( arr );
-    bw.putFunc( false, func_arr );
+    bw.putFunc( false, func_arr, true );
     bw.putNull( false );
 
     seq::ByteBuffer bb( arr.data(), arr.size() );
@@ -431,7 +431,7 @@ TEST( executor_hello_world_func, {
 	std::vector<byte> arr_3;
 	seq::BufferWriter bw_3( arr_3 );
 	bw_3.putName( false, true, (byte*) "var" );
-	bw_3.putFunc( false, arr_2 );
+	bw_3.putFunc( false, arr_2, true );
 
 	std::vector<byte> arr_4;
 	seq::BufferWriter bw_4( arr_4 );
