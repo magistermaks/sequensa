@@ -1,6 +1,6 @@
 ## Sequensa
 
-<img src="./logo.png" style="float: right; margin-right: 20px;" alt="Logo" title="Sequensa Logo" width="130.75" height="80" />
+<img src="./logo.png" align="right" alt="Logo" title="Sequensa Logo" width="130.75" height="80" />
 
 __General info:__  Sequensa is a esoteric programing language based on C++ that is good enough to actually use it.
 
