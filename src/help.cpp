@@ -12,6 +12,7 @@ void help( ArgParse& argp, Options opt ) {
 	std::cout << "  Use -f      to force execution regardless of version mismatch." << std::endl;
 	std::cout << "  Use -a      to print entire exit stream." << std::endl;
 	std::cout << "  Use -n      to not print exit value." << std::endl;
+	std::cout << "  Use -s      to enable strict math - throw on invalid operands." << std::endl;
 	std::cout << std::endl;
 	std::cout << "Example:" << std::endl;
 	std::cout << "  sequensa --build ./main.sq ./main.sqc" << std::endl;

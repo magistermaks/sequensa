@@ -102,7 +102,14 @@ void run( std::string input, Options opt ) {
 		std::vector<seq::byte> buffer( (std::istreambuf_iterator<char>(infile) ), (std::istreambuf_iterator<char>() ));
 		seq::ByteBuffer bb( buffer.data(), buffer.size() );
 		seq::BufferReader br = bb.getReader();
-		seq::FileHeader header = br.getHeader();
+		seq::FileHeader header;
+
+		try {
+			header = br.getHeader();
+		} catch( seq::InternalError& err ) {
+			std::cout << "Error! Failed to parse file header, invalid signature!" << std::endl;
+			return;
+		}
 
 		// validate versions
 		if( !header.checkVersion(SEQ_API_VERSION_MAJOR, SEQ_API_VERSION_MINOR) ) {
@@ -144,6 +151,8 @@ void run( std::string input, Options opt ) {
 				std::cout << "Successfully created virtual environment, starting!" << std::endl;
 
 			}
+
+			exe.setStrictMath( opt.strict_math );
 
 			exe.execute( br.getSubBuffer() );
 

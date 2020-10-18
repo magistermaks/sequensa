@@ -45,6 +45,7 @@ struct Options {
 	bool force_execution: 1;
 	bool print_all: 1;
 	bool print_none: 1;
+	bool strict_math: 1;
 };
 
 void help( ArgParse& argp, Options opt );
