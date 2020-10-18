@@ -2,7 +2,7 @@
 
 <img src="./logo.png" align="right" alt="Logo" title="Sequensa Logo" width="130.75" height="80" />
 
-__General info:__  Sequensa is a esoteric programing language based on C++ that is good enough to actually use it.
+__General info:__  Sequensa is a esoteric programing language based on C++ stream syntax that is good enough to actually use it.
 
 Read more about Sequensa programming language [here](http://darktree.net/projects/sequensa/)  
 Learn how to compile/install Sequensa [here](./COMPILE.md)
