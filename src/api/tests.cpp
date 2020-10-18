@@ -1872,6 +1872,31 @@ TEST( ce_negative_numbers, {
 
 } );
 
+TEST( ce_half_fail_math_modes, {
+
+	seq::string code = (byte*) (
+			"#exit << (null = 1234)"
+			);
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Null );
+
+	try{
+		exe.setStrictMath( true );
+		exe.execute( bb );
+	}catch( seq::RuntimeError& err ) {
+		return;
+	}
+
+	FAIL( "Expected exception!" );
+
+} );
+
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
 REGISTER_EXCEPTION( seq_runtime_error, seq::RuntimeError );

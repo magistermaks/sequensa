@@ -210,7 +210,7 @@
 #define SEQ_API_STANDARD "2020-10-10"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 5
-#define SEQ_API_VERSION_PATCH 2
+#define SEQ_API_VERSION_PATCH 3
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -645,9 +645,12 @@ namespace seq {
 	class FileHeader {
 
 		public:
+			FileHeader();
 			FileHeader( byte seq_major, byte seq_minor, byte seq_patch, std::map<seq::string, seq::string> properties );
-			const bool checkVersion( byte seq_major, byte seq_minor );
-			const bool checkPatch( byte seq_patch );
+			FileHeader( const FileHeader& header );
+			FileHeader( FileHeader&& header );
+			bool checkVersion( byte seq_major, byte seq_minor );
+			bool checkPatch( byte seq_patch );
 			seq::string& getValue( const byte* key );
 			int getVersionMajor();
 			int getVersionMinor();
@@ -655,10 +658,13 @@ namespace seq {
 			std::string getVersionString();
 			std::map<seq::string, seq::string> getValueMap();
 
+			FileHeader& operator= ( const FileHeader& header );
+			FileHeader& operator= ( FileHeader&& header ) noexcept;
+
 		private:
-			const byte seq_major;
-			const byte seq_minor;
-			const byte seq_patch;
+			byte seq_major;
+			byte seq_minor;
+			byte seq_patch;
 			std::map<seq::string, seq::string> properties;
 	};
 
@@ -1277,13 +1283,29 @@ void seq::BufferWriter::putFileHeader( byte seq_major, byte seq_minor, byte seq_
 	}
 }
 
+seq::FileHeader::FileHeader() {};
+
 seq::FileHeader::FileHeader( byte _seq_major, byte _seq_minor, byte _seq_patch, std::map<seq::string, seq::string> _properties ): seq_major( _seq_major ), seq_minor( _seq_minor ), seq_patch( _seq_patch ), properties( _properties ) {}
 
-const bool seq::FileHeader::checkVersion( byte _seq_major, byte _seq_minor ) {
+seq::FileHeader::FileHeader( const FileHeader& header ) {
+	this->seq_major = header.seq_major;
+	this->seq_minor = header.seq_minor;
+	this->seq_patch = header.seq_patch;
+	this->properties = header.properties;
+}
+
+seq::FileHeader::FileHeader( FileHeader&& header ) {
+	this->seq_major = header.seq_major;
+	this->seq_minor = header.seq_minor;
+	this->seq_patch = header.seq_patch;
+	this->properties = std::move( header.properties );
+}
+
+bool seq::FileHeader::checkVersion( byte _seq_major, byte _seq_minor ) {
 	return ( this->seq_major == _seq_major ) && ( this->seq_minor == _seq_minor );
 }
 
-const bool seq::FileHeader::checkPatch( byte _seq_patch ) {
+bool seq::FileHeader::checkPatch( byte _seq_patch ) {
 	return ( this->seq_patch == _seq_patch );
 }
 
@@ -1309,6 +1331,26 @@ std::string seq::FileHeader::getVersionString() {
 
 std::map<seq::string, seq::string> seq::FileHeader::getValueMap() {
 	return this->properties;
+}
+
+seq::FileHeader& seq::FileHeader::operator= ( const FileHeader& header ) {
+	if( this != &header ) {
+		this->seq_major = header.seq_major;
+		this->seq_minor = header.seq_minor;
+		this->seq_patch = header.seq_patch;
+		this->properties = header.properties;
+	}
+	return *this;
+}
+
+seq::FileHeader& seq::FileHeader::operator= ( FileHeader&& header ) noexcept {
+	if( this != &header ) {
+		this->seq_major = header.seq_major;
+		this->seq_minor = header.seq_minor;
+		this->seq_patch = header.seq_patch;
+		this->properties = std::move( header.properties );
+	}
+	return *this;
 }
 
 seq::type::Generic::Generic( const DataType _type, bool _anchor ): type( _type ), anchor( _anchor ) {}
