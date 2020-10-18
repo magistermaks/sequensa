@@ -1,6 +1,6 @@
 ## Sequensa
 
-__Status:__  Fixing bugs
+__General info:__  Sequensa is a esoteric programing language based on C++ that is good enough to actually use it.
 
 Read more about Sequensa programming language [here](http://darktree.net/projects/sequensa/)  
 Learn how to compile/install Sequensa [here](./COMPILE.md)
