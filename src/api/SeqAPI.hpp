@@ -210,7 +210,7 @@
 #define SEQ_API_STANDARD "2020-10-10"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 5
-#define SEQ_API_VERSION_PATCH 4
+#define SEQ_API_VERSION_PATCH 5
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -292,7 +292,7 @@ namespace seq {
 		Type   = 5, // maps to: TYP
 		VMCall = 6, // maps to: VMC
 		Arg    = 7, // maps to: ARG
-		Func   = 8, // maps to: FUN
+		Func   = 8, // maps to: FUN FNE
 		Expr   = 9, // maps to: EXP
 		Name  = 10, // maps to: VAR DEF
 		Flowc = 11, // maps to: FLC
@@ -3630,6 +3630,7 @@ std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::To
 	seq::BufferWriter bw( arr );
 	bool hasEndTag = false;
 
+	// throw on empty functions
 	if( end - start < 2 ) {
 		throw seq::CompilerError( "end of scope", "stream", "function", tokens.at(start).getLine() );
 	}
@@ -3638,15 +3639,18 @@ std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::To
 
 		byte tags = 0;
 
-		if( tokens.at(i).getCategory() == seq::Compiler::Token::Category::Tag ) {
-			tags = tokens.at(i).getData();
+		// if token is tag store its data in 'tags'
+		if( tokens[i].getCategory() == seq::Compiler::Token::Category::Tag ) {
+			tags = tokens[i].getData();
 
+			// if function contains any 'end' tag change opcode from FUN to FNE
 			if( tags == SEQ_TAG_END ) {
 				hasEndTag = true;
 			}
 
+			// end must not be the last token
 			if( (++ i) >= end ) {
-				throw seq::CompilerError( "end of input", "start of stream", "function", tokens.at(i).getLine() );
+				throw seq::CompilerError( "end of input", "start of stream", "function", tokens[i].getLine() );
 			}
 		}
 
@@ -3663,6 +3667,7 @@ std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::To
 
 	}
 
+	// write function to output
 	std::vector<byte> ret;
 	seq::BufferWriter bw2( ret );
 	bw2.putFunc( anchor, arr, hasEndTag );
@@ -3674,19 +3679,22 @@ int seq::Compiler::extractHeaderData( std::vector<Token>& tokens, std::vector<se
 
 	int s = 0;
 
+	// check if first token is an load statement otherwise there is nothing to extract
 	if( tokens.size() > 0 && tokens.at(0).getCategory() == seq::Compiler::Token::Category::Load ) {
+
 		int l = 0;
 		const int size = tokens.size();
 
+		// iterate over token array
 		for( int i = 0; i < size; i ++ ) {
 			auto& token = tokens[ i ];
 
 			if( l != (int) token.getLine() ) {
-
 				l = token.getLine();
 
 				if( token.getCategory() == seq::Compiler::Token::Category::Load ) {
 
+					// validate load statement
 					if( i + 1 >= size || (i + 2 >= size && (int) tokens.at( i + 2 ).getLine() == l) ) {
 						throw seq::CompilerError( "token " + seq::util::toStdString( token.getRaw() ), "load statement", "header", l );
 					}
@@ -3697,16 +3705,18 @@ int seq::Compiler::extractHeaderData( std::vector<Token>& tokens, std::vector<se
 						throw seq::CompilerError( "token " + seq::util::toStdString( token.getRaw() ), "load statement", "header", l );
 					}
 
+					// add load to supplied load array
 					if( arrayPtr != nullptr ) {
 						arrayPtr->push_back( token2.getClean() );
 					}
 
 					s = i;
 					continue;
+
 				}
 
-				s = i;
-				break;
+				// otherwise return offset
+				return i;
 
 			}
 		}
