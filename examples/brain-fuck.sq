@@ -1,7 +1,6 @@
 
-// Simple Brainfuck interpreter
-// ++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.
-// Some BF programs don't work as this implementation is quite buggy, I will fix it later
+// Simple Brainfuck interpreter, MIT licence
+// Cells are [0-255], array starts at 0 and is 'infinite' to the right
 
 load "stdio"
 load "string"

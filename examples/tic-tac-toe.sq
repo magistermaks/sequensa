@@ -1,3 +1,7 @@
+
+// Simple Tic-Tac-Toe game, MIT licence
+// AI makes random moves
+
 load "stdio"
 load "rand"
 load "utils"
