@@ -210,7 +210,7 @@
 #define SEQ_API_STANDARD "2020-10-10"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 5
-#define SEQ_API_VERSION_PATCH 3
+#define SEQ_API_VERSION_PATCH 4
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -1283,7 +1283,7 @@ void seq::BufferWriter::putFileHeader( byte seq_major, byte seq_minor, byte seq_
 	}
 }
 
-seq::FileHeader::FileHeader() {};
+seq::FileHeader::FileHeader(): seq_major( 0 ), seq_minor( 0 ), seq_patch( 0 ), properties( {} ) {};
 
 seq::FileHeader::FileHeader( byte _seq_major, byte _seq_minor, byte _seq_patch, std::map<seq::string, seq::string> _properties ): seq_major( _seq_major ), seq_minor( _seq_minor ), seq_patch( _seq_patch ), properties( _properties ) {}
 
@@ -2207,7 +2207,7 @@ seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream& 
 		seq::BufferReader br = fbr;
 
 		// set current stack argument
-		this->getTopLevel()->setArg( (i == size) ? seq::Generic( new seq::type::Null( false ) ) : input_stream.at(i) );
+		this->getTopLevel()->setArg( (i == size) ? seq::Generic( new seq::type::Null( false ) ) : input_stream[i] );
 
 		// iterate over function code
 		while( br.hasNext() ) {
@@ -2243,7 +2243,9 @@ seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream& 
 				case seq::CommandResult::ResultType::Again:
 					// add returned arguments to CURRENT input stream
 					if( i == size ) throw RuntimeError( "Native function 'again' can not be called from 'end' taged stream!" );
-					input_stream.insert( input_stream.begin() + i + 1, cr.acc.begin(), cr.acc.end() );
+					input_stream.erase( input_stream.begin(), input_stream.begin() + i + 1 );
+					input_stream.insert( input_stream.begin(), cr.acc.begin(), cr.acc.end() );
+					i = -1;
 					break;
 
 				default:

@@ -1897,6 +1897,24 @@ TEST( ce_half_fail_math_modes, {
 
 } );
 
+TEST( ce_vmcall_passing, {
+
+	seq::string code = (byte*) (
+			"#exit << #{ \n"
+			"	#return << @ \n"
+			"} << exit \n"
+			);
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::VMCall );
+
+} );
+
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
 REGISTER_EXCEPTION( seq_runtime_error, seq::RuntimeError );
