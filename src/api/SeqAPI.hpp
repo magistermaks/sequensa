@@ -210,7 +210,7 @@
 #define SEQ_API_STANDARD "2020-10-10"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 5
-#define SEQ_API_VERSION_PATCH 1
+#define SEQ_API_VERSION_PATCH 2
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -816,6 +816,7 @@ namespace seq {
 			std::string getResultString();
 			seq::Generic getResult();
 			seq::Stream& getResults();
+			void setStrictMath( bool flag );
 			void execute( ByteBuffer bb, seq::Stream args = { seq::Generic( new type::Null( false ) ) } );
 
 		EXECUTOR_ACCESS: // use these methods only if you know what you are doing //
@@ -835,6 +836,7 @@ namespace seq {
 			std::unordered_map<string, type::Native> natives;
 			std::vector<StackLevel> stack;
 			seq::Stream result;
+			bool strictMath: 1;
 	};
 
 #ifndef SEQ_EXCLUDE_COMPILER
@@ -1999,7 +2001,7 @@ seq::StackLevel::StackLevel( seq::StackLevel&& level ) {
 	this->vars = std::move( level.vars );
 }
 
-seq::Generic seq::StackLevel::getArg() {
+inline seq::Generic seq::StackLevel::getArg() {
 	return seq::Generic( this->arg );
 }
 
@@ -2077,6 +2079,7 @@ seq::CommandResult::CommandResult( seq::CommandResult::ResultType _stt, seq::Str
 
 seq::Executor::Executor() {
 	this->stack.push_back( seq::StackLevel() );
+	strictMath = false;
 }
 
 void seq::Executor::inject( seq::string name, seq::type::Native native ) {
@@ -2113,6 +2116,10 @@ seq::Generic seq::Executor::getResult() {
 
 seq::Stream& seq::Executor::getResults() {
 	return this->result;
+}
+
+void seq::Executor::setStrictMath( bool flag ) {
+	strictMath = flag;
 }
 
 void seq::Executor::execute( seq::ByteBuffer bb, seq::Stream args ) {
@@ -2367,47 +2374,56 @@ seq::CommandResult seq::Executor::executeAnchor( seq::Generic entity, seq::Strea
 seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic right, seq::ExprOperator op, bool anchor ) {
 
 	{
-		const seq::DataType ldt = left.getDataType();
-		const seq::DataType rdt = right.getDataType();
+		const seq::DataType ltype = left.getDataType();
+		const seq::DataType rtype = right.getDataType();
 
-		if( ldt == seq::DataType::Expr || ldt == seq::DataType::Arg ) left = this->executeExpr(left);
-		if( rdt == seq::DataType::Expr || rdt == seq::DataType::Arg ) right = this->executeExpr(right);
+		// if left or right side is and expr or arg pass it through executeExpr
+		if( ltype == seq::DataType::Expr || ltype == seq::DataType::Arg ) left = this->executeExpr(left);
+		if( rtype == seq::DataType::Expr || rtype == seq::DataType::Arg ) right = this->executeExpr(right);
 	}
+
+	const seq::DataType ltype = left.getDataType();
+	const seq::DataType rtype = right.getDataType();
 
 	// Handle accessor operator
 	if( op == seq::ExprOperator::Accessor ) {
 
-			if( left.getDataType() == seq::DataType::Name && right.getDataType() == seq::DataType::Number ) {
-				long index = right.Number().getLong();
-				seq::Stream s = this->resolveName( left.Name().getName(), anchor );
-
-				try{
-					return s.at( index );
-				}catch( std::out_of_range& err ){
-					return seq::Generic( new seq::type::Null(anchor) );
-				}
-			}
-
+		if( ltype != seq::DataType::Name || rtype != seq::DataType::Number ) {
+			throw seq::RuntimeError( "Invalid accessor operands, stream and number expected!" );
 		}
 
-	// 'not' and 'binary not' use only one argument (right)
-	if( op != seq::ExprOperator::Not && op != seq::ExprOperator::BinaryNot ) {
-		if( left.getDataType() != right.getDataType() ) {
-			return seq::Generic( new seq::type::Null(anchor) );
+		// try returning element from stream (left) at index (right)
+		try{
+			long index = right.Number().getLong();
+			seq::Stream s = this->resolveName( left.Name().getName(), anchor );
+
+			return s.at( index );
+		}catch( std::out_of_range& err ){
+			return seq::util::newNull(anchor);
 		}
 
 	}
 
-	seq::DataType type = right.getDataType();
+	// return null if data types don't match (with exception of Not and BinaryNot)
+	if( rtype != ltype ) {
+		if( op != seq::ExprOperator::Not && op != seq::ExprOperator::BinaryNot ) {
+			if( this->strictMath ) {
+				throw seq::RuntimeError( "Expression operators don't match!" );
+			}else{
+				return seq::util::newNull(anchor);
+			}
+
+		}
+	}
 
 	typedef seq::Generic G;
-	auto str = [] ( G g ) -> seq::type::String* { return (seq::type::String*) g.getRaw(); };
-	auto num = [] ( G g ) -> seq::type::Number* { return (seq::type::Number*) g.getRaw(); };
+	auto str = [] ( G& g ) -> seq::type::String* { return (seq::type::String*) g.getRaw(); };
+	auto num = [] ( G& g ) -> seq::type::Number* { return (seq::type::Number*) g.getRaw(); };
 
 	static const std::array<std::array<std::function<seq::type::Generic*(bool,seq::Generic,seq::Generic)>,2>,SEQ_MAX_OPERATOR> lambdas = {{
 			{ // Less
-					[&] ( bool f, G a, G b ) { return new seq::type::Bool(anchor, num(a)->getDouble() < num(b)->getDouble()); },
-					[&] ( bool f, G a, G b ) { return new seq::type::Null(anchor); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Bool(f, num(a)->getDouble() < num(b)->getDouble()); },
+					[&] ( bool f, G a, G b ) { return new seq::type::Null(f); },
 			},
 			{ // Greater
 					[&] ( bool f, G a, G b ) { return new seq::type::Bool(f, num(a)->getDouble() > num(b)->getDouble()); },
@@ -2491,7 +2507,8 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 			}
 	}};
 
-	switch( type ) {
+	// handle each data type
+	switch( rtype ) {
 
 		case seq::DataType::Number:
 			return seq::Generic( lambdas.at( ((byte) op) - 1 )[0]( anchor, left, right ) );
@@ -2499,8 +2516,8 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 		case seq::DataType::Bool: {
 
 				// Don't touch it again! The bool check for left value is needed for NOT and BINARY NOT
-				G lb = seq::Generic( new seq::type::Number( false, (float) (left.getDataType() == seq::DataType::Bool ? (left.Bool().getBool() ? 1 : 0) : 0) ) );
-				G rb = seq::Generic( new seq::type::Number( false, (float) (right.Bool().getBool() ? 1 : 0) ) );
+				G lb = seq::util::newNumber( (float) (left.getDataType() == seq::DataType::Bool ? (left.Bool().getBool() ? 1 : 0) : 0) );
+				G rb = seq::util::newNumber( (float) (right.Bool().getBool() ? 1 : 0) );
 				seq::type::Generic* r = lambdas.at( ((byte) op) - 1 ).at( 0 )( anchor, lb, rb );
 
 				if( r->getDataType() == seq::DataType::Bool ) {
@@ -2525,7 +2542,7 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 
 		case seq::DataType::Null:
 			if( op == seq::ExprOperator::Equal ) return seq::Generic( new seq::type::Bool( false, true ) );
-			if( op == seq::ExprOperator::Equal ) return seq::Generic( new seq::type::Bool( false, false ) );
+			if( op == seq::ExprOperator::NotEqual ) return seq::Generic( new seq::type::Bool( false, false ) );
 			return seq::Generic( new seq::type::Null(anchor) );
 
 		default:
@@ -2549,7 +2566,7 @@ seq::Generic seq::Executor::executeExpr( seq::Generic entity ) {
 		seq::Generic right = expr.getRightReader().next().getGeneric();
 		seq::ExprOperator op = expr.getOperator();
 
-		return this->executeExprPair( left, right, op, anchor );
+		return this->executeExprPair( std::move(left), std::move(right), op, anchor );
 	}
 
 	// if it is simple argument resolve it's value
@@ -2562,11 +2579,11 @@ seq::Generic seq::Executor::executeExpr( seq::Generic entity ) {
 		// according to Sequensa specification
 		// if argument reference is invalid null should be returned instead
 		if( s < 0 ) {
-			return seq::Generic( new seq::type::Null( anchor ) );
+			return seq::util::newNull( anchor );
 		}
 
 		// return stack argument
-		auto ret = this->stack[s].getArg();
+		auto ret = std::move( this->stack[s].getArg() );
 		ret.setAnchor(anchor);
 		return ret;
 	}
@@ -2773,6 +2790,7 @@ std::vector<byte> seq::Compiler::compile( seq::string code, std::vector<seq::str
 
 std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 
+	// define internal struct
 	enum struct State {
 		Start,
 		Comment,
@@ -2786,6 +2804,7 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 		Arg
 	};
 
+	// init stuff
 	const static std::vector<seq::string> long_operators = { "!="_b, ">="_b, "!>"_b, "<="_b, "!<"_b, "&&"_b, "||"_b, "^^"_b, "**"_b };
 	const static std::vector<byte> short_operators = { '+'_b, '-'_b, '/'_b, '%'_b, '*'_b, '>'_b, '<'_b, '='_b, '&'_b, '|'_b, '^'_b, '~'_b };
 	const static std::vector<seq::string> brackets = { "{ "_b, "} "_b, "#{"_b, "[ "_b, "] "_b, "#["_b, "( "_b, ") "_b, "#("_b };
@@ -2798,6 +2817,7 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 	int curlyBrackets = 0;
 	int squareBrackets = 0;
 
+	// function used to add token to token array based on tokenizer internal state
 	auto next = [&] () -> void {
 		if( !token.empty() ) {
 			tokens.push_back( seq::Compiler::construct( token , line ) );
@@ -2805,14 +2825,7 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 		}
 	};
 
-	auto isLetter = [&] (byte chr) -> bool {
-		return std::isalpha( chr ) || chr == '_'_b;
-	};
-
-	auto isNumber = [&] (byte chr) -> bool {
-		return std::isdigit( chr );
-	};
-
+	// function used to create string from two bytes, used for checking long operators
 	auto bind = [] (byte a, byte b) -> seq::string {
 		seq::string str;
 		str += a;
@@ -2820,7 +2833,8 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 		return str;
 	};
 
-	auto updateBrackes = [&] (byte chr) {
+	// brackets state checker
+	auto updateBrackets = [&] (byte chr) {
 		switch( chr ) {
 			case '{'_b: curlyBrackets ++; break;
 			case '}'_b: curlyBrackets --; break;
@@ -2831,8 +2845,11 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 			default: throw seq::InternalError( "Invalid lambda argument!" );
 		}
 
+		// bracket count cannot be negative
 		if( curlyBrackets < 0 ) throw seq::CompilerError( "'}'", "", "", line );
 		if( roundBrackets < 0 ) throw seq::CompilerError( "')'", "", "", line );
+
+		// square brackets cannot be nested
 		if( squareBrackets != 0 && squareBrackets != 1 ) {
 			std::string msg = "'";
 			msg += (char) chr;
@@ -2870,16 +2887,16 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 					if( c == '#'_b && n == '"'_b ) { state = State::String; token += "#\""_b; i ++; break; }
 					if( c == '"'_b ) { state = State::String; token += c; break; }
 					if( c == ' '_b || c == '\n'_b || c == '\t'_b ) { break; }
-					if( (c == '#'_b && isLetter( n )) || isLetter( c ) ) { state = State::Name; token += c; break; }
+					if( (c == '#'_b && (std::isalpha(n) || n == '_'_b)) || (std::isalpha(c) || c == '_'_b) ) { state = State::Name; token += c; break; }
 					if( c == '<'_b && n == '<'_b ) { token += "<<"_b; i ++; next(); break; }
-					if( (c == '#'_b && isNumber( n )) || isNumber( c ) ) { state = State::Number; token += c; break; }
-					if( (c == '-'_b && isNumber( n )) || (c == '#'_b && n == '-'_b) ) { state = State::NumberSign; token += c; break; }
+					if( (c == '#'_b && std::isdigit(n)) || std::isdigit(c) ) { state = State::Number; token += c; break; }
+					if( (c == '-'_b && std::isdigit(n)) || (c == '#'_b && n == '-'_b) ) { state = State::NumberSign; token += c; break; }
 					if( std::find(long_operators.begin(), long_operators.end(), bind( c, n )) != long_operators.end() ) { token += c; token += n; i ++; next(); break; }
 					if( std::find(short_operators.begin(), short_operators.end(), c) != short_operators.end() ) { token += c; next(); break; }
 					if( c == '!'_b ) { token += "null"_b; next(); token += c; next(); break; }
 					if( (c == '#'_b && n == '@'_b) || c == '@'_b ) { state = State::Arg; token += c; break; }
-					if( std::find(brackets.begin(), brackets.end(), bind( c, ' ' ) ) != brackets.end() ) { token += c; updateBrackes( c ); next(); break; }
-					if( std::find(brackets.begin(), brackets.end(), bind( c, n ) ) != brackets.end() ) { token += c; token += n; updateBrackes( n ); i ++; next(); break; }
+					if( std::find(brackets.begin(), brackets.end(), bind( c, ' ' ) ) != brackets.end() ) { token += c; updateBrackets( c ); next(); break; }
+					if( std::find(brackets.begin(), brackets.end(), bind( c, n ) ) != brackets.end() ) { token += c; token += n; updateBrackets( n ); i ++; next(); break; }
 					if( c == ':'_b && n == ':'_b ) { token += "::"_b; i ++; next(); break; }
 					if( c == ','_b || c == ':'_b ) { token += c; next(); break; }
 
@@ -2921,7 +2938,7 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 					break;
 
 				case State::Name: // or Tag
-					if( isLetter( c ) ) token += c; else {
+					if( std::isalpha(c) || c == '_'_b ) token += c; else {
 
 						if( c == ':'_b ) {
 							token += c;
@@ -2952,7 +2969,7 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 					break;
 
 				case State::Number:
-					if( isNumber(c) ) token += c; else {
+					if( std::isdigit(c) ) token += c; else {
 						if( c == '.'_b ) {
 							token += c;
 							state = State::Number2;
@@ -2965,7 +2982,7 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 					break;
 
 				case State::Number2:
-					if( isNumber(c) ) token += c; else {
+					if( std::isdigit(c) ) token += c; else {
 						state = State::Start;
 						flag = true;
 						next();
@@ -2993,12 +3010,14 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 
 	}
 
+	// check brackets state
 	if( state == State::String ) throw CompilerError( "end of input", "end of string", "", line );
 	if( curlyBrackets != 0 ) throw CompilerError( "end of input", "curly bracket", "", line );
 	if( roundBrackets != 0 ) throw CompilerError( "end of input", "round bracket", "", line );
 	if( squareBrackets != 0 ) throw CompilerError( "end of input", "square bracket", "", line );
 
-	next(); // if some token is still left, add it.
+	// if some token is still left, add it.
+	next();
 	return tokens;
 }
 
