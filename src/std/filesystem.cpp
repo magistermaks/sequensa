@@ -118,7 +118,7 @@
 //	return EMPTY;
 //}
 
-seq::Stream seq_std_fs_mkdir( seq::Stream& input ) {
+seq::Stream seq_std_mkdir( seq::Stream& input ) {
 
 	seq::Stream output;
 
@@ -133,11 +133,23 @@ seq::Stream seq_std_fs_mkdir( seq::Stream& input ) {
 	return output;
 }
 
-seq::Stream seq_std_fs_mkfile( seq::Stream& input ) {
-	return EMPTY;
+seq::Stream seq_std_mkfile( seq::Stream& input ) {
+
+	seq::Stream output;
+
+	for( auto& arg : input ) {
+
+		std::string path = (char*) seq::util::stringCast( arg ).String().getString().c_str();
+		std::ofstream file { path };
+		output.push_back( seq::util::newBool( file.good() ) );
+		file.close();
+
+	}
+
+	return output;
 }
 
-seq::Stream seq_std_fs_remove( seq::Stream& input ) {
+seq::Stream seq_std_remove( seq::Stream& input ) {
 
 	seq::Stream output;
 
@@ -151,7 +163,7 @@ seq::Stream seq_std_fs_remove( seq::Stream& input ) {
 	return output;
 }
 
-seq::Stream seq_std_fs_exists( seq::Stream& input ) {
+seq::Stream seq_std_exists( seq::Stream& input ) {
 
 	seq::Stream output;
 
@@ -165,7 +177,7 @@ seq::Stream seq_std_fs_exists( seq::Stream& input ) {
 	return output;
 }
 
-seq::Stream seq_std_fs_cwd( seq::Stream& input ) {
+seq::Stream seq_std_cwd( seq::Stream& input ) {
 
 	seq::Stream output;
 
@@ -193,11 +205,11 @@ INIT( seq::Executor* exe, seq::FileHeader* head ) {
 	//exe->inject( "std:read_line"_b, seq_std_fs_read_line );
 	//exe->inject( "std:write"_b, seq_std_fs_write );
 	//exe->inject( "std:append"_b, seq_std_fs_append );
-	exe->inject( "std:mkfile"_b, seq_std_fs_mkfile );
-	exe->inject( "std:mkdir"_b, seq_std_fs_mkdir );
-	exe->inject( "std:remove"_b, seq_std_fs_remove );
-	exe->inject( "std:exists"_b, seq_std_fs_exists );
-	exe->inject( "std:cwd"_b, seq_std_fs_cwd );
+	exe->inject( "std:mkfile"_b, seq_std_mkfile );
+	exe->inject( "std:mkdir"_b, seq_std_mkdir );
+	exe->inject( "std:remove"_b, seq_std_remove );
+	exe->inject( "std:exists"_b, seq_std_exists );
+	exe->inject( "std:cwd"_b, seq_std_cwd );
 
 	return INIT_SUCCESS;
 }

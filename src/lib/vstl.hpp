@@ -34,10 +34,15 @@
 #include <functional>
 #include <exception>
 #include <string>
+#include <chrono>
 #include <iostream>
 
-#define VSTL_MODE_STRICT 2
 #define VSTL_MODE_LENIENT 1
+#define VSTL_MODE_STRICT 2
+
+#ifndef VSTL_TEST_COUNT
+#	define VSTL_TEST_COUNT 1
+#endif
 
 #define ASSERT( condition, message ) if( !(condition) ) FAIL( message )
 #define TEST( name, ... ) long __vstl_test__##name = vstl::Test( #name, __LINE__, [&] () -> void __VA_ARGS__ ).add();
@@ -84,15 +89,20 @@ namespace vstl {
 };
 
 int vstl::run( int mode ) {
+	auto start = std::chrono::steady_clock::now();
+
     for( Test& test : tests ) {
     	if( !test.run( mode ) && mode == VSTL_MODE_STRICT ) {
     		break;
     	}
     }
 
+    auto time = std::chrono::steady_clock::now() - start;
+
     std::cout << std::endl << "Executed " + std::to_string( vstl::failed_count + vstl::successful_count ) + " tests, " +
         std::to_string( vstl::failed_count ) + " failed, " +
-        std::to_string( vstl::successful_count ) + " succeeded." << std::endl;
+        std::to_string( vstl::successful_count ) + " succeeded. (taken: " <<
+		std::chrono::duration<double, std::milli>(time).count() << "ms)" << std::endl;
 
 #ifndef VSTL_RETURN_0
     return vstl::failed_count;
@@ -117,7 +127,7 @@ long vstl::Test::add() {
 
 bool vstl::Test::run( int mode ) {
     try{
-        this->lambda();
+    	for( int i = 0; i < VSTL_TEST_COUNT; i ++ ) this->lambda();
 	} catch (vstl::TestFail &fail) {
         std::cerr << "Test '" + this->name + "' failed! Error message: " << fail.what() << std::endl;
         vstl::failed_count ++;
