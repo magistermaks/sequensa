@@ -1915,6 +1915,28 @@ TEST( ce_vmcall_passing, {
 
 } );
 
+TEST( ce_between_anchors, {
+
+	seq::string code = (byte*) (
+			"#exit << 1 << #2 << 3"
+			);
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	auto& res = exe.getResults();
+
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(0).Number().getLong(), 1l );
+
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(1).Number().getLong(), 2l );
+
+} );
+
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
 REGISTER_EXCEPTION( seq_runtime_error, seq::RuntimeError );

@@ -228,10 +228,11 @@ bool nbi_get_flag() {
     FD_ZERO(&fd);
     FD_SET(0, &fd);
 
-    return (bool)select(1, &fd, NULL, NULL, &timeout);
+    bool flag = (bool)select(1, &fd, NULL, NULL, &timeout);
 #ifndef NBI_LIB_NO_TERMIOS_POP
     __nbi_termios_pop();
 #endif
+    return flag;
 #endif
 }
 
@@ -246,10 +247,11 @@ char nbi_std_input() {
         __nbi_termios_init();
     }
     __nbi_termios_push();
-    return getchar();
+    char chr = getchar();
 #ifndef NBI_LIB_NO_TERMIOS_POP
     __nbi_termios_pop();
 #endif
+    return chr;
 #endif
 }
 
