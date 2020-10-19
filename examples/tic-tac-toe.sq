@@ -3,7 +3,7 @@
 // AI makes random moves
 
 load "stdio"
-load "rand"
+load "math"
 load "utils"
 load "time"
 
