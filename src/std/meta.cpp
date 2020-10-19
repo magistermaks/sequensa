@@ -89,18 +89,6 @@ seq::Stream seq_std_meta_build_time( seq::Stream& input ) {
 	return output;
 }
 
-seq::Stream seq_std_meta_system( seq::Stream& input ) {
-	seq::Stream output;
-
-	for( int i = input.size(); i > 0; i -- ) {
-
-		output.push_back( seq::util::newString( (seq::byte*) SQ_SYSTEM ) );
-
-	}
-
-	return output;
-}
-
 INIT( seq::Executor* exe, seq::FileHeader* head ) {
 
 	if( head == nullptr ) {
@@ -117,7 +105,6 @@ INIT( seq::Executor* exe, seq::FileHeader* head ) {
 	exe->inject( "std:meta:patch"_b, seq_std_meta_patch );
 	exe->inject( "std:meta:value"_b, seq_std_meta_patch );
 	exe->inject( "std:meta:build_time"_b, seq_std_meta_build_time );
-	exe->inject( "std:meta:system"_b, seq_std_meta_system );
 
 	return INIT_SUCCESS;
 }

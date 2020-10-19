@@ -150,6 +150,29 @@ seq::Stream seq_std_cwd( seq::Stream& input ) {
 	return output;
 }
 
+seq::Stream seq_std_system_name( seq::Stream& input ) {
+	seq::Stream output;
+
+	for( int i = input.size(); i > 0; i -- ) {
+
+		output.push_back( seq::util::newString( (seq::byte*) SQ_SYSTEM ) );
+
+	}
+
+	return output;
+}
+
+seq::Stream seq_std_invoke( seq::Stream& input ) {
+
+	for( auto& arg : input ) {
+
+		system( (char*) seq::util::stringCast( arg ).String().getString().c_str() );
+
+	}
+
+	return EMPTY;
+}
+
 INIT( seq::Executor* exe, seq::FileHeader* head ) {
 
 	exe->inject( "std:read"_b, seq_std_read );
@@ -160,6 +183,8 @@ INIT( seq::Executor* exe, seq::FileHeader* head ) {
 	exe->inject( "std:remove"_b, seq_std_remove );
 	exe->inject( "std:exists"_b, seq_std_exists );
 	exe->inject( "std:cwd"_b, seq_std_cwd );
+	exe->inject( "std:system_name"_b, seq_std_system_name );
+	exe->inject( "std:invoke"_b, seq_std_invoke );
 
 	return INIT_SUCCESS;
 }
