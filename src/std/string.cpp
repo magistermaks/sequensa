@@ -49,6 +49,10 @@ seq::Stream seq_std_split( seq::Stream& input ) {
 	seq::Stream output;
 	seq::string delim = seq::util::stringCast( input[0] ).String().getString();
 
+	if( delim.empty() ) {
+		return input;
+	}
+
 	for( long i = 1; i < (long) input.size(); i ++ ) {
 
 		seq::string str2 = seq::util::stringCast( input[i] ).String().getString();
