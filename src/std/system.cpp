@@ -151,6 +151,7 @@ seq::Stream seq_std_cwd( seq::Stream& input ) {
 }
 
 seq::Stream seq_std_system_name( seq::Stream& input ) {
+
 	seq::Stream output;
 
 	for( int i = input.size(); i > 0; i -- ) {
@@ -164,13 +165,16 @@ seq::Stream seq_std_system_name( seq::Stream& input ) {
 
 seq::Stream seq_std_invoke( seq::Stream& input ) {
 
+	seq::Stream output;
+
 	for( auto& arg : input ) {
 
-		system( (char*) seq::util::stringCast( arg ).String().getString().c_str() );
+		int s = system( (char*) seq::util::stringCast( arg ).String().getString().c_str() );
+		output.push_back( seq::util::newNumber( s ) );
 
 	}
 
-	return EMPTY;
+	return output;
 }
 
 INIT( seq::Executor* exe, seq::FileHeader* head ) {

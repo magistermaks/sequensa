@@ -123,6 +123,49 @@ seq::Stream seq_std_to_code( seq::Stream& input ) {
 	return output;
 }
 
+seq::Stream seq_std_substr( seq::Stream& input ) {
+
+	if( input.size() < 2 ) {
+		return { seq::util::newBool(false) };
+	}
+
+	const int start = seq::util::numberCast( input[0] ).Number().getLong();
+	const int length = seq::util::numberCast( input[1] ).Number().getLong() - start;
+
+	seq::Stream output;
+
+	for( long i = 2; i < (long) input.size(); i ++ ) {
+
+		try{
+			output.push_back( seq::util::newString( seq::util::stringCast( input[i] ).String().getString().substr(start, length).c_str() ) );
+		}catch(std::exception& err){
+			return { seq::util::newString( ""_b ) };
+		}
+
+	}
+
+	return output;
+}
+
+seq::Stream seq_std_findstr( seq::Stream& input ) {
+
+	seq::Stream output;
+	seq::string delim = seq::util::stringCast( input[0] ).String().getString();
+
+	if( delim.empty() ) {
+		return { seq::util::newNumber(-1) };
+	}
+
+	for( long i = 1; i < (long) input.size(); i ++ ) {
+
+		seq::string str2 = seq::util::stringCast( input[i] ).String().getString();
+		output.push_back( seq::util::newNumber( str2.find( delim ) ) );
+
+	}
+
+	return output;
+}
+
 INIT( seq::Executor* exe, seq::FileHeader* head ) {
 
 	exe->inject( "std:uppercase"_b, seq_std_uppercase );
@@ -132,6 +175,8 @@ INIT( seq::Executor* exe, seq::FileHeader* head ) {
 	exe->inject( "std:explode"_b, seq_std_explode );
 	exe->inject( "std:from_code"_b, seq_std_from_code );
 	exe->inject( "std:to_code"_b, seq_std_to_code );
+	exe->inject( "std:substr"_b, seq_std_substr );
+	exe->inject( "std:findstr"_b, seq_std_findstr );
 
 	return INIT_SUCCESS;
 }
