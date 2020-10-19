@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser( description="Sequensa build system" )
 parser.add_argument( "--test", help="Run Sequensa API unit tests", action="store_true" )
 parser.add_argument( "--na", help="Don't create 'sq' alias", action="store_true" )
 parser.add_argument( "--np", help="Don't attempt to add sequensa to PATH", action="store_true" )
-parser.add_argument( "--dev", help="Compile in debug mode", action="store_true" )
+parser.add_argument( "--dbg", help="Compile in debug mode", action="store_true" )
 args = parser.parse_args()
 
 # palatform independent settings
@@ -29,7 +29,7 @@ lib_ext = ""
 compiler_args = ""
 
 # set compiler args
-if args.dev:
+if args.dbg:
     compiler_args = " -O0 -g3 -Wall -c "
 else:
     compiler_args = " -O3 -g0 -Wall -c "
@@ -132,6 +132,7 @@ try:
     os.mkdir( path + "/lib/utils" ) 
     os.mkdir( path + "/lib/string" ) 
     os.mkdir( path + "/lib/time" ) 
+    os.mkdir( path + "/lib/filesystem" ) 
     os.mkdir( tmp_path ) 
     os.mkdir( tmp_path + "/src" ) 
     os.mkdir( tmp_path + "/src/lib" ) 
@@ -155,6 +156,7 @@ compile( "src/std/meta", "-fPIC " )
 compile( "src/std/utils", "-fPIC " )
 compile( "src/std/string", "-fPIC " )
 compile( "src/std/time", "-fPIC " )
+compile( "src/std/filesystem", "-fPIC " )
 
 # print build status
 print( "\nLinking Targets..." )
@@ -168,6 +170,7 @@ link( path + "/lib/meta/native" + lib_ext, ["/src/std/meta.o"], " -shared" )
 link( path + "/lib/utils/native" + lib_ext, ["/src/std/utils.o"], " -shared" )
 link( path + "/lib/string/native" + lib_ext, ["/src/std/string.o"], " -shared" )
 link( path + "/lib/time/native" + lib_ext, ["/src/std/time.o"], " -shared" )
+link( path + "/lib/filesystem/native" + lib_ext, ["/src/std/filesystem.o"], " -shared" )
 
 # delete tmp directory
 rem_dir( tmp_path )
