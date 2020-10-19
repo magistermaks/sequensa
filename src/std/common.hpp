@@ -2,8 +2,11 @@
 #ifndef STD_COMMON_HPP_
 #define STD_COMMON_HPP_
 
+#ifndef NO_EXCLUDE_COMPILER
+#	define SEQ_EXCLUDE_COMPILER
+#endif
+
 #define SEQ_IMPLEMENT
-#define SEQ_EXCLUDE_COMPILER
 #include "../api/SeqAPI.hpp"
 
 #ifdef _WIN32
