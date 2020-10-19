@@ -17,106 +17,61 @@
 #	define POSIX_MKDIR(dir) mkdir( dir, ACCESSPERMS )
 #endif
 
-//class FileHandle: public seq::type::Blob {
-//
-//	public:
-//		FileHandle( bool _anchor, std::fstream file ): seq::type::Blob( _anchor ) {
-//			this->file = file;
-//		}
-//
-//		seq::type::Blob* copy() {
-//			return new FileHandle( this->anchor, this->file );
-//		}
-//
-//		seq::string toString() {
-//			return "file_handle"_b;
-//		}
-//
-//		std::fstream file;
-//
-//};
-//
-//seq::Stream seq_std_fs_open( seq::Stream& input ) {
-//
-//	seq::Stream output;
-//
-//	for( auto& arg : input ) {
-//		std::string path = reinterpret_cast<std::string>(seq::util::stringCast( arg ).String().getString());
-//		output.push_back( seq::Generic( new FileHandle( false, std::fstream(path) ) ) );
-//	}
-//
-//	return output;
-//}
-//
-//seq::Stream seq_std_fs_open_binary( seq::Stream& input ) {
-//
-//	seq::Stream output;
-//
-//	for( auto& arg : input ) {
-//		std::string path = reinterpret_cast<std::string>(seq::util::stringCast( arg ).String().getString());
-//		output.push_back( seq::Generic( new FileHandle( false, std::fstream(path, std::ios::binary) ) ) );
-//	}
-//
-//	return output;
-//}
-//
-//seq::Stream seq_std_fs_is_good( seq::Stream& input ) {
-//
-//	seq::Stream output;
-//
-//	for( auto& arg : input ) {
-//		if( arg.getDataType() == seq::DataType::Blob && arg.Blob().toString() == "file_handle"_b ) {
-//			output.push_back( seq::util::newBool( ((FileHandle&) arg.Blob()).file.is_open() ) );
-//		}
-//
-//		output.push_back( seq::util::newNull() );
-//	}
-//
-//	return output;
-//}
-//
-//seq::Stream seq_std_fs_close( seq::Stream& input ) {
-//
-//	for( auto& arg : input ) {
-//		if( arg.getDataType() == seq::DataType::Blob && arg.Blob().toString() == "file_handle"_b ) {
-//			((FileHandle&) arg.Blob()).file.close();
-//		}
-//	}
-//
-//	return EMPTY;
-//}
-//
-//seq::Stream seq_std_fs_read_all( seq::Stream& input ) {
-//
-//	seq::Stream output;
-//
-//	for( auto& arg : input ) {
-//		if( arg.getDataType() == seq::DataType::Blob && arg.Blob().toString() == "file_handle"_b ) {
-//
-//			std::stringstream buffer;
-//			buffer << ((FileHandle&) arg.Blob()).file.rdbuf();
-//			std::string str(buffer.str());
-//			output.push_back( seq::util::newString( (seq::byte*) str.c_str() ) );
-//
-//		}
-//
-//		output.push_back( seq::util::newNull() );
-//	}
-//
-//	return output;
-//}
-//
-//seq::Stream seq_std_fs_read_line( seq::Stream& input ) {
-//	return EMPTY;
-//}
-//
-//seq::Stream seq_std_fs_write( seq::Stream& input ) {
-//	return EMPTY;
-//}
-//
-//seq::Stream seq_std_fs_append( seq::Stream& input ) {
-//	return EMPTY;
-//}
+seq::Stream seq_std_read( seq::Stream& input ) {
+
+	seq::Stream output;
+
+	for( auto& arg : input ) {
+
+		std::string path = (char*) seq::util::stringCast( arg ).String().getString().c_str();
+		std::ifstream file( path );
+		std::stringstream buffer;
+		buffer << file.rdbuf();
+		output.push_back( seq::util::newString( (seq::byte*) buffer.str().c_str() ) );
+		file.close();
+
+	}
+
+	return output;
+}
+
+seq::Stream seq_std_write( seq::Stream& input ) {
+
+	std::string path = (char*) seq::util::stringCast( input[0] ).String().getString().c_str();
+	std::ofstream file( path, std::ios::out | std::ios::trunc );
+
+	if( file.good() ) {
+
+		for( int i = 1; i < (int) input.size(); i ++ ) {
+			file << (char*) seq::util::stringCast( input[i] ).String().getString().c_str();
+		}
+
+		file.close();
+
+		return { seq::util::newBool(true) };
+	}
+
+	return { seq::util::newBool(false) };
+}
+
+seq::Stream seq_std_append( seq::Stream& input ) {
+
+	std::string path = (char*) seq::util::stringCast( input[0] ).String().getString().c_str();
+	std::ofstream file( path, std::ios::out | std::ios::app );
+
+	if( file.good() ) {
+
+		for( int i = 1; i < (int) input.size(); i ++ ) {
+			file << (char*) seq::util::stringCast( input[i] ).String().getString().c_str();
+		}
+
+		file.close();
+
+		return { seq::util::newBool(true) };
+	}
+
+	return { seq::util::newBool(false) };
+}
 
 seq::Stream seq_std_mkdir( seq::Stream& input ) {
 
@@ -140,7 +95,7 @@ seq::Stream seq_std_mkfile( seq::Stream& input ) {
 	for( auto& arg : input ) {
 
 		std::string path = (char*) seq::util::stringCast( arg ).String().getString().c_str();
-		std::ofstream file { path };
+		std::ofstream file( path );
 		output.push_back( seq::util::newBool( file.good() ) );
 		file.close();
 
@@ -197,14 +152,9 @@ seq::Stream seq_std_cwd( seq::Stream& input ) {
 
 INIT( seq::Executor* exe, seq::FileHeader* head ) {
 
-	//exe->inject( "std:fopen"_b, seq_std_fs_open );
-	//exe->inject( "std:fopen_binary"_b, seq_std_fs_open );
-	//exe->inject( "std:is_good"_b, seq_std_fs_is_good );
-	//exe->inject( "std:close"_b, seq_std_fs_close );
-	//exe->inject( "std:read_all"_b, seq_std_fs_read_all );
-	//exe->inject( "std:read_line"_b, seq_std_fs_read_line );
-	//exe->inject( "std:write"_b, seq_std_fs_write );
-	//exe->inject( "std:append"_b, seq_std_fs_append );
+	exe->inject( "std:read"_b, seq_std_read );
+	exe->inject( "std:write"_b, seq_std_write );
+	exe->inject( "std:append"_b, seq_std_append );
 	exe->inject( "std:mkfile"_b, seq_std_mkfile );
 	exe->inject( "std:mkdir"_b, seq_std_mkdir );
 	exe->inject( "std:remove"_b, seq_std_remove );
