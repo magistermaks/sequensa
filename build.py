@@ -185,7 +185,7 @@ link( path + "/lib/lang/native" + lib_ext, ["/src/api/seqapi.o", "/src/std/lang.
 rem_dir( tmp_path )
 
 # add Sequensa to PATH (if not already present)
-if not args.Xalias:
+if not args.Xpath:
     lpath = localize_path( path )
     if not lpath in os.environ['PATH']:
         add_to_path( lpath )
@@ -193,7 +193,7 @@ if not args.Xalias:
         print( "Please restart shell for changes to take effect" )
 
 # create alias for "sequensa"
-if not args.Xpath:
+if not args.Xalias:
     os.link( path + "/sequensa" + exe_ext, path + "/sq" + exe_ext )
 
 # print done and exit
