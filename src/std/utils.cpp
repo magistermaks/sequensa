@@ -17,9 +17,14 @@ seq::Stream seq_std_call( seq::Stream& input ) {
 	return output;
 }
 
+seq::Stream seq_std_length( seq::Stream& input ) {
+	return { seq::util::newNumber( input.size() ) };
+}
+
 INIT( seq::Executor* exe, seq::FileHeader* head ) {
 
 	exe->inject( "std:call"_b, seq_std_call );
+	exe->inject( "std:length"_b, seq_std_length );
 
 	const seq::Generic value_true = seq::util::newBool( true );
 

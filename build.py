@@ -65,6 +65,7 @@ def link( target, paths, args = "" ):
 print( "Sequensa builder v1.0" )
 print( "Platform: " + system_name + ", Selected '" + command + "' compiler." )
 
+# warn about non-standard compiler
 if command != "g++" and command != "gcc":
     print("\nWarning: Selected compiler is non-default!")
     print("Warning: Expected g++ or gcc, this may cause problems.")
