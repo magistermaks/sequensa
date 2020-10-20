@@ -6,7 +6,6 @@
 #	define SEQ_EXCLUDE_COMPILER
 #endif
 
-#define SEQ_IMPLEMENT
 #include "../api/SeqAPI.hpp"
 
 #ifdef _WIN32

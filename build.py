@@ -91,11 +91,12 @@ if args.test:
 
     # compile target
     print( "\nBuilding Target..." )
+    compile( "src/api/seqapi" )
     compile( "src/api/tests" )
 	
     # link target
     print( "\nLinking Target..." )
-    link( tmp_path + "/tests" + exe_ext, ["/src/api/tests.o"] )
+    link( tmp_path + "/tests" + exe_ext, ["/src/api/seqapi.o", "/src/api/tests.o"] )
 
     # execute target
     print( "\nRunning Target..." )
@@ -137,12 +138,14 @@ try:
     os.mkdir( tmp_path + "/src" ) 
     os.mkdir( tmp_path + "/src/lib" ) 
     os.mkdir( tmp_path + "/src/std" )
+    os.mkdir( tmp_path + "/src/api" ) 
 except:
     print( "\nFailed to prepare directory structure!" )
     print( " * Try checking installer permissions" )
     exit()
 
 # compile all Sequensa files
+compile( "src/api/seqapi", "-fPIC " )
 compile( "src/main" )
 compile( "src/help" )
 compile( "src/build" )
@@ -162,15 +165,15 @@ compile( "src/std/lang", "-fPIC " )
 print( "\nLinking Targets..." )
 
 # link targets
-link( path + "/sequensa" + exe_ext, ["/src/lib/whereami.o", "/src/main.o", "/src/help.o", "/src/build.o", "/src/run.o", "/src/utils.o"] )
-link( path + "/lib/stdio/native" + lib_ext, ["/src/std/stdio.o"], " -shared" )
-link( path + "/lib/math/native" + lib_ext, ["/src/std/math.o"], " -shared" )
-link( path + "/lib/meta/native" + lib_ext, ["/src/std/meta.o"], " -shared" )
-link( path + "/lib/utils/native" + lib_ext, ["/src/std/utils.o"], " -shared" )
-link( path + "/lib/string/native" + lib_ext, ["/src/std/string.o"], " -shared" )
-link( path + "/lib/time/native" + lib_ext, ["/src/std/time.o"], " -shared" )
-link( path + "/lib/system/native" + lib_ext, ["/src/std/system.o"], " -shared" )
-link( path + "/lib/lang/native" + lib_ext, ["/src/std/lang.o"], " -shared" )
+link( path + "/sequensa" + exe_ext, ["/src/api/seqapi.o", "/src/lib/whereami.o", "/src/main.o", "/src/help.o", "/src/build.o", "/src/run.o", "/src/utils.o"] )
+link( path + "/lib/stdio/native" + lib_ext, ["/src/api/seqapi.o", "/src/std/stdio.o"], " -shared" )
+link( path + "/lib/math/native" + lib_ext, ["/src/api/seqapi.o", "/src/std/math.o"], " -shared" )
+link( path + "/lib/meta/native" + lib_ext, ["/src/api/seqapi.o", "/src/std/meta.o"], " -shared" )
+link( path + "/lib/utils/native" + lib_ext, ["/src/api/seqapi.o", "/src/std/utils.o"], " -shared" )
+link( path + "/lib/string/native" + lib_ext, ["/src/api/seqapi.o", "/src/std/string.o"], " -shared" )
+link( path + "/lib/time/native" + lib_ext, ["/src/api/seqapi.o", "/src/std/time.o"], " -shared" )
+link( path + "/lib/system/native" + lib_ext, ["/src/api/seqapi.o", "/src/std/system.o"], " -shared" )
+link( path + "/lib/lang/native" + lib_ext, ["/src/api/seqapi.o", "/src/std/lang.o"], " -shared" )
 
 # delete tmp directory
 rem_dir( tmp_path )

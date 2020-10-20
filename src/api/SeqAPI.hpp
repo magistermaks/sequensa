@@ -210,7 +210,7 @@
 #define SEQ_API_STANDARD "2020-10-19"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 5
-#define SEQ_API_VERSION_PATCH 6
+#define SEQ_API_VERSION_PATCH 7
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -918,7 +918,7 @@ using seq::byte;
 
 #ifdef SEQ_IMPLEMENT
 
-constexpr inline byte seq::util::packTags( const long pos, const long end ) noexcept {
+constexpr byte seq::util::packTags( const long pos, const long end ) noexcept {
 	byte tags = 0;
 
 	tags |= ( ( pos == 0 ) ? SEQ_TAG_FIRST : 0 );
@@ -936,7 +936,7 @@ seq::string seq::util::toSeqString( const std::string str ) noexcept {
 	return seq::string( (byte*) str.c_str() );
 }
 
-constexpr inline long seq::util::whole( const double val ) noexcept {
+constexpr long seq::util::whole( const double val ) noexcept {
 	return (long) val;
 }
 
@@ -1078,7 +1078,7 @@ std::vector<seq::FlowCondition*> seq::util::copyFlowConditions( const std::vecto
 	return list;
 }
 
-inline seq::Fraction seq::util::asFraction( const double value ) {
+seq::Fraction seq::util::asFraction( const double value ) {
 	return seq::type::Number( false, value ).getFraction();
 }
 
@@ -1090,47 +1090,47 @@ seq::DataType seq::util::toDataType( const seq::string str ) {
 	throw seq::InternalError( "Invalid argument!" );
 }
 
-inline seq::Generic seq::util::newBool( bool value, bool anchor ) noexcept {
+seq::Generic seq::util::newBool( bool value, bool anchor ) noexcept {
 	return seq::Generic( new seq::type::Bool( anchor, value ) );
 }
 
-inline seq::Generic seq::util::newNumber( double value, bool anchor ) noexcept {
+seq::Generic seq::util::newNumber( double value, bool anchor ) noexcept {
 	return seq::Generic( new seq::type::Number( anchor, value ) );
 }
 
-inline seq::Generic seq::util::newArg( byte value, bool anchor ) noexcept {
+seq::Generic seq::util::newArg( byte value, bool anchor ) noexcept {
 	return seq::Generic( new seq::type::Arg( anchor, value ) );
 }
 
-inline seq::Generic seq::util::newString( const byte* value, bool anchor ) noexcept {
+seq::Generic seq::util::newString( const byte* value, bool anchor ) noexcept {
 	return seq::Generic( new seq::type::String( anchor, value ) );
 }
 
-inline seq::Generic seq::util::newType( DataType value, bool anchor ) noexcept {
+seq::Generic seq::util::newType( DataType value, bool anchor ) noexcept {
 	return seq::Generic( new seq::type::Type( anchor, value ) );
 }
 
-inline seq::Generic seq::util::newVMCall( type::VMCall::CallType value, bool anchor ) noexcept {
+seq::Generic seq::util::newVMCall( type::VMCall::CallType value, bool anchor ) noexcept {
 	return seq::Generic( new seq::type::VMCall( anchor, value ) );
 }
 
-inline seq::Generic seq::util::newFunction( BufferReader* reader, bool end, bool anchor ) noexcept {
+seq::Generic seq::util::newFunction( BufferReader* reader, bool end, bool anchor ) noexcept {
 	return seq::Generic( new seq::type::Function( anchor, reader, end ) );
 }
 
-inline seq::Generic seq::util::newExpression( ExprOperator op, BufferReader* left, BufferReader* right, bool anchor ) noexcept {
+seq::Generic seq::util::newExpression( ExprOperator op, BufferReader* left, BufferReader* right, bool anchor ) noexcept {
 	return seq::Generic( new seq::type::Expression( anchor, op, left, right ) );
 }
 
-inline seq::Generic seq::util::newFlowc( const std::vector<FlowCondition*> readers, bool anchor ) noexcept {
+seq::Generic seq::util::newFlowc( const std::vector<FlowCondition*> readers, bool anchor ) noexcept {
 	return seq::Generic( new seq::type::Flowc( anchor, readers ) );
 }
 
-inline seq::Generic seq::util::newStream( byte tags, BufferReader* reader, bool anchor ) noexcept {
+seq::Generic seq::util::newStream( byte tags, BufferReader* reader, bool anchor ) noexcept {
 	return seq::Generic( new seq::type::Stream( anchor, tags, reader ) );
 }
 
-inline seq::Generic seq::util::newNull( bool anchor ) noexcept {
+seq::Generic seq::util::newNull( bool anchor ) noexcept {
 	return seq::Generic( new seq::type::Null( anchor ) );
 }
 
@@ -1355,15 +1355,15 @@ seq::FileHeader& seq::FileHeader::operator= ( FileHeader&& header ) noexcept {
 
 seq::type::Generic::Generic( const DataType _type, bool _anchor ): type( _type ), anchor( _anchor ) {}
 
-inline const bool seq::type::Generic::getAnchor() const noexcept {
+const bool seq::type::Generic::getAnchor() const noexcept {
 	return this->anchor;
 }
 
-inline void seq::type::Generic::setAnchor( bool anchor ) noexcept {
+void seq::type::Generic::setAnchor( bool anchor ) noexcept {
 	this->anchor = anchor;
 }
 
-inline const seq::DataType seq::type::Generic::getDataType() const noexcept {
+const seq::DataType seq::type::Generic::getDataType() const noexcept {
 	return this->type;
 }
 
@@ -1469,7 +1469,7 @@ seq::BufferReader& seq::type::Function::getReader() {
 	return *(this->reader);
 }
 
-inline const bool seq::type::Function::hasEnd() noexcept {
+const bool seq::type::Function::hasEnd() noexcept {
 	return this->end;
 }
 
@@ -1587,15 +1587,15 @@ seq::Generic& seq::Generic::operator= ( Generic&& generic ) noexcept {
 	return *this;
 }
 
-inline const seq::DataType seq::Generic::getDataType() const noexcept {
+const seq::DataType seq::Generic::getDataType() const noexcept {
 	return this->generic->getDataType();
 }
 
-inline bool seq::Generic::getAnchor() const noexcept {
+bool seq::Generic::getAnchor() const noexcept {
 	return this->generic->getAnchor();
 }
 
-inline void seq::Generic::setAnchor( bool anchor ) noexcept {
+void seq::Generic::setAnchor( bool anchor ) noexcept {
 	return this->generic->setAnchor( anchor );
 }
 
@@ -2043,7 +2043,7 @@ seq::StackLevel::StackLevel( seq::StackLevel&& level ) {
 	this->vars = std::move( level.vars );
 }
 
-inline seq::Generic seq::StackLevel::getArg() {
+seq::Generic seq::StackLevel::getArg() {
 	return seq::Generic( this->arg );
 }
 
@@ -2140,7 +2140,7 @@ seq::StackLevel* seq::Executor::getLevel( int level ) {
 	}
 }
 
-inline seq::StackLevel* seq::Executor::getTopLevel() {
+seq::StackLevel* seq::Executor::getTopLevel() {
 	return &(this->stack.back());
 }
 

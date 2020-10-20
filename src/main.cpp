@@ -1,5 +1,4 @@
 
-#define SEQ_IMPLEMENT
 #include "api/SeqAPI.hpp"
 
 #define ARGPARSE_IMPLEMENT
