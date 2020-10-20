@@ -12,13 +12,14 @@ from utils import *
 # parse cl args
 parser = argparse.ArgumentParser( description="Sequensa build system" )
 parser.add_argument( "--test", help="Run Sequensa API unit tests", action="store_true" )
-parser.add_argument( "--na", help="Don't create 'sq' alias", action="store_true" )
-parser.add_argument( "--np", help="Don't attempt to add sequensa to PATH", action="store_true" )
+parser.add_argument( "--Xalias", help="Don't create 'sq' alias", action="store_true" )
+parser.add_argument( "--Xpath", help="Don't attempt to add sequensa to PATH", action="store_true" )
 parser.add_argument( "--dbg", help="Compile in debug mode", action="store_true" )
+parser.add_argument( "-c", help="Specify compiler command", type=str, default="g++" )
 args = parser.parse_args()
 
 # palatform independent settings
-command = "g++"
+command = args.c
 tmp_path = "./builder-tmp"
 
 system_name = platform.system()
@@ -64,15 +65,20 @@ def link( target, paths, args = "" ):
 print( "Sequensa builder v1.0" )
 print( "Platform: " + system_name + ", Selected '" + command + "' compiler." )
 
+if command != "g++" and command != "gcc":
+    print("\nWarning: Selected compiler is non-default!")
+    print("Warning: Expected g++ or gcc, this may cause problems.")
+
 # if no compiler avaible exit with error
 if not test_for_command( command + exe_ext ):
     print( "\nError: Compiler not found!" )
 
     if system_name == "Linux":
-        print( " * Try installing it with 'sudo apt install build-essential'" )
+        print( " * Try installing g++ with 'sudo apt install build-essential'" )
     else:
-        print( " * Try installing it from 'http://mingw.org/'" )
+        print( " * Try installing g++ from 'http://mingw.org/'" )
 
+    print(" * Try selecting different compiler using the '-c' flag")
     exit()
 
 # if in "test" mode, compile, link and execute API unit tests
@@ -179,7 +185,7 @@ link( path + "/lib/lang/native" + lib_ext, ["/src/api/seqapi.o", "/src/std/lang.
 rem_dir( tmp_path )
 
 # add Sequensa to PATH (if not already present)
-if not args.np:
+if not args.Xalias:
     lpath = localize_path( path )
     if not lpath in os.environ['PATH']:
         add_to_path( lpath )
@@ -187,7 +193,7 @@ if not args.np:
         print( "Please restart shell for changes to take effect" )
 
 # create alias for "sequensa"
-if not args.na:
+if not args.Xpath:
     os.link( path + "/sequensa" + exe_ext, path + "/sq" + exe_ext )
 
 # print done and exit
