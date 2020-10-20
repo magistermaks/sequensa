@@ -5,6 +5,7 @@ import os
 import shutil
 import sys
 import argparse
+import tempfile
 
 # import utils
 from utils import *
@@ -20,7 +21,7 @@ args = parser.parse_args()
 
 # palatform independent settings
 command = args.c
-tmp_path = "./builder-tmp"
+tmp_path = tempfile.gettempdir() + "/seq-tmp"
 
 system_name = platform.system()
 path = ""
@@ -49,7 +50,7 @@ else:
 
 # define function used to invoke compiler
 def compile( path, args = "" ):
-    print( "Compiling '" + path + ".cpp' => '" + tmp_path + "/" + path + ".o'" )
+    print( "Compiling './" + path + ".cpp' => '" + tmp_path + "/" + path + ".o'" )
     os.system( command + compiler_args + args + "-o \"" + tmp_path + "/" + path + ".o\" " + path + ".cpp" ) 
 
 # define function used to invoke linker
