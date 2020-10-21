@@ -15,29 +15,22 @@ parser = argparse.ArgumentParser( description="Sequensa build system" )
 parser.add_argument( "--test", help="Run Sequensa API unit tests", action="store_true" )
 parser.add_argument( "--Xalias", help="Don't create 'sq' alias", action="store_true" )
 parser.add_argument( "--Xpath", help="Don't attempt to add sequensa to PATH", action="store_true" )
-parser.add_argument( "--dbg", help="Compile in debug mode", action="store_true" )
 parser.add_argument( "-c", help="Specify compiler command", type=str, default="g++" )
+parser.add_argument( "-f", help="Specify compiler flags", type=str, default="-O3 -g0 -Wall -c" )
 args = parser.parse_args()
 
 # palatform independent settings
 command = args.c
 tmp_path = tempfile.gettempdir() + "/seq-tmp"
 
-system_name = platform.system()
 path = ""
 linker_args = ""
 exe_ext = ""
 lib_ext = ""
-compiler_args = ""
-
-# set compiler args
-if args.dbg:
-    compiler_args = " -O0 -g3 -Wall -c "
-else:
-    compiler_args = " -O3 -g0 -Wall -c "
+compiler_args = " " + args.f + " "
 
 # palatform dependent settings
-if system_name == "Linux":
+if os.name == "posix":
     path = os.getenv('HOME') + "/sequensa"
     linker_args = " -ldl"
     exe_ext = ""
@@ -51,7 +44,7 @@ else:
 # define function used to invoke compiler
 def compile( path, args = "" ):
     print( "Compiling './" + path + ".cpp' => '" + tmp_path + "/" + path + ".o'" )
-    os.system( command + compiler_args + args + "-o \"" + tmp_path + "/" + path + ".o\" " + path + ".cpp" ) 
+    os.system( command + compiler_args + args + " -o \"" + tmp_path + "/" + path + ".o\" " + path + ".cpp" ) 
 
 # define function used to invoke linker
 def link( target, paths, args = "" ):
@@ -64,7 +57,7 @@ def link( target, paths, args = "" ):
 
 # print basic info
 print( "Sequensa builder v1.0" )
-print( "Platform: " + system_name + ", Selected '" + command + "' compiler." )
+print( "Platform: " + platform.system() + ", Selected '" + command + "' compiler." )
 
 # warn about non-standard compiler
 if command != "g++" and command != "gcc":
@@ -75,7 +68,7 @@ if command != "g++" and command != "gcc":
 if not test_for_command( command + exe_ext ):
     print( "\nError: Compiler not found!" )
 
-    if system_name == "Linux":
+    if os.name == "posix":
         print( " * Try installing g++ with 'sudo apt install build-essential'" )
     else:
         print( " * Try installing g++ from 'http://mingw.org/'" )
