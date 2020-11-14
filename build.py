@@ -16,7 +16,9 @@ parser.add_argument( "--test", help="Run Sequensa API unit tests", action="store
 parser.add_argument( "--Xalias", help="Don't create 'sq' alias", action="store_true" )
 parser.add_argument( "--Xpath", help="Don't attempt to add sequensa to PATH", action="store_true" )
 parser.add_argument( "-c", help="Specify compiler command", type=str, default="g++" )
-parser.add_argument( "-f", help="Specify compiler flags", type=str, default="-O3 -g0 -Wall -c" )
+parser.add_argument( "-cf", help="Specify compiler flags", type=str, default="-O3 -g0 -Wall -c" )
+parser.add_argument( "-lf", help="Specify linker flags", type=str, default="" )
+parser.add_argument( "--workspace", help="Preserve workspace", action="store_true"  )
 args = parser.parse_args()
 
 # palatform independent settings
@@ -27,17 +29,18 @@ path = ""
 linker_args = ""
 exe_ext = ""
 lib_ext = ""
-compiler_args = " " + args.f + " "
+compiler_args = " " + args.cf + " "
+linker_args = " " + args.lf + " "
 
 # palatform dependent settings
 if os.name == "posix":
     path = os.getenv('HOME') + "/sequensa"
-    linker_args = " -ldl"
+    linker_args_end = " -ldl"
     exe_ext = ""
     lib_ext = ".so"
 else:
     path = "C:/sequensa"
-    linker_args = ""
+    linker_args_end = ""
     exe_ext = ".exe"
     lib_ext = ".dll"
 
@@ -53,7 +56,7 @@ def link( target, paths, args = "" ):
         x = x + tmp_path + p + " "
 	
     print( "Linking '" + target + "'" )
-    os.system( command + args + " -o \"" + target + "\" " + x + linker_args ) 
+    os.system( command + linker_args + args + " -o \"" + target + "\" " + x + linker_args_end ) 
 
 # print basic info
 print( "Sequensa builder v1.0" )
@@ -104,7 +107,10 @@ if args.test:
     os.system( localize_path( tmp_path + "/tests" + exe_ext ) )
 
     # delete tmp directory and exit
-    rem_dir( tmp_path )
+    if not args.workspace:
+        rem_dir( tmp_path )
+    else:
+        print( "\nWorkspace: '" + tmp_path + "' preserved." )
     exit() 
 
 # warn about target directory
@@ -177,7 +183,10 @@ link( path + "/lib/system/native" + lib_ext, ["/src/api/seqapi.o", "/src/std/sys
 link( path + "/lib/lang/native" + lib_ext, ["/src/api/seqapi.o", "/src/std/lang.o"], " -shared" )
 
 # delete tmp directory
-rem_dir( tmp_path )
+if not args.workspace:
+    rem_dir( tmp_path )
+else:
+    print( "\nWorkspace: '" + tmp_path + "' preserved." )
 
 # add Sequensa to PATH (if not already present)
 if not args.Xpath:
