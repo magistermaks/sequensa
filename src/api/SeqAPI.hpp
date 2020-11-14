@@ -568,7 +568,7 @@ namespace seq {
 
 	namespace util {
 
-		constexpr byte packTags( const long pos, const long end ) noexcept;
+		byte packTags( const long pos, const long end ) noexcept;
 		std::string toStdString( const seq::string str ) noexcept;
 		seq::string toSeqString( const std::string str ) noexcept;
 		constexpr long whole( const double val ) noexcept;
@@ -918,7 +918,7 @@ using seq::byte;
 
 #ifdef SEQ_IMPLEMENT
 
-constexpr byte seq::util::packTags( const long pos, const long end ) noexcept {
+byte seq::util::packTags( const long pos, const long end ) noexcept {
 	byte tags = 0;
 
 	tags |= ( ( pos == 0 ) ? SEQ_TAG_FIRST : 0 );
