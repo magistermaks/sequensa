@@ -2111,7 +2111,25 @@ TEST( ce_no_return, {
 	CHECK( (int) res.size(), (int) 1 )
 	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Null );
 
-} )
+} );
+
+TEST( ce_binary_op, {
+
+	seq::string code = "#exit << ( ((6 & 2) | 1) ^ 7 )"_b;
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	auto& res = exe.getResults();
+
+	CHECK( (int) res.size(), (int) 1 )
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(0).Number().getLong(), (long) (((6 & 2) | 1) ^ 7) );
+
+} );
 
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
