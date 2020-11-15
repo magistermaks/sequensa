@@ -380,7 +380,11 @@ TEST( buffer_writer_file_header, {
     CHECK( header4.getVersionMajor(), 1 );
     CHECK( header4.getVersionMinor(), 2 );
     CHECK( header4.getVersionPatch(), 3 );
-    CHECK( header4.getValueMap().empty(), true );
+
+    CHECK( header4.getValueMap().empty(), false );
+    CHECK( header2.getValueMap().empty(), true );
+    CHECK( header3.getValueMap().empty(), true );
+    CHECK( header.getValueMap().empty(), false );
 
     CHECK( br.nextByte(), (byte) 'A' );
 } );
@@ -1443,7 +1447,7 @@ TEST( ce_blob, {
 		}else{
 
 			if( input[0].Blob().toString() != "blobus"_b ) {
-				FAIL( "Invalit blob string!" );
+				FAIL( "Invalid blob string!" );
 			}
 
 			return seq::Stream {
@@ -2034,6 +2038,28 @@ TEST( util_simple, {
 
 	g = seq::util::newNull();
 	CHECK( (byte) g.getDataType(), (byte) seq::DataType::Null );
+
+} );
+
+TEST( buffer_get_section, {
+
+	std::vector<byte> arr;
+	seq::BufferWriter bw( arr );
+
+	bw.putByte( 'A' );
+	bw.putByte( 'B' );
+	bw.putByte( 'C' );
+	bw.putByte( 'D' );
+	bw.putByte( 'E' );
+
+	seq::ByteBuffer bb( arr.data(), arr.size() );
+
+	seq::BufferReader br = bb.getReader( 1, 3 );
+
+	CHECK( br.nextByte(), 'B'_b );
+	CHECK( br.nextByte(), 'C'_b );
+	CHECK( br.nextByte(), 'D'_b );
+	CHECK( br.hasNext(), false );
 
 } );
 

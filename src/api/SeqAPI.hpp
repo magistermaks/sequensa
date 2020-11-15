@@ -210,7 +210,7 @@
 #define SEQ_API_STANDARD "2020-10-20"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 5
-#define SEQ_API_VERSION_PATCH 8
+#define SEQ_API_VERSION_PATCH 9
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -515,7 +515,7 @@ namespace seq {
 
 			public:
 				Blob( bool anchor );
-				seq::string toString();
+				virtual seq::string toString();
 				virtual Blob* copy();
 
 		};
@@ -1013,7 +1013,7 @@ seq::Generic seq::util::boolCast( seq::Generic arg ) {
 
 	bool val = ( seq::util::numberCast( arg ).Number().getDouble() != 0 );
 
-	return seq::Generic( new seq::type::Bool( false, val ) );
+	return newBool( val );
 }
 
 seq::Generic seq::util::stringCast( seq::Generic arg ) {
