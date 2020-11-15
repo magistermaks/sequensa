@@ -732,7 +732,7 @@ TEST( ce_arg, {
 TEST( ce_string_escape_codes, {
 
 	seq::string code = (byte*) (
-			"#exit << \"\\\\\\n\\t\\\"\"");
+			"#exit << \"\\\\\\n\\t\\\"\\r\"");
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -741,7 +741,7 @@ TEST( ce_string_escape_codes, {
 	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
-	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "\\\n\t\"" ) ) {
+	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "\\\n\t\"\r" ) ) {
 		FAIL( "Invalid String!" );
 	}
 
@@ -2128,6 +2128,19 @@ TEST( ce_binary_op, {
 	CHECK( (int) res.size(), (int) 1 )
 	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
 	CHECK( res.at(0).Number().getLong(), (long) (((6 & 2) | 1) ^ 7) );
+
+} );
+
+TEST( c_fail_square_bracket, {
+
+		seq::string code = "#exit << [[true]]"_b;
+
+		try{
+
+			seq::Compiler::compile( code );
+			FAIL( "Exception expected!" );
+
+		}catch( seq::CompilerError& err ){}
 
 } );
 
