@@ -2,6 +2,8 @@
 #include "SeqAPI.hpp"
 #include "../lib/vstl.hpp"
 
+using seq::byte;
+
 void print_buffer( seq::ByteBuffer& bb ) {
     seq::BufferReader br = bb.getReader();
     while( br.hasNext() ) std::cout << (int) br.nextByte() << " ";
@@ -356,6 +358,29 @@ TEST( buffer_writer_file_header, {
     CHECK_ELSE( header.getValue( (byte*) "number" ), seq::string( (byte*) "123.4" ) ) {
         FAIL( "Invalid string! - " + std::string( (char*) header.getValue( (byte*) "number" ).c_str() ) );
     }
+
+    CHECK( header.getVersionMajor(), 1 );
+    CHECK( header.getVersionMinor(), 2 );
+    CHECK( header.getVersionPatch(), 3 );
+
+    seq::FileHeader header2( header );
+
+    CHECK( header2.getVersionMajor(), 1 );
+    CHECK( header2.getVersionMinor(), 2 );
+    CHECK( header2.getVersionPatch(), 3 );
+
+    seq::FileHeader header3;
+
+    CHECK( header3.getVersionMajor(), 0 );
+    CHECK( header3.getVersionMinor(), 0 );
+    CHECK( header3.getVersionPatch(), 0 );
+
+    seq::FileHeader header4( std::move( header2 ) );
+
+    CHECK( header4.getVersionMajor(), 1 );
+    CHECK( header4.getVersionMinor(), 2 );
+    CHECK( header4.getVersionPatch(), 3 );
+    CHECK( header4.getValueMap().empty(), true );
 
     CHECK( br.nextByte(), (byte) 'A' );
 } );
@@ -1416,6 +1441,11 @@ TEST( ce_blob, {
 		if( input[0].getDataType() != seq::DataType::Blob ) {
 			return seq::Stream();
 		}else{
+
+			if( input[0].Blob().toString() != "blobus"_b ) {
+				FAIL( "Invalit blob string!" );
+			}
+
 			return seq::Stream {
 				seq::Generic( new seq::type::Number( false, ((Thing&) input[0].Blob()).a ) ),
 				seq::Generic( new seq::type::Number( false, ((Thing&) input[0].Blob()).b ) )
@@ -1931,6 +1961,79 @@ TEST( ce_between_anchors, {
 
 	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Number );
 	CHECK( res.at(1).Number().getLong(), 2l );
+
+} );
+
+TEST( ce_casts, {
+
+	seq::string code = "#exit << (<< #number << false) << (<< #string << false << [true] << exit << number)"_b;
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	auto& res = exe.getResults();
+
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(0).Number().getLong(), 0l );
+
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::String );
+	CHECK_ELSE( res.at(1).String().getString(), seq::string( "false"_b ) ) {
+		FAIL( "Invalid string, expected 'false'!" );
+	}
+
+	CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::String );
+	CHECK_ELSE( res.at(2).String().getString(), seq::string( "flowc"_b ) ) {
+		FAIL( "Invalid string, expected 'flowc'!" );
+	}
+
+	CHECK( (byte) res.at(3).getDataType(), (byte) seq::DataType::String );
+	CHECK_ELSE( res.at(3).String().getString(), seq::string( "func"_b ) ) {
+		FAIL( "Invalid string, expected 'func'!" );
+	}
+
+	CHECK( (byte) res.at(4).getDataType(), (byte) seq::DataType::String );
+	CHECK_ELSE( res.at(4).String().getString(), seq::string( "type"_b ) ) {
+		FAIL( "Invalid string, expected 'type'!" );
+	}
+
+} );
+
+TEST( util_simple, {
+
+	seq::Generic g;
+
+	g = seq::util::newBool( true );
+	CHECK( (byte) g.getDataType(), (byte) seq::DataType::Bool );
+
+	g = seq::util::newNumber( 123.0 );
+	CHECK( (byte) g.getDataType(), (byte) seq::DataType::Number );
+
+	g = seq::util::newArg( 1 );
+	CHECK( (byte) g.getDataType(), (byte) seq::DataType::Arg );
+
+	g = seq::util::newString( "hello"_b );
+	CHECK( (byte) g.getDataType(), (byte) seq::DataType::String );
+
+	g = seq::util::newType( seq::DataType::Bool );
+	CHECK( (byte) g.getDataType(), (byte) seq::DataType::Type );
+
+	g = seq::util::newVMCall( seq::type::VMCall::CallType::Exit );
+	CHECK( (byte) g.getDataType(), (byte) seq::DataType::VMCall );
+
+	g = seq::util::newFunction( nullptr, false );
+	CHECK( (byte) g.getDataType(), (byte) seq::DataType::Func );
+
+	g = seq::util::newExpression( seq::ExprOperator::Addition, nullptr, nullptr );
+	CHECK( (byte) g.getDataType(), (byte) seq::DataType::Expr );
+
+	g = seq::util::newStream( 0, nullptr );
+	CHECK( (byte) g.getDataType(), (byte) seq::DataType::Stream );
+
+	g = seq::util::newNull();
+	CHECK( (byte) g.getDataType(), (byte) seq::DataType::Null );
 
 } );
 
