@@ -976,6 +976,7 @@ TEST( ce_stream_tags, {
 	seq::Executor exe;
 	exe.inject( "join"_b, native_join_strings );
 	exe.execute( bb );
+	exe.reset();
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
 	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "firstnonenonelastnoneend" ) ) {
@@ -2052,16 +2053,65 @@ TEST( buffer_get_section, {
 	bw.putByte( 'D' );
 	bw.putByte( 'E' );
 
-	seq::ByteBuffer bb( arr.data(), arr.size() );
+	seq::ByteBuffer bb1( arr.data(), arr.size() );
 
-	seq::BufferReader br = bb.getReader( 1, 3 );
+	seq::BufferReader br1 = bb1.getReader( 1, 3 );
+	seq::ByteBuffer bb2 = br1.getSubBuffer();
 
-	CHECK( br.nextByte(), 'B'_b );
-	CHECK( br.nextByte(), 'C'_b );
-	CHECK( br.nextByte(), 'D'_b );
-	CHECK( br.hasNext(), false );
+	CHECK( br1.nextByte(), 'B'_b );
+	CHECK( br1.nextByte(), 'C'_b );
+	CHECK( br1.nextByte(), 'D'_b );
+	CHECK( br1.hasNext(), false );
+
+	seq::BufferReader br2 = bb2.getReader( 1, 2 );
+
+	CHECK( br2.nextByte(), 'C'_b );
+	CHECK( br2.nextByte(), 'D'_b );
+	CHECK( br2.hasNext(), false );
 
 } );
+
+TEST( ce_flowc_range, {
+
+	seq::string code = "#exit << #[1:5] << 1 << 2 << 3 << 4 << 5"_b;
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	auto& res = exe.getResults();
+
+	CHECK( (int) res.size(), (int) 3 )
+
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(0).Number().getLong(), 2l );
+
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(1).Number().getLong(), 3l );
+
+	CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(2).Number().getLong(), 4l );
+
+} );
+
+TEST( ce_no_return, {
+
+	seq::string code = ""_b;
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	auto& res = exe.getResults();
+
+	CHECK( (int) res.size(), (int) 1 )
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Null );
+
+} )
 
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
