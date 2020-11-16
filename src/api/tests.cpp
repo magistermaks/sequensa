@@ -2133,16 +2133,45 @@ TEST( ce_binary_op, {
 
 TEST( c_fail_square_bracket, {
 
-		seq::string code = "#exit << [[true]]"_b;
+	seq::string code = "#exit << [[true]]"_b;
 
-		try{
+	try{
 
-			seq::Compiler::compile( code );
-			FAIL( "Exception expected!" );
+		seq::Compiler::compile( code );
+		FAIL( "Exception expected!" );
 
-		}catch( seq::CompilerError& err ){}
+	}catch( seq::CompilerError& err ){}
 
 } );
+
+TEST( c_fail_multi, {
+
+	EXPECT_ERR( {
+		seq::Compiler::compile( " #exit << \"\\g\" "_b );
+	} );
+
+	EXPECT_ERR( {
+		seq::Compiler::compile( " set #var << 123 "_b );
+	} );
+
+	EXPECT_ERR( {
+		seq::Compiler::compile( " #exit << << 123 "_b );
+	} );
+
+	EXPECT_ERR( {
+		seq::Compiler::compile( " #exit << #[#123] << 123 "_b );
+	} );
+
+	EXPECT_ERR( {
+		seq::Compiler::compile( " #exit << #[true false] << true "_b );
+	} );
+
+	EXPECT_ERR( {
+		seq::Compiler::compile( " #exit << #[123:true] << true "_b );
+	} );
+
+} );
+
 
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
