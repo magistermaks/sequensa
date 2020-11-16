@@ -1918,14 +1918,10 @@ TEST( ce_half_fail_math_modes, {
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::Null );
 
-	try{
+	EXPECT_ERR( {
 		exe.setStrictMath( true );
 		exe.execute( bb );
-	}catch( seq::RuntimeError& err ) {
-		return;
-	}
-
-	FAIL( "Expected exception!" );
+	} );
 
 } );
 
@@ -2131,20 +2127,11 @@ TEST( ce_binary_op, {
 
 } );
 
-TEST( c_fail_square_bracket, {
+TEST( c_fail_multiple, {
 
-	seq::string code = "#exit << [[true]]"_b;
-
-	try{
-
-		seq::Compiler::compile( code );
-		FAIL( "Exception expected!" );
-
-	}catch( seq::CompilerError& err ){}
-
-} );
-
-TEST( c_fail_multi, {
+	EXPECT_ERR( {
+		seq::Compiler::compile( " #exit << [[true]] "_b );
+	} );
 
 	EXPECT_ERR( {
 		seq::Compiler::compile( " #exit << \"\\g\" "_b );
@@ -2168,6 +2155,30 @@ TEST( c_fail_multi, {
 
 	EXPECT_ERR( {
 		seq::Compiler::compile( " #exit << #[123:true] << true "_b );
+	} );
+
+	EXPECT_ERR( {
+		seq::Compiler::compile( " #exit << ( "_b );
+	} );
+
+	EXPECT_ERR( {
+		seq::Compiler::compile( " #exit << { "_b );
+	} );
+
+	EXPECT_ERR( {
+		seq::Compiler::compile( " #exit << [ "_b );
+	} );
+
+	EXPECT_ERR( {
+		seq::Compiler::compile( " #exit << ) "_b );
+	} );
+
+	EXPECT_ERR( {
+		seq::Compiler::compile( " #exit << } "_b );
+	} );
+
+	EXPECT_ERR( {
+		seq::Compiler::compile( " #exit << ] "_b );
 	} );
 
 } );
