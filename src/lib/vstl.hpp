@@ -51,6 +51,7 @@
 #define CHECK( value, expected ) CHECK_ELSE( value, expected ) FAIL( "Expected: " + std::to_string( b ) + " got: " + std::to_string( a ) )
 #define REGISTER_EXCEPTION( id, name ) long __vstl_exception__##id = vstl::register_exception( [&] (std::exception_ptr p) -> void { try{ if( p ) std::rethrow_exception(p); } catch( name& e ) { throw vstl::TestFail( e.what() ); } catch ( ... ) {} } )
 #define BEGIN( mode ) int main() { return vstl::run( mode ); }
+#define EXPECT_ERR( ... ) try{ __VA_ARGS__; FAIL( "Expected exception!" ); } catch (...) {}
 
 namespace vstl {
 
