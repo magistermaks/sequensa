@@ -2181,6 +2181,32 @@ TEST( c_fail_multiple, {
 		seq::Compiler::compile( " #exit << ] "_b );
 	} );
 
+	EXPECT_ERR( {
+		seq::Compiler::compile( " #exit << a:b: "_b );
+	} );
+
+} );
+
+TEST( ce_long_namespace, {
+
+	seq::string code = (byte*) (
+			"set a:b:c:d:e << 123 \n"
+			"#exit << a:b:c:d:e"
+			);
+
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	auto& res = exe.getResults();
+
+	CHECK( (int) res.size(), (int) 1 )
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(0).Number().getLong(), (long) 123 );
+
 } );
 
 
