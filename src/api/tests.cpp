@@ -2220,6 +2220,38 @@ TEST( c_fail_multiple, {
 		seq::Compiler::compile( " #exit << [{}] "_b );
 	} );
 
+	EXPECT_ERR( {
+		seq::Compiler::compile( " #exit << (<< #exit << 123) "_b );
+	} );
+
+	EXPECT_ERR( {
+		seq::Compiler::compile( " set { #exit << true } "_b );
+	} );
+
+	EXPECT_ERR( {
+		seq::Compiler::compile( " #exit << #[12:#34] << 123 "_b );
+	} );
+
+	EXPECT_ERR( {
+		seq::Compiler::compile( " #exit << ( 123 123 ) "_b );
+	} );
+
+	EXPECT_ERR( {
+		seq::Compiler::compile( " #exit << ( 123 + 321 + ) "_b );
+	} );
+
+	EXPECT_ERR( {
+		seq::Compiler::compile( " #exit << ( 123 + + 321 ) "_b );
+	} );
+
+	EXPECT_ERR( {
+		seq::Compiler::compile( " #exit << {} "_b );
+	} );
+
+	EXPECT_ERR( {
+		seq::Compiler::compile( " load "_b );
+	} );
+
 } );
 
 TEST( ce_long_namespace, {
