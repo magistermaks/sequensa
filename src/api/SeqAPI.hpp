@@ -210,7 +210,7 @@
 #define SEQ_API_STANDARD "2020-10-20"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 5
-#define SEQ_API_VERSION_PATCH 10
+#define SEQ_API_VERSION_PATCH 11
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -3509,7 +3509,7 @@ std::vector<byte> seq::Compiler::assembleFlowc( std::vector<seq::Compiler::Token
 				}
 
 				default:
-					throw seq::CompilerError( "token '" + seq::util::toStdString(token.getRaw()) + "'", "value or rage", "flow controller", token.getLine() );
+					throw seq::CompilerError( "token '" + seq::util::toStdString(token.getRaw()) + "'", "value or range", "flow controller", token.getLine() );
 
 			}
 
@@ -3518,7 +3518,7 @@ std::vector<byte> seq::Compiler::assembleFlowc( std::vector<seq::Compiler::Token
 	}
 
 	if( !expectSeparator || arr.empty() ) {
-		throw seq::CompilerError( "", "value or rage", "flow controller", tokens.at(i).getLine() );
+		throw seq::CompilerError( "", "value or range", "flow controller", tokens.at(i).getLine() );
 	}
 
 	std::vector<byte> ret;
