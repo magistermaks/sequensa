@@ -75,6 +75,11 @@ TEST( buffer_writer_complex, {
     bw.putArg( false, 3 );
     bw.putName( false, true, (byte*) "name" );
 
+    { // fraction (special case - default values for size 0)
+    	bw.putOpcode( true, seq::Opcode::NUM );
+    	bw.putHead( 0, 0 );
+    }
+
     seq::ByteBuffer bb( arr.data(), arr.size() );
     seq::BufferReader br = bb.getReader();
 
@@ -148,6 +153,13 @@ TEST( buffer_writer_complex, {
         CHECK_ELSE( name.getName(), seq::string( (byte*) "name" ) ) {
             FAIL( "Invalid string! - " + std::string( (char*) name.getName().c_str() ) );
         }
+    }
+
+    { // fraction (special case)
+        seq::TokenReader tr = br.next();
+        CHECK( (byte) tr.getDataType(), (byte) seq::DataType::Number );
+        CHECK( tr.isAnchored(), true );
+        CHECK( tr.getGeneric().Number().getLong(), (long) 0 );
     }
 
 } );
@@ -371,20 +383,28 @@ TEST( buffer_writer_file_header, {
 
     seq::FileHeader header3;
 
-    CHECK( header3.getVersionMajor(), 0 );
-    CHECK( header3.getVersionMinor(), 0 );
-    CHECK( header3.getVersionPatch(), 0 );
+    CHECK_ELSE( header3.getVersionString(), std::string( "0.0.0" ) ) {
+    	FAIL( "Invalid version string, expected '0.0.0'!" );
+    }
 
     seq::FileHeader header4( std::move( header2 ) );
 
-    CHECK( header4.getVersionMajor(), 1 );
-    CHECK( header4.getVersionMinor(), 2 );
-    CHECK( header4.getVersionPatch(), 3 );
+    CHECK_ELSE( header4.getVersionString(), std::string( "1.2.3" ) ) {
+    	FAIL( "Invalid version string, expected '1.2.3'!" );
+    }
 
     CHECK( header4.getValueMap().empty(), false );
     CHECK( header2.getValueMap().empty(), true );
     CHECK( header3.getValueMap().empty(), true );
     CHECK( header.getValueMap().empty(), false );
+
+    header4 = header3;
+
+    CHECK_ELSE( header4.getVersionString(), std::string( "0.0.0" ) ) {
+    	FAIL( "Invalid version string, expected '0.0.0'!" );
+    }
+
+    CHECK( header4.getValueMap().empty(), true );
 
     CHECK( br.nextByte(), (byte) 'A' );
 } );
@@ -2006,6 +2026,9 @@ TEST( util_simple, {
 
 	seq::Generic g;
 
+	g = seq::util::newNull();
+	CHECK( (byte) g.getDataType(), (byte) seq::DataType::Null );
+
 	g = seq::util::newBool( true );
 	CHECK( (byte) g.getDataType(), (byte) seq::DataType::Bool );
 
@@ -2069,7 +2092,7 @@ TEST( buffer_get_section, {
 
 TEST( ce_flowc_range, {
 
-	seq::string code = "#exit << #[1:5] << 1 << 2 << 3 << 4 << 5"_b;
+	seq::string code = "#exit << #[1:5] << 1 << null << 2 << \"hello\" << 3 << true << 4 << 5 << null"_b;
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -2185,6 +2208,18 @@ TEST( c_fail_multiple, {
 		seq::Compiler::compile( " #exit << a:b: "_b );
 	} );
 
+	EXPECT_ERR( {
+		seq::Compiler::compile( " #exit << [@] "_b );
+	} );
+
+	EXPECT_ERR( {
+		seq::Compiler::compile( " #exit << [] "_b );
+	} );
+
+	EXPECT_ERR( {
+		seq::Compiler::compile( " #exit << [{}] "_b );
+	} );
+
 } );
 
 TEST( ce_long_namespace, {
@@ -2206,6 +2241,45 @@ TEST( ce_long_namespace, {
 	CHECK( (int) res.size(), (int) 1 )
 	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
 	CHECK( res.at(0).Number().getLong(), (long) 123 );
+
+} );
+
+TEST( ce_flowc_null, {
+
+	seq::string code = "#exit << (<< #[null] << null << true) << (<< #[false] << null << false)"_b;
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	auto& res = exe.getResults();
+
+	CHECK( (int) res.size(), (int) 2 )
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Null );
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Bool );
+
+} );
+
+TEST( ce_function_break, {
+
+	seq::string code = (byte*) (
+			"#exit << #{ \n"
+			"	#break << null \n"
+			"	#return << 1234 \n"
+			"} << 678");
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	auto& res = exe.getResults();
+
+	CHECK( (int) res.size(), (int) 1 )
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Null );
 
 } );
 

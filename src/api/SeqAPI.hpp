@@ -210,7 +210,7 @@
 #define SEQ_API_STANDARD "2020-10-20"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 5
-#define SEQ_API_VERSION_PATCH 9
+#define SEQ_API_VERSION_PATCH 10
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -736,7 +736,6 @@ namespace seq {
 
 		public:
 			BufferWriter( std::vector<byte>& buffer );
-			void putByte( byte b );
 			void putNull( bool anchor );
 			void putBool( bool anchor, bool value );
 			void putNumber( bool anchor, Fraction f );
@@ -750,13 +749,14 @@ namespace seq {
 			void putFlowc( bool anchor, std::vector<std::vector<byte>>& buffers );
 			void putStream( bool anchor, byte tags, std::vector<byte>& buf );
 			void putFileHeader( byte seq_major, byte seq_minor, byte seq_patch, const std::map<seq::string, seq::string>& data );
-			void putBuffer( std::vector<byte>& buffer );
 
-		private:
+		public: // Use only if you REALLY know what are you doing!
+			void putByte( byte b );
 			void putString( const byte* str );
 			void putOpcode( bool anchor, seq::Opcode code );
 			void putInteger( byte length, long value );
 			void putHead( byte left, byte right );
+			void putBuffer( std::vector<byte>& buffer );
 			std::vector<byte>& buffer;
 	};
 
