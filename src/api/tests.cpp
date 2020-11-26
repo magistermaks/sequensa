@@ -2315,6 +2315,37 @@ TEST( ce_function_break, {
 
 } );
 
+TEST( ce_expression_strings, {
+
+	seq::string code = "#exit << (\"12\" + \"3\") << (\"12\" != \"3\") << (\"12\" = \"3\") << (\"12\" != \"12\") << (\"12\" = \"12\")"_b;
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	auto& res = exe.getResults();
+
+	CHECK( (int) res.size(), (int) 5 )
+
+	CHECK_ELSE( res.at(0).String().getString(), seq::string( "123"_b ) ) {
+		FAIL( "Invalid string, expected '123'!" );
+	}
+
+	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::Bool );
+	CHECK( res.at(1).Bool().getBool(), true );
+
+	CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::Bool );
+	CHECK( res.at(2).Bool().getBool(), false );
+
+	CHECK( (byte) res.at(3).getDataType(), (byte) seq::DataType::Bool );
+	CHECK( res.at(3).Bool().getBool(), false );
+
+	CHECK( (byte) res.at(4).getDataType(), (byte) seq::DataType::Bool );
+	CHECK( res.at(4).Bool().getBool(), true );
+
+} );
 
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
