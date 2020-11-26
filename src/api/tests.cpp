@@ -2,6 +2,9 @@
 #include "SeqAPI.hpp"
 #include "../lib/vstl.hpp"
 
+// Test coverage: 91.89%
+// Last updated: 2020-11-26
+
 using seq::byte;
 
 void print_buffer( seq::ByteBuffer& bb ) {
