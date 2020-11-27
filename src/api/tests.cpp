@@ -2350,6 +2350,25 @@ TEST( ce_expression_strings, {
 
 } );
 
+TEST( c_error_handle, {
+
+	static bool flag;
+	flag = true;
+
+	seq::Compiler::setErrorHandle( [] (seq::CompilerError err) {
+		flag = false;
+	} );
+
+	auto buf = seq::Compiler::compile( "#exit << [#4]"_b );
+
+	seq::Compiler::setErrorHandle( seq::Compiler::defaultErrorHandle );
+
+	if( flag ) {
+		FAIL( "Error handle test failed!" );
+	}
+
+} );
+
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
 REGISTER_EXCEPTION( seq_runtime_error, seq::RuntimeError );
