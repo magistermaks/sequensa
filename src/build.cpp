@@ -26,6 +26,8 @@
 #include "modes.hpp"
 #include "api/SeqAPI.hpp"
 
+bool failed = false;
+
 bool build( std::string input, std::vector<seq::byte>* buffer, std::vector<std::string>* dependencies, std::vector<seq::string>* natives, bool v ) {
 
 	std::ifstream infile( input );
@@ -41,8 +43,15 @@ bool build( std::string input, std::vector<seq::byte>* buffer, std::vector<std::
 
 		}catch( seq::CompilerError& err ){
 
-			std::cout << "Compilation of '" << input << "' failed!" << std::endl;
 			std::cout << err.what() << std::endl;
+			failed = true;
+
+		}
+
+		// set by error handle
+		if( failed ) {
+
+			std::cout << "Compilation of '" << input << "' failed!" << std::endl;
 			return false;
 
 		}
@@ -214,9 +223,22 @@ bool build_tree( std::string input, std::string output, bool v ) {
 
 void build( ArgParse& argp, Options opt ) {
 
+	failed = false;
 	auto vars = argp.getValues();
 
 	if( vars.size() == 2 ) {
+
+		if( opt.multi_error ) {
+			seq::Compiler::setErrorHandle( [] (seq::CompilerError err) {
+				if( err.isCritical() ) {
+					std::cout << "Fatal: ";
+					throw err;
+				}
+
+				std::cout << err.what() << std::endl;
+				failed = true;
+			} );
+		}
 
 		if( !build_tree( vars.at(0), vars.at(1), opt.verbose ) ) {
 
