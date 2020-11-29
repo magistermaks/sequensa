@@ -19,6 +19,7 @@ parser.add_argument( "-c", help="Specify compiler command", type=str, default="g
 parser.add_argument( "-cf", help="Specify compiler flags", type=str, default="-O3 -g0 -Wall -c" )
 parser.add_argument( "-lf", help="Specify linker flags", type=str, default="" )
 parser.add_argument( "--workspace", help="Preserve workspace", action="store_true"  )
+parser.add_argument( "--uninstall", help="Uninstall Sequensa", action="store_true"  )
 args = parser.parse_args()
 
 # palatform independent settings
@@ -61,6 +62,21 @@ def link( target, paths, args = "" ):
 # print basic info
 print( "Sequensa builder v1.0" )
 print( "Platform: " + platform.system() + ", Selected '" + command + "' compiler." )
+
+if args.uninstall:
+    print( "\nSequensa will be uninstalled from: " + path )
+    print( "That dir will be deleted with all Sequensa libraries, do you wish to continue? y/n" )
+    
+    # exit if user did not select 'yes'
+    if input() != "y":
+        print( "\nUninstalation aborted!" )
+        exit()
+        
+    # uninstall
+    rem_dir( path )
+    
+    print( "\nSequensa uninstalled!" )
+    exit();
 
 # warn about non-standard compiler
 if command != "g++" and command != "gcc":
