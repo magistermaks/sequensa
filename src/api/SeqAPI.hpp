@@ -232,7 +232,7 @@
 
 #define SEQ_API_STANDARD "2020-10-20"
 #define SEQ_API_VERSION_MAJOR 1
-#define SEQ_API_VERSION_MINOR 6
+#define SEQ_API_VERSION_MINOR 7
 #define SEQ_API_VERSION_PATCH 0
 #define SEQ_API_NAME "SeqAPI"
 
@@ -838,6 +838,7 @@ namespace seq {
 	class Executor {
 
 		public:
+			Executor( Executor* parent );
 			Executor();
 			void inject( seq::string name, seq::type::Native native );
 			void define( seq::string name, seq::Stream stream );
@@ -859,14 +860,16 @@ namespace seq {
 			Generic executeExprPair( Generic left, Generic right, ExprOperator op, bool anchor );
 			Generic executeExpr( Generic entity );
 			Stream resolveName( string& name, bool anchor );
-			void defineName( string& name, Stream& value );
+			void defineName( string& name, Stream& value, bool define = true );
 			Stream executeFlowc( std::vector<FlowCondition*> fcs, Stream& input_stream );
 			Generic executeCast( Generic cast, Generic arg );
+			type::Native resolveNative( string& name );
 
 		private:
 			std::unordered_map<string, type::Native> natives;
 			std::vector<StackLevel> stack;
 			seq::Stream result;
+			Executor* parent;
 			bool strictMath: 1;
 	};
 
@@ -2163,10 +2166,13 @@ bool seq::FlowCondition::validate( seq::Generic arg ) {
 
 seq::CommandResult::CommandResult( seq::CommandResult::ResultType _stt, seq::Stream _acc ): stt( _stt ), acc( _acc ) {}
 
-seq::Executor::Executor() {
+seq::Executor::Executor( Executor* parent ) {
 	this->stack.push_back( seq::StackLevel() );
-	strictMath = false;
+	this->strictMath = false;
+	this->parent = parent;
 }
+
+seq::Executor::Executor(): Executor( nullptr ) {};
 
 void seq::Executor::inject( seq::string name, seq::type::Native native ) {
 	this->natives[ name ] = native;
@@ -2423,7 +2429,7 @@ seq::CommandResult seq::Executor::executeAnchor( seq::Generic entity, seq::Strea
 
 		// test if name refers to native function, and if so execute it
 		try{
-			return CommandResult( seq::CommandResult::ResultType::None, this->natives.at( name.getName() )( input_stream ) );
+			return CommandResult( seq::CommandResult::ResultType::None, resolveNative( name.getName() )( input_stream ) );
 		} catch (std::out_of_range &ignore) {
 
 			// if it isn't native, try finding it on the stack
@@ -2694,12 +2700,17 @@ seq::Stream seq::Executor::resolveName( seq::string& name, bool anchor ) {
 
 	}
 
+	// if executor has a parent, ask him
+	if( parent != nullptr ) {
+		return parent->resolveName( name, anchor );
+	}
+
 	// if symbol wasn't found throw runtime exception
 	throw seq::RuntimeError( "Referenced undefined symbol: '" + seq::util::toStdString(name) + "'" );
 
 }
 
-void seq::Executor::defineName( string& name, Stream& value ) {
+void seq::Executor::defineName( string& name, Stream& value, bool define ) {
 
 	// iterate stack levels in search of the specified variable
 	for( int i = (int) this->stack.size() - 1; i >= 0; i -- ) {
@@ -2720,8 +2731,35 @@ void seq::Executor::defineName( string& name, Stream& value ) {
 
 	}
 
+	// if executor has a parent, ask him
+	if( parent != nullptr ) {
+		return parent->defineName( name, value, false );
+	}
+
 	// if symbol wasn't found create new variable in top stack level
-	getTopLevel()->setVar(name, value);
+	if( define ) {
+		getTopLevel()->setVar(name, value);
+	}
+
+}
+
+seq::type::Native seq::Executor::resolveNative( string& name ) {
+
+	try{
+
+		return this->natives.at( name );
+
+	}catch(std::out_of_range &err) {
+
+		if( parent != nullptr ) {
+
+			return parent->resolveNative( name );
+
+		}
+
+		throw err;
+
+	}
 
 }
 
