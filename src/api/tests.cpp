@@ -2369,6 +2369,45 @@ TEST( c_error_handle, {
 
 } );
 
+TEST( ce_executor_parenting, {
+
+	seq::string code = (byte*) (
+			"set a << 42 \n"
+			"set b << 13 \n"
+			"#exit << #test_func << \"#exit << ((a :: 0) + (b :: 0) + 37)\""
+			);
+
+	auto buf = seq::Compiler::compile( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	static seq::Executor exe;
+	exe = seq::Executor();
+
+	exe.inject( "test_func"_b, [] (seq::Stream& stream) -> seq::Stream {
+		if( stream[0].getDataType() != seq::DataType::String ) {
+			throw seq::RuntimeError("Expected string!");
+		}
+
+		seq::string code = stream[0].String().getString();
+		auto buf = seq::Compiler::compile( code );
+		seq::ByteBuffer bb( buf.data(), buf.size() );
+
+		seq::Executor local_exe( &exe );
+		local_exe.execute( bb );
+
+		return local_exe.getResults();
+	} );
+
+	exe.execute( bb );
+
+	auto& res = exe.getResults();
+
+	CHECK( (int) res.size(), (int) 1 );
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(0).Number().getLong(), (long) (42 + 13 + 37) );
+
+} );
+
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
 REGISTER_EXCEPTION( seq_runtime_error, seq::RuntimeError );
