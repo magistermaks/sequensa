@@ -2374,7 +2374,7 @@ TEST( ce_executor_parenting, {
 	seq::string code = (byte*) (
 			"set a << 42 \n"
 			"set b << 13 \n"
-			"#exit << #test_func << \"#exit << ((a :: 0) + (b :: 0) + 37)\""
+			"#exit << #test_func << \"#exit << #inc_func << ((a :: 0) + (b :: 0) + 37)\""
 			);
 
 	auto buf = seq::Compiler::compile( code );
@@ -2382,6 +2382,15 @@ TEST( ce_executor_parenting, {
 
 	static seq::Executor exe;
 	exe = seq::Executor();
+
+	exe.inject( "inc_func"_b, [] (seq::Stream& stream) -> seq::Stream {
+		if( stream[0].getDataType() != seq::DataType::Number ) {
+			throw seq::RuntimeError("Expected number!");
+		}
+
+		double i = stream[0].Number().getDouble() + 1;
+		return { seq::util::newNumber( i ) };
+	} );
 
 	exe.inject( "test_func"_b, [] (seq::Stream& stream) -> seq::Stream {
 		if( stream[0].getDataType() != seq::DataType::String ) {
@@ -2404,7 +2413,7 @@ TEST( ce_executor_parenting, {
 
 	CHECK( (int) res.size(), (int) 1 );
 	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
-	CHECK( res.at(0).Number().getLong(), (long) (42 + 13 + 37) );
+	CHECK( res.at(0).Number().getLong(), (long) (42 + 13 + 37 + 1) );
 
 } );
 
