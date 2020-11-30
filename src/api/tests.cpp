@@ -2417,6 +2417,13 @@ TEST( ce_executor_parenting, {
 
 } );
 
+TEST( c_namespace_accessor, {
+
+	auto buf = seq::Compiler::compile( "#exit << (a:b::0)"_b );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+} );
+
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
 REGISTER_EXCEPTION( seq_runtime_error, seq::RuntimeError );
