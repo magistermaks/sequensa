@@ -233,7 +233,7 @@
 #define SEQ_API_STANDARD "2020-10-20"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 7
-#define SEQ_API_VERSION_PATCH 0
+#define SEQ_API_VERSION_PATCH 1
 #define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
@@ -2923,7 +2923,6 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 		String,
 		Escape,
 		Name,
-		Name2,
 		Number,
 		Number2,
 		NumberSign,
@@ -3068,8 +3067,13 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 					if( std::isalpha(c) || c == '_'_b ) token += c; else {
 
 						if( c == ':'_b ) {
-							token += c;
-							state = State::Name2;
+							if( std::isalpha(n) || n == '_'_b ) {
+								token += c;
+							}else{
+								state = State::Start;
+								flag = true;
+								next();
+							}
 							break;
 						}
 
@@ -3081,17 +3085,6 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 
 						state = State::Start;
 						next();
-					}
-					break;
-
-				case State::Name2:
-					if( c == ':'_b ) {
-						state = State::Start;
-						flag = true;
-						next();
-					}else{
-						state = State::Name;
-						flag = true;
 					}
 					break;
 
