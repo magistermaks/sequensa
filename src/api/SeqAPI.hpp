@@ -43,7 +43,7 @@
  *		If provided with the `headerData` pointer it will store an array of found dependence names in it.
  * 		The returned buffer is of type `std::vector<seq::byte> `
  *
- * 		To execute returned buffer it first must encased in ByteBuffer object, the first expected constructor
+ * 		To execute returned buffer it first must be encased in ByteBuffer object, the first expected constructor
  * 		argument is the pointer to the buffer, and the second one is the buffer size:
  * 		seq::ByteBuffer bb( buf.data(), buf.size() )
  * 		where `buf` is the std::vector returned by seq::Copiler::compile.
@@ -68,7 +68,7 @@
  *
  *			// Create args stream containing the number '2'
  *			seq::Stream args = {
- *				seq::Generic( new seq::type::Number( false, 2 ) )
+ *				seq::util::newNumber( 2 )
  * 			};
  *
  * 			// Execute the bytecode with given args
@@ -92,7 +92,7 @@
  * 		`define` method takes two parameters: name of the variable and stream to be stored as the variable's value.
  *
  * 			exe.define( "myval"_b, {
- * 				seq::Generic( new seq::type::Null( false ) )
+ * 				seq::util::newNull()
  * 			} );
  *
  * 		All injected function can be removed from the Executor object by
@@ -103,7 +103,7 @@
  * 		After successful execution (exe.execute) of the program the returned value(s) can be
  * 		obtained by calling `exe.getResult()` for single result or `exe.getResults()` for stream
  * 		of returned values. Additional helper method `exe.getResultString()` can be used to obtain result
- * 		directly as c++ string.
+ * 		directly as C++ string.
  *
  * 		Note: `exe.getResult()` returns first element of the result stream (according to
  * 		Sequensa Language Specification this is the program's exit code)
@@ -170,7 +170,7 @@
  *		The default error handler can be restored using:
  *			seq::Compiler::setErrorHandle( seq::Compiler::defaultErrorHandle );
  *
- * 8. seq::string, seq::byte and c++11 literals
+ * 8. seq::string, seq::byte and C++11 literals
  *
  * 		seq::byte is alias for unsigned char,
  * 		seq::string is a std::basic_string of seq::bytes it can be used to store utf-8 data
@@ -186,10 +186,10 @@
  *
  * 9. Sequensa API meta-data
  *
- * 		All meta-data can be found in the SEQ_API_* macros
+ * 		All metadata can be found in the SEQ_API_* macros
  *
+ *		SEQ_API_NAME - string - name of the API
  * 		SEQ_API_STANDARD - string - version of the Sequensa Standard implemented by the API
- * 		SEQ_API_NAME - string - name of the API
  * 		SEQ_API_VERSION_MAJOR - byte - Major component of the version number
  * 		SEQ_API_VERSION_MINOR - byte - Minor component of the version number
  * 		SEQ_API_VERSION_PATCH - byte - Patch component of the version number
@@ -214,6 +214,14 @@
 #include <regex>
 #include <cfloat>
 
+// public metadata
+#define SEQ_API_NAME "SeqAPI"
+#define SEQ_API_STANDARD "2020-10-20"
+#define SEQ_API_VERSION_MAJOR 1
+#define SEQ_API_VERSION_MINOR 7
+#define SEQ_API_VERSION_PATCH 2
+
+// enum ranges
 #define SEQ_MIN_OPCODE 1
 #define SEQ_MAX_OPCODE 16
 #define SEQ_MIN_DATA_TYPE 1
@@ -222,19 +230,11 @@
 #define SEQ_MAX_CALL_TYPE 5
 #define SEQ_MIN_OPERATOR 1
 #define SEQ_MAX_OPERATOR 21
-#define SEQ_MAX_UBYTE1 255l
-#define SEQ_MAX_UBYTE2 65535l
-#define SEQ_MAX_UBYTE4 4294967295l
-#define SEQ_MAX_UBYTE8 18446744073709551615l
+
+// tags
 #define SEQ_TAG_FIRST 1
 #define SEQ_TAG_LAST 2
 #define SEQ_TAG_END 4
-
-#define SEQ_API_STANDARD "2020-10-20"
-#define SEQ_API_VERSION_MAJOR 1
-#define SEQ_API_VERSION_MINOR 7
-#define SEQ_API_VERSION_PATCH 1
-#define SEQ_API_NAME "SeqAPI"
 
 #ifdef SEQ_PUBLIC_EXECUTOR
 #	define EXECUTOR_ACCESS public
@@ -1193,7 +1193,7 @@ void seq::BufferWriter::putString( const byte* str ) {
 
 void seq::BufferWriter::putInteger( byte length, long value ) {
 	for( ; length != 0; length -- ) {
-		this->putByte( (byte) ( value & SEQ_MAX_UBYTE1 ) );
+		this->putByte( (byte) ( value & 0xFFl ) );
 		value = ( value >> 8 );
 	}
 }
@@ -1465,9 +1465,9 @@ const seq::Fraction seq::type::Number::getFraction() {
 }
 
 byte seq::type::Number::sizeOf( unsigned long value ) {
-	if( value > SEQ_MAX_UBYTE4 ) return 8;
-	if( value > SEQ_MAX_UBYTE2 ) return 4;
-	if( value > SEQ_MAX_UBYTE1 ) return 2;
+	if( value > 0xFFFFFFFFul ) return 8;
+	if( value > 0xFFFFul ) return 4;
+	if( value > 0xFFul ) return 2;
 	return 1;
 }
 
