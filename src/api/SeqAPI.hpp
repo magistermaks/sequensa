@@ -219,7 +219,7 @@
 #define SEQ_API_STANDARD "2020-10-20"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 7
-#define SEQ_API_VERSION_PATCH 3
+#define SEQ_API_VERSION_PATCH 4
 
 // enum ranges
 #define SEQ_MIN_OPCODE 1
@@ -2499,6 +2499,7 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 	// return null if data types don't match (with exception of Not and BinaryNot)
 	if( rtype != ltype ) {
 		if( op != seq::ExprOperator::Not && op != seq::ExprOperator::BinaryNot ) {
+
 			if( this->strictMath ) {
 				throw seq::RuntimeError( "Expression operators don't match!" );
 			}else{
@@ -2508,91 +2509,92 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 		}
 	}
 
-	typedef seq::type::Generic*(*ExprFunc)(bool, seq::Generic*, seq::Generic*);
+	typedef seq::type::Generic*(*ExprFunc)(bool, seq::type::Generic*, seq::type::Generic*);
 
-#	define SQFUN [] ( bool f, seq::Generic* a, seq::Generic* b ) -> seq::type::Generic*
-#	define SQNUM( g ) ((seq::type::Number*) g->getRaw())
-#	define SQSTR( g ) ((seq::type::String*) g->getRaw())
+#	define SQFUN [] ( bool f, seq::type::Generic* a, seq::type::Generic* b ) -> seq::type::Generic*
+#	define SQNML( g ) ((seq::type::Number*) g)->getLong()
+#	define SQNMD( g ) ((seq::type::Number*) g)->getDouble()
+#	define SQSTR( g ) ((seq::type::String*) g)->getString()
 
 	static const ExprFunc lambdas[SEQ_MAX_OPERATOR][2] = {
 			{ // Less
-					SQFUN { return new seq::type::Bool(f, SQNUM(a)->getDouble() < SQNUM(b)->getDouble()); },
+					SQFUN { return new seq::type::Bool(f, SQNMD(a) < SQNMD(b)); },
 					SQFUN { return new seq::type::Null(f); },
 			},
 			{ // Greater
-					SQFUN { return new seq::type::Bool(f, SQNUM(a)->getDouble() > SQNUM(b)->getDouble()); },
+					SQFUN { return new seq::type::Bool(f, SQNMD(a) > SQNMD(b)); },
 					SQFUN { return new seq::type::Null(f); },
 			},
 			{ // Equal
-					SQFUN { return new seq::type::Bool(f, SQNUM(a)->getDouble() == SQNUM(b)->getDouble()); },
-					SQFUN { return new seq::type::Bool(f, SQSTR(a)->getString() == SQSTR(b)->getString()); },
+					SQFUN { return new seq::type::Bool(f, SQNMD(a) == SQNMD(b)); },
+					SQFUN { return new seq::type::Bool(f, SQSTR(a) == SQSTR(b)); },
 			},
 			{ // NotEqual
-					SQFUN { return new seq::type::Bool(f, SQNUM(a)->getDouble() != SQNUM(b)->getDouble()); },
-					SQFUN { return new seq::type::Bool(f, SQSTR(a)->getString() != SQSTR(b)->getString()); },
+					SQFUN { return new seq::type::Bool(f, SQNMD(a) != SQNMD(b)); },
+					SQFUN { return new seq::type::Bool(f, SQSTR(a) != SQSTR(b)); },
 			},
 			{ // NotGreater
-					SQFUN { return new seq::type::Bool(f, SQNUM(a)->getDouble() <= SQNUM(b)->getDouble()); },
+					SQFUN { return new seq::type::Bool(f, SQNMD(a) <= SQNMD(b)); },
 					SQFUN { return new seq::type::Null(f); },
 			},
 			{ // NotLess
-					SQFUN { return new seq::type::Bool(f, SQNUM(a)->getDouble() >= SQNUM(b)->getDouble()); },
+					SQFUN { return new seq::type::Bool(f, SQNMD(a) >= SQNMD(b)); },
 					SQFUN { return new seq::type::Null(f); },
 			},
 			{ // And
-					SQFUN { return new seq::type::Bool(f, SQNUM(a)->getLong() != 0 && SQNUM(b)->getLong() != 0); },
+					SQFUN { return new seq::type::Bool(f, SQNML(a) != 0 && SQNML(b) != 0); },
 					SQFUN { return new seq::type::Null(f); },
 			},
 			{ // Or
-					SQFUN { return new seq::type::Bool(f, SQNUM(a)->getLong() != 0 || SQNUM(b)->getLong() != 0); },
+					SQFUN { return new seq::type::Bool(f, SQNML(a) != 0 || SQNML(b) != 0); },
 					SQFUN { return new seq::type::Null(f); },
 			},
 			{ // Xor
-					SQFUN { return new seq::type::Bool(f, (SQNUM(a)->getLong() != 0) != (SQNUM(b)->getLong() != 0)); },
+					SQFUN { return new seq::type::Bool(f, (SQNML(a) != 0) != (SQNML(b) != 0)); },
 					SQFUN { return new seq::type::Null(f); },
 			},
 			{ // Not
-					SQFUN { return new seq::type::Bool(f, SQNUM(b)->getLong() == 0); },
+					SQFUN { return new seq::type::Bool(f, SQNML(b) == 0); },
 					SQFUN { return new seq::type::Null(f); },
 			},
 			{ // Multiplication
-					SQFUN { return new seq::type::Number(f, SQNUM(a)->getDouble() * SQNUM(b)->getDouble()); },
+					SQFUN { return new seq::type::Number(f, SQNMD(a) * SQNMD(b)); },
 					SQFUN { return new seq::type::Null(f); },
 			},
 			{ // Division
-					SQFUN { return new seq::type::Number(f, SQNUM(a)->getDouble() / SQNUM(b)->getDouble()); },
+					SQFUN { return new seq::type::Number(f, SQNMD(a) / SQNMD(b)); },
 					SQFUN { return new seq::type::Null(f); },
 			},
 			{ // Addition
-					SQFUN { return new seq::type::Number(f, SQNUM(a)->getDouble() + SQNUM(b)->getDouble()); },
-					SQFUN { return new seq::type::String(f, (SQSTR(a)->getString() + SQSTR(b)->getString()).c_str() ); },
+					SQFUN { return new seq::type::Number(f, SQNMD(a) + SQNMD(b)); },
+					SQFUN { return new seq::type::String(f, (SQSTR(a) + SQSTR(b)).c_str() ); },
 			},
 			{ // Subtraction
-					SQFUN { return new seq::type::Number(f, SQNUM(a)->getDouble() - SQNUM(b)->getDouble()); },
+					SQFUN { return new seq::type::Number(f, SQNMD(a) - SQNMD(b)); },
 					SQFUN { return new seq::type::Null(f); },
 			},
 			{ // Modulo
-					SQFUN { return new seq::type::Number(f, SQNUM(a)->getLong() % SQNUM(b)->getLong()); },
+					SQFUN { return new seq::type::Number(f, SQNML(a) % SQNML(b)); },
 					SQFUN { return new seq::type::Null(f); },
 			},
 			{ // Power
-					SQFUN { return new seq::type::Number(f, std::pow( SQNUM(a)->getDouble(), SQNUM(b)->getDouble() )); },
+					SQFUN { return new seq::type::Number(f, std::pow( SQNMD(a), SQNMD(b) )); },
 					SQFUN { return new seq::type::Null(f); },
 			},
 			{ // BinaryAnd
-					SQFUN { return new seq::type::Number(f, SQNUM(a)->getLong() & SQNUM(b)->getLong() ); },
+					SQFUN { return new seq::type::Number(f, SQNML(a) & SQNML(b) ); },
 					SQFUN { return new seq::type::Null(f); },
 			},
 			{ // BinaryOr
-					SQFUN { return new seq::type::Number(f, SQNUM(a)->getLong() | SQNUM(b)->getLong() ); },
+					SQFUN { return new seq::type::Number(f, SQNML(a) | SQNML(b) ); },
 					SQFUN { return new seq::type::Null(f); },
 			},
 			{ // BinaryXor
-					SQFUN { return new seq::type::Number(f, SQNUM(a)->getLong() ^ SQNUM(b)->getLong() ); },
+					SQFUN { return new seq::type::Number(f, SQNML(a) ^ SQNML(b) ); },
 					SQFUN { return new seq::type::Null(f); },
 			},
 			{ // BinaryNot
-					SQFUN { return new seq::type::Number(f, ~ SQNUM(b)->getLong() ); },
+					SQFUN { return new seq::type::Number(f, ~ SQNML(b) ); },
 					SQFUN { return new seq::type::Null(f); },
 			},
 			{ // Accessor (handled in different place)
@@ -2602,21 +2604,22 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 	};
 
 #	undef SQFUN
-#	undef SQNUM
+#	undef SQNML
+#	undef SQNMD
 #	undef SQSTR
 
 	// handle each data type
 	switch( rtype ) {
 
 		case seq::DataType::Number:
-			return seq::Generic( lambdas[ ((byte) op) - 1 ][0]( anchor, &left, &right ) );
+			return seq::Generic( lambdas[ ((byte) op) - 1 ][0]( anchor, left.getRaw(), right.getRaw() ) );
 
 		case seq::DataType::Bool: {
 
 				// Don't touch it again! The bool check for left value is needed for NOT and BINARY NOT
 				seq::Generic lb = seq::util::newNumber( (float) (left.getDataType() == seq::DataType::Bool ? (left.Bool().getBool() ? 1 : 0) : 0) );
 				seq::Generic rb = seq::util::newNumber( (float) (right.Bool().getBool() ? 1 : 0) );
-				seq::type::Generic* r = lambdas[ ((byte) op) - 1 ][0]( anchor, &lb, &rb );
+				seq::type::Generic* r = lambdas[ ((byte) op) - 1 ][0]( anchor, lb.getRaw(), rb.getRaw() );
 
 				if( r->getDataType() == seq::DataType::Bool ) {
 					return seq::Generic( r );
@@ -2631,7 +2634,7 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 			}
 
 		case seq::DataType::String:
-			return seq::Generic( lambdas[ ((byte) op) - 1 ][1]( anchor, &left, &right ) );
+			return seq::Generic( lambdas[ ((byte) op) - 1 ][1]( anchor, left.getRaw(), right.getRaw() ) );
 
 		case seq::DataType::Type:
 			if( op == seq::ExprOperator::Equal ) return seq::Generic( new seq::type::Bool( false, left.Type().getType() == right.Type().getType() ) );
