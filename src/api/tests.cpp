@@ -1618,7 +1618,7 @@ TEST( ce_value_cast, {
 TEST( ce_expression_new, {
 
 	seq::string code = (byte*) (
-			"#return << ( null = null ) << ( number = bool ) << ( type = type ) << ( 3 != null )\n"
+			"#return << ( null = null ) << ( number = bool ) << ( type = type ) << ( 3 != null )"
 			);
 
 	auto buf = seq::Compiler::compile( code );

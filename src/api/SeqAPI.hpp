@@ -219,7 +219,7 @@
 #define SEQ_API_STANDARD "2020-10-20"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 7
-#define SEQ_API_VERSION_PATCH 4
+#define SEQ_API_VERSION_PATCH 5
 
 // enum ranges
 #define SEQ_MIN_OPCODE 1
@@ -2488,8 +2488,8 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 
 		// try returning element from stream (left) at index (right)
 		try{
-			long index = right.Number().getLong();
-			return this->resolveName( left.Name().getName(), anchor ).at( index );
+			const Stream stream = std::move( this->resolveName( left.Name().getName(), anchor ) );
+			return std::move( stream.at( right.Number().getLong() ) );
 		}catch( std::out_of_range& err ){
 			return seq::util::newNull(anchor);
 		}
@@ -2509,147 +2509,165 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 		}
 	}
 
-	typedef seq::type::Generic*(*ExprFunc)(bool, seq::type::Generic*, seq::type::Generic*);
+	typedef seq::type::Generic*(*ExprFunc)( bool, seq::type::Generic*, seq::type::Generic* );
+	typedef seq::type::Generic*(*TypeFunc)( bool, seq::type::Generic*, seq::type::Generic*, byte op );
 
-#	define SQFUN [] ( bool f, seq::type::Generic* a, seq::type::Generic* b ) -> seq::type::Generic*
+#	define SQEFN [] ( bool f, seq::type::Generic* a, seq::type::Generic* b ) -> seq::type::Generic*
+#	define SQTFN [] ( bool f, seq::type::Generic* a, seq::type::Generic* b, byte op ) -> seq::type::Generic*
 #	define SQNML( g ) ((seq::type::Number*) g)->getLong()
 #	define SQNMD( g ) ((seq::type::Number*) g)->getDouble()
 #	define SQSTR( g ) ((seq::type::String*) g)->getString()
+#	define SQBOL( g ) ((seq::type::Bool*) g)->getBool()
+#	define SQTYP( g ) ((seq::type::Type*) g)->getType()
 
-	static const ExprFunc lambdas[SEQ_MAX_OPERATOR][2] = {
-			{ // Less
-					SQFUN { return new seq::type::Bool(f, SQNMD(a) < SQNMD(b)); },
-					SQFUN { return new seq::type::Null(f); },
-			},
-			{ // Greater
-					SQFUN { return new seq::type::Bool(f, SQNMD(a) > SQNMD(b)); },
-					SQFUN { return new seq::type::Null(f); },
-			},
-			{ // Equal
-					SQFUN { return new seq::type::Bool(f, SQNMD(a) == SQNMD(b)); },
-					SQFUN { return new seq::type::Bool(f, SQSTR(a) == SQSTR(b)); },
-			},
-			{ // NotEqual
-					SQFUN { return new seq::type::Bool(f, SQNMD(a) != SQNMD(b)); },
-					SQFUN { return new seq::type::Bool(f, SQSTR(a) != SQSTR(b)); },
-			},
-			{ // NotGreater
-					SQFUN { return new seq::type::Bool(f, SQNMD(a) <= SQNMD(b)); },
-					SQFUN { return new seq::type::Null(f); },
-			},
-			{ // NotLess
-					SQFUN { return new seq::type::Bool(f, SQNMD(a) >= SQNMD(b)); },
-					SQFUN { return new seq::type::Null(f); },
-			},
-			{ // And
-					SQFUN { return new seq::type::Bool(f, SQNML(a) != 0 && SQNML(b) != 0); },
-					SQFUN { return new seq::type::Null(f); },
-			},
-			{ // Or
-					SQFUN { return new seq::type::Bool(f, SQNML(a) != 0 || SQNML(b) != 0); },
-					SQFUN { return new seq::type::Null(f); },
-			},
-			{ // Xor
-					SQFUN { return new seq::type::Bool(f, (SQNML(a) != 0) != (SQNML(b) != 0)); },
-					SQFUN { return new seq::type::Null(f); },
-			},
-			{ // Not
-					SQFUN { return new seq::type::Bool(f, SQNML(b) == 0); },
-					SQFUN { return new seq::type::Null(f); },
-			},
-			{ // Multiplication
-					SQFUN { return new seq::type::Number(f, SQNMD(a) * SQNMD(b)); },
-					SQFUN { return new seq::type::Null(f); },
-			},
-			{ // Division
-					SQFUN { return new seq::type::Number(f, SQNMD(a) / SQNMD(b)); },
-					SQFUN { return new seq::type::Null(f); },
-			},
-			{ // Addition
-					SQFUN { return new seq::type::Number(f, SQNMD(a) + SQNMD(b)); },
-					SQFUN { return new seq::type::String(f, (SQSTR(a) + SQSTR(b)).c_str() ); },
-			},
-			{ // Subtraction
-					SQFUN { return new seq::type::Number(f, SQNMD(a) - SQNMD(b)); },
-					SQFUN { return new seq::type::Null(f); },
-			},
-			{ // Modulo
-					SQFUN { return new seq::type::Number(f, SQNML(a) % SQNML(b)); },
-					SQFUN { return new seq::type::Null(f); },
-			},
-			{ // Power
-					SQFUN { return new seq::type::Number(f, std::pow( SQNMD(a), SQNMD(b) )); },
-					SQFUN { return new seq::type::Null(f); },
-			},
-			{ // BinaryAnd
-					SQFUN { return new seq::type::Number(f, SQNML(a) & SQNML(b) ); },
-					SQFUN { return new seq::type::Null(f); },
-			},
-			{ // BinaryOr
-					SQFUN { return new seq::type::Number(f, SQNML(a) | SQNML(b) ); },
-					SQFUN { return new seq::type::Null(f); },
-			},
-			{ // BinaryXor
-					SQFUN { return new seq::type::Number(f, SQNML(a) ^ SQNML(b) ); },
-					SQFUN { return new seq::type::Null(f); },
-			},
-			{ // BinaryNot
-					SQFUN { return new seq::type::Number(f, ~ SQNML(b) ); },
-					SQFUN { return new seq::type::Null(f); },
-			},
-			{ // Accessor (handled in different place)
-					SQFUN { return new seq::type::Null(f); },
-					SQFUN { return new seq::type::Null(f); },
-			}
+	static const ExprFunc null_expr_func = SQEFN { return new seq::type::Null(f); };
+	static const TypeFunc null_type_func = SQTFN { return new seq::type::Null(f); };
+
+	static const ExprFunc expr_lambdas[SEQ_MAX_OPERATOR][3] = {
+		{ // Less
+			SQEFN { return new seq::type::Bool(f, SQNMD(a) < SQNMD(b)); },
+			SQEFN { return new seq::type::Bool(f, SQBOL(a) < SQBOL(b)); },
+			null_expr_func,
+		},
+		{ // Greater
+			SQEFN { return new seq::type::Bool(f, SQNMD(a) > SQNMD(b)); },
+			SQEFN { return new seq::type::Bool(f, SQBOL(a) > SQBOL(b)); },
+			null_expr_func,
+		},
+		{ // Equal
+			SQEFN { return new seq::type::Bool(f, SQNMD(a) == SQNMD(b)); },
+			SQEFN { return new seq::type::Bool(f, SQBOL(a) == SQBOL(b)); },
+			SQEFN { return new seq::type::Bool(f, SQSTR(a) == SQSTR(b)); },
+		},
+		{ // NotEqual
+			SQEFN { return new seq::type::Bool(f, SQNMD(a) != SQNMD(b)); },
+			SQEFN { return new seq::type::Bool(f, SQBOL(a) != SQBOL(b)); },
+			SQEFN { return new seq::type::Bool(f, SQSTR(a) != SQSTR(b)); },
+		},
+		{ // NotGreater
+			SQEFN { return new seq::type::Bool(f, SQNMD(a) <= SQNMD(b)); },
+			SQEFN { return new seq::type::Bool(f, SQBOL(a) <= SQBOL(b)); },
+			null_expr_func,
+		},
+		{ // NotLess
+			SQEFN { return new seq::type::Bool(f, SQNMD(a) >= SQNMD(b)); },
+			SQEFN { return new seq::type::Bool(f, SQBOL(a) >= SQBOL(b)); },
+			null_expr_func,
+		},
+		{ // And
+			SQEFN { return new seq::type::Bool(f, SQNML(a) != 0 && SQNML(b) != 0); },
+			SQEFN { return new seq::type::Bool(f, SQBOL(a) && SQBOL(b)); },
+			null_expr_func,
+		},
+		{ // Or
+			SQEFN { return new seq::type::Bool(f, SQNML(a) != 0 || SQNML(b) != 0); },
+			SQEFN { return new seq::type::Bool(f, SQBOL(a) || SQBOL(b)); },
+			null_expr_func,
+		},
+		{ // Xor
+			SQEFN { return new seq::type::Bool(f, (SQNML(a) != 0) != (SQNML(b) != 0)); },
+			SQEFN { return new seq::type::Bool(f, SQBOL(a) != SQBOL(b)); },
+			null_expr_func,
+		},
+		{ // Not
+			SQEFN { return new seq::type::Bool(f, SQNML(b) == 0); },
+			SQEFN { return new seq::type::Bool(f, !SQBOL(b)); },
+			null_expr_func,
+		},
+		{ // Multiplication
+			SQEFN { return new seq::type::Number(f, SQNMD(a) * SQNMD(b)); },
+			SQEFN { return new seq::type::Bool(f, SQBOL(a) < SQBOL(b)); },
+			null_expr_func,
+		},
+		{ // Division
+			SQEFN { return new seq::type::Number(f, SQNMD(a) / SQNMD(b)); },
+			SQEFN { return new seq::type::Bool(f, SQBOL(a) < SQBOL(b)); },
+			null_expr_func,
+		},
+		{ // Addition
+			SQEFN { return new seq::type::Number(f, SQNMD(a) + SQNMD(b)); },
+			SQEFN { return new seq::type::Bool(f, SQBOL(a) || SQBOL(b)); },
+			SQEFN { return new seq::type::String(f, (SQSTR(a) + SQSTR(b)).c_str() ); },
+		},
+		{ // Subtraction
+			SQEFN { return new seq::type::Number(f, SQNMD(a) - SQNMD(b)); },
+			SQEFN { return new seq::type::Bool(f, SQBOL(a) != SQBOL(b)); },
+			null_expr_func,
+		},
+		{ // Modulo
+			SQEFN { return new seq::type::Number(f, SQNML(a) % SQNML(b)); },
+			null_expr_func,
+			null_expr_func,
+		},
+		{ // Power
+			SQEFN { return new seq::type::Number(f, std::pow( SQNMD(a), SQNMD(b) )); },
+			null_expr_func,
+			null_expr_func,
+		},
+		{ // BinaryAnd
+			SQEFN { return new seq::type::Number(f, SQNML(a) & SQNML(b) ); },
+			SQEFN { return new seq::type::Bool(f, SQBOL(a) && SQBOL(b)); },
+			null_expr_func,
+		},
+		{ // BinaryOr
+			SQEFN { return new seq::type::Number(f, SQNML(a) | SQNML(b) ); },
+			SQEFN { return new seq::type::Bool(f, SQBOL(a) || SQBOL(b)); },
+			null_expr_func,
+		},
+		{ // BinaryXor
+			SQEFN { return new seq::type::Number(f, SQNML(a) ^ SQNML(b) ); },
+			SQEFN { return new seq::type::Bool(f, SQBOL(a) != SQBOL(b)); },
+			null_expr_func,
+		},
+		{ // BinaryNot
+			SQEFN { return new seq::type::Number(f, ~ SQNML(b) ); },
+			SQEFN { return new seq::type::Bool(f, !SQBOL(b)); },
+			null_expr_func,
+		},
+		{ // Accessor (handled in different place)
+			null_expr_func,
+			null_expr_func,
+			null_expr_func,
+		}
 	};
 
-#	undef SQFUN
+	static const TypeFunc simple_null_type_func = SQTFN {
+		if( op == (byte) seq::ExprOperator::Equal - 1 ) return new seq::type::Bool( f, true );
+		if( op == (byte) seq::ExprOperator::NotEqual - 1 ) return new seq::type::Bool( f, false );
+		return new seq::type::Null( f );
+	};
+
+	static const TypeFunc simple_type_type_func = SQTFN {
+		if( op == (byte) seq::ExprOperator::Equal - 1 ) return new seq::type::Bool( f, SQTYP(a) == SQTYP(b) );
+		if( op == (byte) seq::ExprOperator::NotEqual - 1 ) return new seq::type::Bool( f, SQTYP(a) != SQTYP(b) );
+		return new seq::type::Null( f );
+	};
+
+	static const TypeFunc type_lambdas[SEQ_MAX_DATA_TYPE] = {
+		/* 1  Bool   */ SQTFN { return expr_lambdas[op][1]( f, a, b ); },
+		/* 2  Null   */ simple_null_type_func,
+		/* 3  Number */ SQTFN { return expr_lambdas[op][0]( f, a, b ); },
+		/* 4  String */ SQTFN { return expr_lambdas[op][2]( f, a, b ); },
+		/* 5  Type   */ simple_type_type_func,
+		/* 6  VMCall */ null_type_func,
+		/* 7  Arg    */ null_type_func,
+		/* 8  Func   */ null_type_func,
+		/* 9  Expr   */ null_type_func,
+		/* 10 Name   */ null_type_func,
+		/* 11 Flowc  */ null_type_func,
+		/* 12 Stream */ null_type_func,
+		/* 13 Blob   */ null_type_func,
+	};
+
+#	undef SQEFN
+#	undef SQTFN
 #	undef SQNML
 #	undef SQNMD
 #	undef SQSTR
+#	undef SQBOL
+#	undef SQTYP
 
-	// handle each data type
-	switch( rtype ) {
-
-		case seq::DataType::Number:
-			return seq::Generic( lambdas[ ((byte) op) - 1 ][0]( anchor, left.getRaw(), right.getRaw() ) );
-
-		case seq::DataType::Bool: {
-
-				// Don't touch it again! The bool check for left value is needed for NOT and BINARY NOT
-				seq::Generic lb = seq::util::newNumber( (float) (left.getDataType() == seq::DataType::Bool ? (left.Bool().getBool() ? 1 : 0) : 0) );
-				seq::Generic rb = seq::util::newNumber( (float) (right.Bool().getBool() ? 1 : 0) );
-				seq::type::Generic* r = lambdas[ ((byte) op) - 1 ][0]( anchor, lb.getRaw(), rb.getRaw() );
-
-				if( r->getDataType() == seq::DataType::Bool ) {
-					return seq::Generic( r );
-				}else{
-					seq::type::Number* r_num = (seq::type::Number*) r;
-					bool val = r_num->getLong() != 0;
-					delete r_num;
-
-					return seq::Generic( new seq::type::Bool( anchor, val ) );
-				}
-
-			}
-
-		case seq::DataType::String:
-			return seq::Generic( lambdas[ ((byte) op) - 1 ][1]( anchor, left.getRaw(), right.getRaw() ) );
-
-		case seq::DataType::Type:
-			if( op == seq::ExprOperator::Equal ) return seq::Generic( new seq::type::Bool( false, left.Type().getType() == right.Type().getType() ) );
-			if( op == seq::ExprOperator::NotEqual ) return seq::Generic( new seq::type::Bool( false, left.Type().getType() != right.Type().getType() ) );
-			return seq::Generic( new seq::type::Null(anchor) );
-
-		case seq::DataType::Null:
-			if( op == seq::ExprOperator::Equal ) return seq::Generic( new seq::type::Bool( false, true ) );
-			if( op == seq::ExprOperator::NotEqual ) return seq::Generic( new seq::type::Bool( false, false ) );
-			return seq::Generic( new seq::type::Null(anchor) );
-
-		default:
-			return seq::Generic( new seq::type::Null(anchor) );
-
-	}
+	return seq::Generic( type_lambdas[ ((byte) rtype) - 1 ]( anchor, left.getRaw(), right.getRaw(), ((byte) op) - 1 ) );
 
 }
 
