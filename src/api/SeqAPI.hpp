@@ -219,7 +219,7 @@
 #define SEQ_API_STANDARD "2020-10-20"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 7
-#define SEQ_API_VERSION_PATCH 5
+#define SEQ_API_VERSION_PATCH 6
 
 // enum ranges
 #define SEQ_MIN_OPCODE 1
@@ -2519,11 +2519,17 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 #	define SQSTR( g ) ((seq::type::String*) g)->getString()
 #	define SQBOL( g ) ((seq::type::Bool*) g)->getBool()
 #	define SQTYP( g ) ((seq::type::Type*) g)->getType()
+#	define SQPAD
 
 	static const ExprFunc null_expr_func = SQEFN { return new seq::type::Null(f); };
 	static const TypeFunc null_type_func = SQTFN { return new seq::type::Null(f); };
 
-	static const ExprFunc expr_lambdas[SEQ_MAX_OPERATOR][3] = {
+	static const ExprFunc expr_lambdas[SEQ_MAX_OPERATOR + 1][3] = {
+		{ // Padding
+			nullptr,
+			nullptr,
+			nullptr
+		},
 		{ // Less
 			SQEFN { return new seq::type::Bool(f, SQNMD(a) < SQNMD(b)); },
 			SQEFN { return new seq::type::Bool(f, SQBOL(a) < SQBOL(b)); },
@@ -2632,18 +2638,19 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 	};
 
 	static const TypeFunc simple_null_type_func = SQTFN {
-		if( op == (byte) seq::ExprOperator::Equal - 1 ) return new seq::type::Bool( f, true );
-		if( op == (byte) seq::ExprOperator::NotEqual - 1 ) return new seq::type::Bool( f, false );
+		if( op == (byte) seq::ExprOperator::Equal ) return new seq::type::Bool( f, true );
+		if( op == (byte) seq::ExprOperator::NotEqual ) return new seq::type::Bool( f, false );
 		return new seq::type::Null( f );
 	};
 
 	static const TypeFunc simple_type_type_func = SQTFN {
-		if( op == (byte) seq::ExprOperator::Equal - 1 ) return new seq::type::Bool( f, SQTYP(a) == SQTYP(b) );
-		if( op == (byte) seq::ExprOperator::NotEqual - 1 ) return new seq::type::Bool( f, SQTYP(a) != SQTYP(b) );
+		if( op == (byte) seq::ExprOperator::Equal ) return new seq::type::Bool( f, SQTYP(a) == SQTYP(b) );
+		if( op == (byte) seq::ExprOperator::NotEqual ) return new seq::type::Bool( f, SQTYP(a) != SQTYP(b) );
 		return new seq::type::Null( f );
 	};
 
-	static const TypeFunc type_lambdas[SEQ_MAX_DATA_TYPE] = {
+	static const TypeFunc type_lambdas[SEQ_MAX_DATA_TYPE + 1] = {
+		/* 0 Padding */ nullptr,
 		/* 1  Bool   */ SQTFN { return expr_lambdas[op][1]( f, a, b ); },
 		/* 2  Null   */ simple_null_type_func,
 		/* 3  Number */ SQTFN { return expr_lambdas[op][0]( f, a, b ); },
@@ -2667,7 +2674,7 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 #	undef SQBOL
 #	undef SQTYP
 
-	return seq::Generic( type_lambdas[ ((byte) rtype) - 1 ]( anchor, left.getRaw(), right.getRaw(), ((byte) op) - 1 ) );
+	return seq::Generic( type_lambdas[ (byte) rtype ]( anchor, left.getRaw(), right.getRaw(), (byte) op ) );
 
 }
 
