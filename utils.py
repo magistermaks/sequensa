@@ -3,7 +3,7 @@ import os
 import shutil
 
 # localize given path
-def localize_path( pth:str ):
+def localize_path( pth ):
     if os.name == "nt":
         pth = pth.replace("/", "\\")
 
@@ -39,7 +39,7 @@ def test_for_command(program):
 
 # stolen from stackoverflow
 # https://stackoverflow.com/a/63840426
-def add_to_path( program_path:str ):
+def add_to_path( program_path ):
     if os.name == "nt":
         import winreg
         import ctypes
