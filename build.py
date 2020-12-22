@@ -61,7 +61,7 @@ patform_config = {
     "posix": {
         "exe": "",
         "lib": ".so",
-        "path": os.getenv('HOME') + "/sequensa",
+        "path": "##invalid name to replace##",
         "sep": "/"
     },
     "nt": {
@@ -74,10 +74,13 @@ patform_config = {
 
 # get correct compiler configuration dict
 def get_compiler_config( key ):
-    if compilers_config[ key ]["alias"] is "":
+    if compilers_config[ key ]["alias"] == "":
         return compilers_config[ key ]
     else:
         return compiler_config( compilers_config[key]["alias"] )
+
+if os.name == "posix":
+    patform_config["posix"]["path"] = os.getenv('HOME') + "/sequensa"
 
 syscfg = patform_config[os.name]
 comcfg = get_compiler_config( args.compiler )
