@@ -199,7 +199,7 @@
  * 		All those preprocessor defines should be placed before `#include` of the API
  *
  * 		#define SEQ_IMPLEMENT - to implement the Sequensa API
- * 		#define SEQ_EXCLUDE_COMPILER - to exclude compiler code from API
+ * 		#define SEQ_EXCLUDE_COMPILER - to exclude compiler code from the API
  * 		#define SEQ_PUBLIC_EXECUTOR - make some seq::Executor methods public
  *
  */
@@ -219,7 +219,7 @@
 #define SEQ_API_STANDARD "2020-10-20"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 7
-#define SEQ_API_VERSION_PATCH 6
+#define SEQ_API_VERSION_PATCH 7
 
 // enum ranges
 #define SEQ_MIN_OPCODE 1
@@ -3085,6 +3085,7 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 
 				case State::Escape:
 					switch( c ) {
+						case 'e'_b: token += '\e'_b; break;
 						case 'n'_b: token += '\n'_b; break;
 						case 't'_b: token += '\t'_b; break;
 						case 'r'_b: token += '\r'_b; break;
