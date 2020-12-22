@@ -33,7 +33,7 @@ seq::Stream seq_std_uppercase( seq::Stream& input ) {
 
 		std::string str = (char*) seq::util::stringCast( arg ).String().getString().c_str();
 		std::transform(str.begin(), str.end(), str.begin(), toupper);
-		output.push_back( seq::util::newString( (seq::byte*) str.c_str() ) );
+		output.push_back( seq::util::newString( str.c_str() ) );
 
 	}
 
@@ -48,7 +48,7 @@ seq::Stream seq_std_lowercase( seq::Stream& input ) {
 
 		std::string str = (char*) seq::util::stringCast( arg ).String().getString().c_str();
 		std::transform(str.begin(), str.end(), str.begin(), tolower);
-		output.push_back( seq::util::newString( (seq::byte*) str.c_str() ) );
+		output.push_back( seq::util::newString( str.c_str() ) );
 
 	}
 
@@ -57,7 +57,7 @@ seq::Stream seq_std_lowercase( seq::Stream& input ) {
 
 seq::Stream seq_std_concat( seq::Stream& input ) {
 
-	seq::string str;
+	std::string str;
 
 	for( auto& arg : input ) {
 
@@ -71,7 +71,7 @@ seq::Stream seq_std_concat( seq::Stream& input ) {
 seq::Stream seq_std_split( seq::Stream& input ) {
 
 	seq::Stream output;
-	seq::string delim = seq::util::stringCast( input[0] ).String().getString();
+	std::string delim = seq::util::stringCast( input[0] ).String().getString();
 
 	if( delim.empty() ) {
 		return input;
@@ -79,7 +79,7 @@ seq::Stream seq_std_split( seq::Stream& input ) {
 
 	for( long i = 1; i < (long) input.size(); i ++ ) {
 
-		seq::string str2 = seq::util::stringCast( input[i] ).String().getString();
+		std::string str2 = seq::util::stringCast( input[i] ).String().getString();
 		size_t prev = 0, pos = 0;
 
 		do {
@@ -102,11 +102,11 @@ seq::Stream seq_std_explode( seq::Stream& input ) {
 
 	for( long i = 0; i < (long) input.size(); i ++ ) {
 
-		seq::string str = seq::util::stringCast( input[i] ).String().getString();
+		std::string str = seq::util::stringCast( input[i] ).String().getString();
 
 		for( long j = 0; j < (long) str.size(); j ++ ) {
 
-			seq::string chr = ""_b;
+			std::string chr = "";
 			chr += (seq::byte) str[j];
 			output.push_back( seq::util::newString( chr.c_str() ) );
 
@@ -124,7 +124,7 @@ seq::Stream seq_std_from_code( seq::Stream& input ) {
 	for( long i = 0; i < (long) input.size(); i ++ ) {
 
 		seq::byte code = (seq::byte) seq::util::numberCast( input[i] ).Number().getLong();
-		seq::string str = ""_b;
+		std::string str = "";
 		str += (seq::byte) code;
 		output.push_back( seq::util::newString( str.c_str() ) );
 
@@ -163,7 +163,7 @@ seq::Stream seq_std_substr( seq::Stream& input ) {
 		try{
 			output.push_back( seq::util::newString( seq::util::stringCast( input[i] ).String().getString().substr(start, length).c_str() ) );
 		}catch(std::exception& err){
-			return { seq::util::newString( ""_b ) };
+			return { seq::util::newString( "" ) };
 		}
 
 	}
@@ -174,7 +174,7 @@ seq::Stream seq_std_substr( seq::Stream& input ) {
 seq::Stream seq_std_findstr( seq::Stream& input ) {
 
 	seq::Stream output;
-	seq::string delim = seq::util::stringCast( input[0] ).String().getString();
+	std::string delim = seq::util::stringCast( input[0] ).String().getString();
 
 	if( delim.empty() ) {
 		return { seq::util::newNumber(-1) };
@@ -182,7 +182,7 @@ seq::Stream seq_std_findstr( seq::Stream& input ) {
 
 	for( long i = 1; i < (long) input.size(); i ++ ) {
 
-		seq::string str2 = seq::util::stringCast( input[i] ).String().getString();
+		std::string str2 = seq::util::stringCast( input[i] ).String().getString();
 		output.push_back( seq::util::newNumber( str2.find( delim ) ) );
 
 	}
@@ -192,15 +192,15 @@ seq::Stream seq_std_findstr( seq::Stream& input ) {
 
 INIT( seq::Executor* exe, seq::FileHeader* head ) {
 
-	exe->inject( "std:uppercase"_b, seq_std_uppercase );
-	exe->inject( "std:lowercase"_b, seq_std_lowercase );
-	exe->inject( "std:concat"_b, seq_std_concat );
-	exe->inject( "std:split"_b, seq_std_split );
-	exe->inject( "std:explode"_b, seq_std_explode );
-	exe->inject( "std:from_code"_b, seq_std_from_code );
-	exe->inject( "std:to_code"_b, seq_std_to_code );
-	exe->inject( "std:substr"_b, seq_std_substr );
-	exe->inject( "std:findstr"_b, seq_std_findstr );
+	exe->inject( "std:uppercase", seq_std_uppercase );
+	exe->inject( "std:lowercase", seq_std_lowercase );
+	exe->inject( "std:concat", seq_std_concat );
+	exe->inject( "std:split", seq_std_split );
+	exe->inject( "std:explode", seq_std_explode );
+	exe->inject( "std:from_code", seq_std_from_code );
+	exe->inject( "std:to_code", seq_std_to_code );
+	exe->inject( "std:substr", seq_std_substr );
+	exe->inject( "std:findstr", seq_std_findstr );
 
 	return INIT_SUCCESS;
 }

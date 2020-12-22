@@ -222,20 +222,20 @@ seq::Stream seq_std_deg( seq::Stream& input ) {
 
 INIT( seq::Executor* exe, seq::FileHeader* head ) {
 
-	exe->inject( "std:sin"_b, seq_std_sin );
-	exe->inject( "std:cos"_b, seq_std_cos );
-	exe->inject( "std:tan"_b, seq_std_tan );
-	exe->inject( "std:abs"_b, seq_std_abs );
-	exe->inject( "std:sum"_b, seq_std_sum );
-	exe->inject( "std:min"_b, seq_std_min );
-	exe->inject( "std:max"_b, seq_std_max );
-	exe->inject( "std:sqrt"_b, seq_std_sqrt );
-	exe->inject( "std:round"_b, seq_std_round );
-	exe->inject( "std:floor"_b, seq_std_floor );
-	exe->inject( "std:ceil"_b, seq_std_ceil );
-	exe->inject( "std:deg"_b, seq_std_deg );
-	exe->inject( "std:rand"_b, seq_std_rand );
-	exe->inject( "std:srand"_b, seq_std_srand );
+	exe->inject( "std:sin", seq_std_sin );
+	exe->inject( "std:cos", seq_std_cos );
+	exe->inject( "std:tan", seq_std_tan );
+	exe->inject( "std:abs", seq_std_abs );
+	exe->inject( "std:sum", seq_std_sum );
+	exe->inject( "std:min", seq_std_min );
+	exe->inject( "std:max", seq_std_max );
+	exe->inject( "std:sqrt", seq_std_sqrt );
+	exe->inject( "std:round", seq_std_round );
+	exe->inject( "std:floor", seq_std_floor );
+	exe->inject( "std:ceil", seq_std_ceil );
+	exe->inject( "std:deg", seq_std_deg );
+	exe->inject( "std:rand", seq_std_rand );
+	exe->inject( "std:srand", seq_std_srand );
 
 	return INIT_SUCCESS;
 }

@@ -51,7 +51,7 @@ seq::Stream seq_std_read( seq::Stream& input ) {
 		std::ifstream file( path );
 		std::stringstream buffer;
 		buffer << file.rdbuf();
-		output.push_back( seq::util::newString( (seq::byte*) buffer.str().c_str() ) );
+		output.push_back( seq::util::newString( buffer.str().c_str() ) );
 		file.close();
 
 	}
@@ -164,7 +164,7 @@ seq::Stream seq_std_cwd( seq::Stream& input ) {
 
 		char tmp[ CWD_MAX_PATH ];
 		if( POSIX_GETCWD(tmp, sizeof(tmp)) ) {
-			output.push_back( seq::util::newString( (seq::byte*) tmp ) );
+			output.push_back( seq::util::newString( tmp ) );
 		}else{
 			output.push_back( seq::util::newNull() );
 		}
@@ -180,7 +180,7 @@ seq::Stream seq_std_system_name( seq::Stream& input ) {
 
 	for( int i = input.size(); i > 0; i -- ) {
 
-		output.push_back( seq::util::newString( (seq::byte*) SQ_SYSTEM ) );
+		output.push_back( seq::util::newString( SQ_SYSTEM ) );
 
 	}
 
@@ -203,16 +203,16 @@ seq::Stream seq_std_invoke( seq::Stream& input ) {
 
 INIT( seq::Executor* exe, seq::FileHeader* head ) {
 
-	exe->inject( "std:read"_b, seq_std_read );
-	exe->inject( "std:write"_b, seq_std_write );
-	exe->inject( "std:append"_b, seq_std_append );
-	exe->inject( "std:mkfile"_b, seq_std_mkfile );
-	exe->inject( "std:mkdir"_b, seq_std_mkdir );
-	exe->inject( "std:remove"_b, seq_std_remove );
-	exe->inject( "std:exists"_b, seq_std_exists );
-	exe->inject( "std:cwd"_b, seq_std_cwd );
-	exe->inject( "std:system_name"_b, seq_std_system_name );
-	exe->inject( "std:invoke"_b, seq_std_invoke );
+	exe->inject( "std:read", seq_std_read );
+	exe->inject( "std:write", seq_std_write );
+	exe->inject( "std:append", seq_std_append );
+	exe->inject( "std:mkfile", seq_std_mkfile );
+	exe->inject( "std:mkdir", seq_std_mkdir );
+	exe->inject( "std:remove", seq_std_remove );
+	exe->inject( "std:exists", seq_std_exists );
+	exe->inject( "std:cwd", seq_std_cwd );
+	exe->inject( "std:system_name", seq_std_system_name );
+	exe->inject( "std:invoke", seq_std_invoke );
 
 	return INIT_SUCCESS;
 }

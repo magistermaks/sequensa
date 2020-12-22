@@ -247,30 +247,6 @@ namespace seq {
 	/// define "byte" (unsigned char)
 	typedef unsigned char byte;
 
-	/// define own version of string to fix windows implementation errors
-	typedef std::basic_string<byte> string;
-
-}
-
-constexpr seq::byte operator"" _b ( char chr ) {
-	return (seq::byte) chr;
-}
-
-constexpr seq::byte* operator"" _b ( const char* str, std::size_t siz ) {
-	return (seq::byte*) str;
-}
-
-/// define std::hash for seq::string to be used by std::unordered_map
-namespace std {
-
-	template<> struct hash<seq::string> {
-
-		std::size_t operator()(seq::string const& s) const noexcept {
-			return std::hash<std::string>{}( (char*) s.c_str() );
-		}
-
-	};
-
 }
 
 namespace seq {
@@ -423,11 +399,11 @@ namespace seq {
 		class String: public Generic {
 
 			public:
-				String( bool anchor, const byte* value );
-				string& getString();
+				String( bool anchor, const char* value );
+				std::string& getString();
 
 			private:
-				string value;
+				std::string value;
 		};
 
 		class Type: public Generic {
@@ -462,13 +438,13 @@ namespace seq {
 		class Name: public Generic {
 
 			public:
-				Name( bool anchor, bool define, string name );
-				string& getName();
+				Name( bool anchor, bool define, std::string name );
+				std::string& getName();
 				const bool getDefine();
 
 			private:
 				const bool define;
-				string name;
+				std::string name;
 		};
 
 		class Function: public Generic {
@@ -538,7 +514,7 @@ namespace seq {
 
 			public:
 				Blob( bool anchor );
-				virtual seq::string toString();
+				virtual std::string toString();
 				virtual Blob* copy();
 
 		};
@@ -592,8 +568,6 @@ namespace seq {
 	namespace util {
 
 		byte packTags( const long pos, const long end ) noexcept;
-		std::string toStdString( const seq::string str ) noexcept;
-		seq::string toSeqString( const std::string str ) noexcept;
 		constexpr long whole( const double val ) noexcept;
 		type::Generic* copyGeneric( const type::Generic* entity );
 		seq::Generic numberCast( seq::Generic arg );
@@ -601,12 +575,12 @@ namespace seq {
 		seq::Generic stringCast( seq::Generic arg );
 		std::vector<FlowCondition*> copyFlowConditions( const std::vector<FlowCondition*> conditions );
 		seq::Fraction asFraction( const double value );
-		seq::DataType toDataType( const seq::string str );
+		seq::DataType toDataType( const std::string str );
 
 		seq::Generic newBool( bool value, bool anchor = false ) noexcept;
 		seq::Generic newNumber( double value, bool anchor = false ) noexcept;
 		seq::Generic newArg( byte value, bool anchor = false ) noexcept;
-		seq::Generic newString( const byte* value, bool anchor = false ) noexcept;
+		seq::Generic newString( const char* value, bool anchor = false ) noexcept;
 		seq::Generic newType( DataType value, bool anchor = false ) noexcept;
 		seq::Generic newVMCall( type::VMCall::CallType value, bool anchor = false ) noexcept;
 		seq::Generic newFunction( BufferReader* reader, bool end, bool anchor = false ) noexcept;
@@ -671,17 +645,17 @@ namespace seq {
 
 		public:
 			FileHeader();
-			FileHeader( byte seq_major, byte seq_minor, byte seq_patch, std::map<seq::string, seq::string> properties );
+			FileHeader( byte seq_major, byte seq_minor, byte seq_patch, std::map<std::string, std::string> properties );
 			FileHeader( const FileHeader& header );
 			FileHeader( FileHeader&& header );
 			bool checkVersion( byte seq_major, byte seq_minor );
 			bool checkPatch( byte seq_patch );
-			seq::string& getValue( const byte* key );
+			std::string& getValue( const char* key );
 			int getVersionMajor();
 			int getVersionMinor();
 			int getVersionPatch();
 			std::string getVersionString();
-			std::map<seq::string, seq::string> getValueMap();
+			std::map<std::string, std::string> getValueMap();
 
 			FileHeader& operator= ( const FileHeader& header );
 			FileHeader& operator= ( FileHeader&& header ) noexcept;
@@ -690,7 +664,7 @@ namespace seq {
 			byte seq_major;
 			byte seq_minor;
 			byte seq_patch;
-			std::map<seq::string, seq::string> properties;
+			std::map<std::string, std::string> properties;
 	};
 
 	/// token reader
@@ -765,19 +739,19 @@ namespace seq {
 			void putBool( bool anchor, bool value );
 			void putNumber( bool anchor, Fraction f );
 			void putArg( bool anchor, byte level );
-			void putString( bool anchor, const byte* str );
+			void putString( bool anchor, const char* str );
 			void putType( bool anchor, DataType type );
 			void putCall( bool anchor, type::VMCall::CallType type );
-			void putName( bool anchor, bool define, const byte* name );
+			void putName( bool anchor, bool define, const char* name );
 			void putFunc( bool anchor, std::vector<byte>& buffer, bool end );
 			void putExpr( bool anchor, ExprOperator op, std::vector<byte>& left, std::vector<byte>& right );
 			void putFlowc( bool anchor, std::vector<std::vector<byte>>& buffers );
 			void putStream( bool anchor, byte tags, std::vector<byte>& buf );
-			void putFileHeader( byte seq_major, byte seq_minor, byte seq_patch, const std::map<seq::string, seq::string>& data );
+			void putFileHeader( byte seq_major, byte seq_minor, byte seq_patch, const std::map<std::string, std::string>& data );
 
 		public: // Use only if you REALLY know what are you doing!
 			void putByte( byte b );
-			void putString( const byte* str );
+			void putString( const char* str );
 			void putOpcode( bool anchor, seq::Opcode code );
 			void putInteger( byte length, long value );
 			void putHead( byte left, byte right );
@@ -792,14 +766,14 @@ namespace seq {
 			StackLevel( seq::Generic arg );
 			StackLevel( StackLevel&& level );
 			seq::Generic getArg();
-			Stream getVar( seq::string& name, bool anchor );
-			void setVar( seq::string& name, Stream value );
-			bool hasVar( seq::string& name );
+			Stream getVar( std::string& name, bool anchor );
+			void setVar( std::string& name, Stream value );
+			bool hasVar( std::string& name );
 			void setArg( seq::Generic arg );
 
 		private:
 			seq::Generic arg;
-			std::unordered_map<seq::string, Stream> vars;
+			std::unordered_map<std::string, Stream> vars;
 	};
 
 	class FlowCondition {
@@ -840,8 +814,8 @@ namespace seq {
 		public:
 			Executor( Executor* parent );
 			Executor();
-			void inject( seq::string name, seq::type::Native native );
-			void define( seq::string name, seq::Stream stream );
+			void inject( std::string name, seq::type::Native native );
+			void define( std::string name, seq::Stream stream );
 			StackLevel* getLevel( int level );
 			StackLevel* getTopLevel();
 			void reset();
@@ -859,14 +833,14 @@ namespace seq {
 			CommandResult executeAnchor( Generic entity, Stream& input_stream );
 			Generic executeExprPair( Generic left, Generic right, ExprOperator op, bool anchor );
 			Generic executeExpr( Generic entity );
-			Stream resolveName( string& name, bool anchor );
-			void defineName( string& name, Stream& value, bool define = true );
+			Stream resolveName( std::string& name, bool anchor );
+			void defineName( std::string& name, Stream& value, bool define = true );
 			Stream executeFlowc( std::vector<FlowCondition*> fcs, Stream& input_stream );
 			Generic executeCast( Generic cast, Generic arg );
-			type::Native resolveNative( string& name );
+			type::Native resolveNative( std::string& name );
 
 		private:
-			std::unordered_map<string, type::Native> natives;
+			std::unordered_map<std::string, type::Native> natives;
 			std::vector<StackLevel> stack;
 			seq::Stream result;
 			Executor* parent;
@@ -903,13 +877,13 @@ namespace seq {
 					VMCall = 17
 				};
 
-				Token( unsigned int line, long data, bool anchor, Category category, seq::string& raw, seq::string& clean );
+				Token( unsigned int line, long data, bool anchor, Category category, std::string& raw, std::string& clean );
 				Token( const Token& token );
 				Token( Token&& token );
 				const unsigned int getLine();
 				const Category getCategory();
-				const seq::string& getRaw();
-				const seq::string& getClean();
+				const std::string& getRaw();
+				const std::string& getClean();
 				const bool isPrimitive();
 				const long getData();
 				const bool getAnchor();
@@ -920,15 +894,15 @@ namespace seq {
 				const long data;
 				const bool anchor;
 				const Category category;
-				const seq::string raw;
-				const seq::string clean;
+				const std::string raw;
+				const std::string clean;
 
 		};
 
-		std::vector<byte> compile( seq::string code, std::vector<seq::string>* headerData = nullptr );
+		std::vector<byte> compile( std::string code, std::vector<std::string>* headerData = nullptr );
 
-		std::vector<Token> tokenize( seq::string code );
-		Token construct( seq::string raw, unsigned int line );
+		std::vector<Token> tokenize( std::string code );
+		Token construct( std::string raw, unsigned int line );
 		int findStreamEnd( std::vector<Token>& tokens, int start, int end );
 		int findOpening( std::vector<Token>& tokens, int index, Token::Category type );
 		int findClosing( std::vector<Token>& tokens, int index, Token::Category type );
@@ -938,7 +912,7 @@ namespace seq {
 		std::vector<byte> assembleFlowc( std::vector<Token>& tokens, int start, int end, bool anchor );
 		std::vector<byte> assembleExpression( std::vector<Token>& tokens, int start, int end, bool anchor, bool top );
 		std::vector<byte> assembleFunction( std::vector<Token>& tokens, int start, int end, bool anchor );
-		int extractHeaderData( std::vector<Token>& tokens, std::vector<seq::string>* arrayPtr );
+		int extractHeaderData( std::vector<Token>& tokens, std::vector<std::string>* arrayPtr );
 
 		void defaultErrorHandle( CompilerError err );
 		void setErrorHandle( ErrorHandle handle );
@@ -968,14 +942,6 @@ byte seq::util::packTags( const long pos, const long end ) noexcept {
 	tags |= ( ( pos == end ) ? SEQ_TAG_END : 0 );
 
 	return tags;
-}
-
-std::string seq::util::toStdString( const seq::string str ) noexcept {
-	return std::string( (char*) str.c_str() );
-}
-
-seq::string seq::util::toSeqString( const std::string str ) noexcept {
-	return seq::string( (byte*) str.c_str() );
 }
 
 constexpr long seq::util::whole( const double val ) noexcept {
@@ -1028,7 +994,7 @@ seq::Generic seq::util::numberCast( seq::Generic arg ) {
 
 		case seq::DataType::String:
 			try {
-				num = new seq::type::Number( false, std::stod( seq::util::toStdString( arg.String().getString() ) ) );
+				num = new seq::type::Number( false, std::stod( arg.String().getString() ) );
 			} catch (std::invalid_argument &err) {
 				num = new seq::type::Number( false, 0 );
 			}
@@ -1067,30 +1033,30 @@ seq::Generic seq::util::stringCast( seq::Generic arg ) {
 
 		case seq::DataType::Bool:
 			if( arg.Bool().getBool() ) {
-				str = new seq::type::String( false, "true"_b );
+				str = new seq::type::String( false, "true" );
 			}else{
-				str = new seq::type::String( false, "false"_b );
+				str = new seq::type::String( false, "false" );
 			}
 			break;
 
 		case seq::DataType::Null:
-			str = new seq::type::String( false, "null"_b );
+			str = new seq::type::String( false, "null" );
 			break;
 
 		case seq::DataType::Number:
-			str = new seq::type::String( false, seq::util::toSeqString(
+			str = new seq::type::String( false, (
 					arg.Number().isNatural() ?
 							std::to_string( arg.Number().getLong() ) :
 							std::to_string( arg.Number().getDouble() ) ).c_str()  );
 			break;
 
 		case seq::DataType::Flowc:
-			str = new seq::type::String( false, "flowc"_b );
+			str = new seq::type::String( false, "flowc" );
 			break;
 
 		case seq::DataType::VMCall:
 		case seq::DataType::Func:
-			str = new seq::type::String( false, "func"_b );
+			str = new seq::type::String( false, "func" );
 			break;
 
 		case seq::DataType::Blob:
@@ -1098,7 +1064,7 @@ seq::Generic seq::util::stringCast( seq::Generic arg ) {
 			break;
 
 		case seq::DataType::Type:
-			str = new seq::type::String( false, "type"_b );
+			str = new seq::type::String( false, "type" );
 			break;
 
 		// invalid casts: (stream, name, expr, arg)
@@ -1124,11 +1090,11 @@ seq::Fraction seq::util::asFraction( const double value ) {
 	return seq::type::Number( false, value ).getFraction();
 }
 
-seq::DataType seq::util::toDataType( const seq::string str ) {
-	if( str == "number"_b ) return seq::DataType::Number;
-	if( str == "bool"_b ) return seq::DataType::Bool;
-	if( str == "string"_b ) return seq::DataType::String;
-	if( str == "type"_b ) return seq::DataType::Type;
+seq::DataType seq::util::toDataType( const std::string str ) {
+	if( str == "number" ) return seq::DataType::Number;
+	if( str == "bool" ) return seq::DataType::Bool;
+	if( str == "string" ) return seq::DataType::String;
+	if( str == "type" ) return seq::DataType::Type;
 	throw seq::InternalError( "Invalid argument!" );
 }
 
@@ -1144,7 +1110,7 @@ seq::Generic seq::util::newArg( byte value, bool anchor ) noexcept {
 	return seq::Generic( new seq::type::Arg( anchor, value ) );
 }
 
-seq::Generic seq::util::newString( const byte* value, bool anchor ) noexcept {
+seq::Generic seq::util::newString( const char* value, bool anchor ) noexcept {
 	return seq::Generic( new seq::type::String( anchor, value ) );
 }
 
@@ -1186,7 +1152,7 @@ void seq::BufferWriter::putOpcode( bool anchor, seq::Opcode code ) {
 	this->putByte( (byte) code | (anchor ? 0b10000000 : 0) );
 }
 
-void seq::BufferWriter::putString( const byte* str ) {
+void seq::BufferWriter::putString( const char* str ) {
 	for ( long i = 0; str[i]; i ++ ) this->putByte( str[i] );
 	this->putByte( 0 );
 }
@@ -1236,7 +1202,7 @@ void seq::BufferWriter::putArg( bool anchor, byte level ) {
 	this->putByte( level );
 }
 
-void seq::BufferWriter::putString( bool anchor, const byte* str ) {
+void seq::BufferWriter::putString( bool anchor, const char* str ) {
 	this->putOpcode( anchor, seq::Opcode::STR );
 	this->putString( str );
 }
@@ -1251,7 +1217,7 @@ void seq::BufferWriter::putCall( bool anchor, type::VMCall::CallType type ) {
 	this->putByte( (byte) type );
 }
 
-void seq::BufferWriter::putName( bool anchor, bool define, const byte* name ) {
+void seq::BufferWriter::putName( bool anchor, bool define, const char* name ) {
 	this->putOpcode( anchor, (define ? seq::Opcode::DEF : seq::Opcode::VAR) );
 	this->putString( name );
 }
@@ -1301,7 +1267,7 @@ void seq::BufferWriter::putStream( bool anchor, byte tags, std::vector<byte>& bu
 	this->putBuffer( buf );
 }
 
-void seq::BufferWriter::putFileHeader( byte seq_major, byte seq_minor, byte seq_patch, const std::map<seq::string, seq::string>& data ) {
+void seq::BufferWriter::putFileHeader( byte seq_major, byte seq_minor, byte seq_patch, const std::map<std::string, std::string>& data ) {
 	this->putByte( 's' );
 	this->putByte( 'q' );
 	this->putByte( 'c' );
@@ -1310,7 +1276,7 @@ void seq::BufferWriter::putFileHeader( byte seq_major, byte seq_minor, byte seq_
 	this->putByte( seq_minor );
 	this->putByte( seq_patch );
 
-	seq::string data_string;
+	std::string data_string;
 	for( const auto& x : data ) {
 		data_string.append( x.first );
 		data_string.push_back( 0 );
@@ -1327,7 +1293,7 @@ void seq::BufferWriter::putFileHeader( byte seq_major, byte seq_minor, byte seq_
 
 seq::FileHeader::FileHeader(): seq_major( 0 ), seq_minor( 0 ), seq_patch( 0 ), properties( {} ) {};
 
-seq::FileHeader::FileHeader( byte _seq_major, byte _seq_minor, byte _seq_patch, std::map<seq::string, seq::string> _properties ): seq_major( _seq_major ), seq_minor( _seq_minor ), seq_patch( _seq_patch ), properties( _properties ) {}
+seq::FileHeader::FileHeader( byte _seq_major, byte _seq_minor, byte _seq_patch, std::map<std::string, std::string> _properties ): seq_major( _seq_major ), seq_minor( _seq_minor ), seq_patch( _seq_patch ), properties( _properties ) {}
 
 seq::FileHeader::FileHeader( const FileHeader& header ) {
 	this->seq_major = header.seq_major;
@@ -1351,8 +1317,8 @@ bool seq::FileHeader::checkPatch( byte _seq_patch ) {
 	return ( this->seq_patch == _seq_patch );
 }
 
-seq::string& seq::FileHeader::getValue( const byte* key ) {
-	return this->properties.at( seq::string(key) );
+std::string& seq::FileHeader::getValue( const char* key ) {
+	return this->properties.at( std::string(key) );
 }
 
 int seq::FileHeader::getVersionMajor() {
@@ -1371,7 +1337,7 @@ std::string seq::FileHeader::getVersionString() {
 	return std::to_string( this->getVersionMajor() ) + "." + std::to_string( this->getVersionMinor() ) + "." + std::to_string( this->getVersionPatch() );
 }
 
-std::map<seq::string, seq::string> seq::FileHeader::getValueMap() {
+std::map<std::string, std::string> seq::FileHeader::getValueMap() {
 	return this->properties;
 }
 
@@ -1471,9 +1437,9 @@ byte seq::type::Number::sizeOf( unsigned long value ) {
 	return 1;
 }
 
-seq::type::String::String( bool _anchor, const byte* _value ): seq::type::Generic( seq::DataType::String, _anchor ), value( _value ) {}
+seq::type::String::String( bool _anchor, const char* _value ): seq::type::Generic( seq::DataType::String, _anchor ), value( _value ) {}
 
-seq::string& seq::type::String::getString() {
+std::string& seq::type::String::getString() {
 	return this->value;
 }
 
@@ -1489,13 +1455,13 @@ const seq::type::VMCall::CallType seq::type::VMCall::getCall() {
 	return this->value;
 }
 
-seq::type::Name::Name( bool _anchor, bool _define, string _name ): seq::type::Generic( seq::DataType::Name, _anchor ), define( _define ), name( _name ) {}
+seq::type::Name::Name( bool _anchor, bool _define, std::string _name ): seq::type::Generic( seq::DataType::Name, _anchor ), define( _define ), name( _name ) {}
 
 const bool seq::type::Name::getDefine() {
 	return this->define;
 }
 
-seq::string& seq::type::Name::getName() {
+std::string& seq::type::Name::getName() {
 	return this->name;
 }
 
@@ -1570,8 +1536,8 @@ seq::type::Null::Null( bool _anchor ): seq::type::Generic( seq::DataType::Null, 
 
 seq::type::Blob::Blob( bool _anchor ): seq::type::Generic( seq::DataType::Blob, _anchor ) {}
 
-seq::string seq::type::Blob::toString() {
-	return "blob"_b;
+std::string seq::type::Blob::toString() {
+	return "blob";
 }
 
 seq::type::Blob* seq::type::Blob::copy() {
@@ -1822,9 +1788,8 @@ seq::FileHeader seq::BufferReader::getHeader() {
 	// read header data
 	long n = 0;
 	for( byte i = 0; i < 4; i ++ ) n |= ( (long) this->nextByte() ) << (i * 8);
-	std::map< seq::string, seq::string > data;
-	seq::string key;
-	seq::string val;
+	std::map<std::string, std::string> data;
+	std::string key, val;
 
 	bool state = false;
 
@@ -1978,7 +1943,7 @@ seq::type::Arg* seq::TokenReader::loadArg() {
 }
 
 seq::type::String* seq::TokenReader::loadString() {
-	seq::string str;
+	std::string str;
 	while( true ) {
 		byte b = this->reader.nextByte();
 		if( b ) str.push_back( b ); else return new seq::type::String( this->isAnchored(), str.c_str() );
@@ -1998,7 +1963,7 @@ seq::type::VMCall* seq::TokenReader::loadCall() {
 }
 
 seq::type::Name* seq::TokenReader::loadName() {
-	seq::string str;
+	std::string str;
 	for( byte i = 0; true; i ++ ) {
 		byte b = this->reader.nextByte();
 		if( b ) str.push_back( b ); else break;
@@ -2094,7 +2059,7 @@ seq::Generic seq::StackLevel::getArg() {
 	return seq::Generic( this->arg );
 }
 
-seq::Stream seq::StackLevel::getVar( seq::string& name, bool anchor ) {
+seq::Stream seq::StackLevel::getVar( std::string& name, bool anchor ) {
 	static seq::Stream ret;
 	auto& vars = this->vars.at( name );
 	ret.reserve( vars.size() );
@@ -2108,11 +2073,11 @@ seq::Stream seq::StackLevel::getVar( seq::string& name, bool anchor ) {
 	return std::move(ret);
 }
 
-bool seq::StackLevel::hasVar( seq::string& name ) {
+bool seq::StackLevel::hasVar( std::string& name ) {
 	return this->vars.count(name) != 0;
 }
 
-void seq::StackLevel::setVar( seq::string& name, seq::Stream value ) {
+void seq::StackLevel::setVar( std::string& name, seq::Stream value ) {
 	this->vars[ name ] = value;
 }
 
@@ -2174,11 +2139,11 @@ seq::Executor::Executor( Executor* parent ) {
 
 seq::Executor::Executor(): Executor( nullptr ) {};
 
-void seq::Executor::inject( seq::string name, seq::type::Native native ) {
+void seq::Executor::inject( std::string name, seq::type::Native native ) {
 	this->natives[ name ] = native;
 }
 
-void seq::Executor::define( seq::string name, seq::Stream stream ) {
+void seq::Executor::define( std::string name, seq::Stream stream ) {
 	this->getTopLevel()->setVar( name, stream );
 }
 
@@ -2199,7 +2164,7 @@ void seq::Executor::reset() {
 }
 
 std::string seq::Executor::getResultString() {
-	return seq::util::toStdString( seq::util::stringCast( this->getResult() ).String().getString() );
+	return seq::util::stringCast( this->getResult() ).String().getString();
 }
 
 seq::Generic seq::Executor::getResult() {
@@ -2218,6 +2183,8 @@ void seq::Executor::execute( seq::ByteBuffer bb, seq::Stream args ) {
 	try{
 		seq::Stream exitStream = this->executeFunction( bb.getReader(), args, true );
 
+		// IMPLEMENTATION ERROR (?)
+		// TODO remove to adhere to the standard
 		if( exitStream.empty() ) {
 			exitStream.push_back( seq::Generic( new seq::type::Null( false ) ) );
 		}
@@ -2453,7 +2420,7 @@ seq::CommandResult seq::Executor::executeAnchor( seq::Generic entity, seq::Strea
 	}
 
 	if( type == seq::DataType::Blob ) {
-		throw seq::RuntimeError( "Invalid '" + seq::util::toStdString( entity.Blob().toString() ) + "' call!" );
+		throw seq::RuntimeError( "Invalid '" + entity.Blob().toString() + "' call!" );
 	}
 
 	// if not any of the above, simply cast args to anchor
@@ -2719,7 +2686,7 @@ seq::Generic seq::Executor::executeExpr( seq::Generic entity ) {
 
 }
 
-seq::Stream seq::Executor::resolveName( seq::string& name, bool anchor ) {
+seq::Stream seq::Executor::resolveName( std::string& name, bool anchor ) {
 
 	// iterate stack levels in search of the specified variable
 	for( int i = (int) this->stack.size() - 1; i >= 0; i -- ) {
@@ -2738,11 +2705,11 @@ seq::Stream seq::Executor::resolveName( seq::string& name, bool anchor ) {
 	}
 
 	// if symbol wasn't found throw runtime exception
-	throw seq::RuntimeError( "Referenced undefined symbol: '" + seq::util::toStdString(name) + "'" );
+	throw seq::RuntimeError( "Referenced undefined symbol: '" + name + "'" );
 
 }
 
-void seq::Executor::defineName( string& name, Stream& value, bool define ) {
+void seq::Executor::defineName( std::string& name, Stream& value, bool define ) {
 
 	// iterate stack levels in search of the specified variable
 	for( int i = (int) this->stack.size() - 1; i >= 0; i -- ) {
@@ -2775,7 +2742,7 @@ void seq::Executor::defineName( string& name, Stream& value, bool define ) {
 
 }
 
-seq::type::Native seq::Executor::resolveNative( string& name ) {
+seq::type::Native seq::Executor::resolveNative( std::string& name ) {
 
 	try{
 
@@ -2858,7 +2825,7 @@ seq::Generic seq::Executor::executeCast( seq::Generic cast, seq::Generic arg ) {
 }
 
 #ifndef SEQ_EXCLUDE_COMPILER
-seq::Compiler::Token::Token( unsigned int _line, long _data, bool _anchor, Category _category, seq::string& _raw, seq::string& _clean ): line( _line ), data( _data ), anchor( _anchor ),  category( _category ), raw( _raw ), clean( _clean ) {}
+seq::Compiler::Token::Token( unsigned int _line, long _data, bool _anchor, Category _category, std::string& _raw, std::string& _clean ): line( _line ), data( _data ), anchor( _anchor ),  category( _category ), raw( _raw ), clean( _clean ) {}
 
 seq::Compiler::Token::Token( const Token& token ): line( token.line ), data( token.data ), anchor( token.anchor ), category( token.category ), raw( token.raw ), clean( token.clean ) {}
 
@@ -2872,11 +2839,11 @@ const seq::Compiler::Token::Category seq::Compiler::Token::getCategory() {
 	return this->category;
 }
 
-const seq::string& seq::Compiler::Token::getRaw() {
+const std::string& seq::Compiler::Token::getRaw() {
 	return this->raw;
 }
 
-const seq::string& seq::Compiler::Token::getClean() {
+const std::string& seq::Compiler::Token::getClean() {
 	return this->clean;
 }
 
@@ -2922,10 +2889,10 @@ std::string seq::Compiler::Token::toString() {
 		"Arg",
 		"VMCall"
 	}[ (byte) getCategory() ];
-	return catstr + "::" + seq::util::toStdString( this->getRaw() );
+	return catstr + "::" + this->getRaw();
 }
 
-std::vector<byte> seq::Compiler::compile( seq::string code, std::vector<seq::string>* headerData ) {
+std::vector<byte> seq::Compiler::compile( std::string code, std::vector<std::string>* headerData ) {
 	auto tokens = seq::Compiler::tokenize( code );
 
 	// skip empty files
@@ -2946,7 +2913,7 @@ std::vector<byte> seq::Compiler::compile( seq::string code, std::vector<seq::str
 	return buffer;
 }
 
-std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
+std::vector<seq::Compiler::Token> seq::Compiler::tokenize( std::string code ) {
 
 	// define internal struct
 	enum struct State {
@@ -2962,12 +2929,12 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 	};
 
 	// init stuff
-	const static std::vector<seq::string> long_operators = { "!="_b, ">="_b, "!>"_b, "<="_b, "!<"_b, "&&"_b, "||"_b, "^^"_b, "**"_b };
-	const static std::vector<byte> short_operators = { '+'_b, '-'_b, '/'_b, '%'_b, '*'_b, '>'_b, '<'_b, '='_b, '&'_b, '|'_b, '^'_b, '~'_b };
-	const static std::vector<seq::string> brackets = { "{ "_b, "} "_b, "#{"_b, "[ "_b, "] "_b, "#["_b, "( "_b, ") "_b, "#("_b };
+	const static std::vector<std::string> long_operators = { "!=", ">=", "!>", "<=", "!<", "&&", "||", "^^", "**" };
+	const static std::vector<char> short_operators = { '+', '-', '/', '%', '*', '>', '<', '=', '&', '|', '^', '~' };
+	const static std::vector<std::string> brackets = { "{ ", "} ", "#{", "[ ", "] ", "#[", "( ", ") ", "#(" };
 
 	State state = State::Start;
-	seq::string token;
+	std::string token;
 	std::vector<seq::Compiler::Token> tokens;
 	unsigned int line = 1;
 	int roundBrackets = 0;
@@ -2978,27 +2945,27 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 	auto next = [&] () -> void {
 		if( !token.empty() ) {
 			tokens.push_back( seq::Compiler::construct( token , line ) );
-			token = (byte*) "";
+			token = "";
 		}
 	};
 
-	// function used to create string from two bytes, used for checking long operators
-	auto bind = [] (byte a, byte b) -> seq::string {
-		seq::string str;
+	// function used to create string from two chars, used for checking long operators
+	auto bind = [] (char a, char b) -> std::string {
+		std::string str;
 		str += a;
 		str += b;
 		return str;
 	};
 
 	// brackets state checker
-	auto updateBrackets = [&] (byte chr) {
+	auto updateBrackets = [&] (char chr) {
 		switch( chr ) {
-			case '{'_b: curlyBrackets ++; break;
-			case '}'_b: curlyBrackets --; break;
-			case '['_b: squareBrackets ++; break;
-			case ']'_b: squareBrackets --; break;
-			case '('_b: roundBrackets ++; break;
-			case ')'_b: roundBrackets --; break;
+			case '{': curlyBrackets ++; break;
+			case '}': curlyBrackets --; break;
+			case '[': squareBrackets ++; break;
+			case ']': squareBrackets --; break;
+			case '(': roundBrackets ++; break;
+			case ')': roundBrackets --; break;
 			default: throw seq::InternalError( "Invalid lambda argument!" );
 		}
 
@@ -3020,11 +2987,11 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 	const int size = code.size();
 	for( int i = 0; i < size; i ++ ) {
 
-		const byte c = code[i];
-		const byte n = i + 1 < size ? code[i+1] : '\0'_b;
+		const char c = code[i];
+		const char n = i + 1 < size ? code[i+1] : '\0';
 
 		// keep line number up-to-date
-		if( c == '\n'_b ) {
+		if( c == '\n' ) {
 			if( state == State::Comment ) state = State::Start;
 			if( state == State::String ) fail( CompilerError( false, "end of line", "end of string", "", line ) );
 			next();
@@ -3040,22 +3007,22 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 
 				case State::Start: {
 					if( !token.empty() ) throw seq::InternalError( "Invalid tokenizer state!" );
-					if( c == '/'_b && n == '/'_b ) { i ++; state = State::Comment; break; }
-					if( c == '#'_b && n == '"'_b ) { state = State::String; token += "#\""_b; i ++; break; }
-					if( c == '"'_b ) { state = State::String; token += c; break; }
-					if( c == ' '_b || c == '\n'_b || c == '\t'_b ) { break; }
-					if( (c == '#'_b && (std::isalpha(n) || n == '_'_b)) || (std::isalpha(c) || c == '_'_b) ) { state = State::Name; token += c; break; }
-					if( c == '<'_b && n == '<'_b ) { token += "<<"_b; i ++; next(); break; }
-					if( (c == '#'_b && std::isdigit(n)) || std::isdigit(c) ) { state = State::Number; token += c; break; }
-					if( (c == '-'_b && std::isdigit(n)) || (c == '#'_b && n == '-'_b) ) { state = State::NumberSign; token += c; break; }
+					if( c == '/' && n == '/' ) { i ++; state = State::Comment; break; }
+					if( c == '#' && n == '"' ) { state = State::String; token += "#\""; i ++; break; }
+					if( c == '"' ) { state = State::String; token += c; break; }
+					if( c == ' ' || c == '\n' || c == '\t' ) { break; }
+					if( (c == '#' && (std::isalpha(n) || n == '_')) || (std::isalpha(c) || c == '_') ) { state = State::Name; token += c; break; }
+					if( c == '<' && n == '<' ) { token += "<<"; i ++; next(); break; }
+					if( (c == '#' && std::isdigit(n)) || std::isdigit(c) ) { state = State::Number; token += c; break; }
+					if( (c == '-' && std::isdigit(n)) || (c == '#' && n == '-') ) { state = State::NumberSign; token += c; break; }
 					if( std::find(long_operators.begin(), long_operators.end(), bind( c, n )) != long_operators.end() ) { token += c; token += n; i ++; next(); break; }
 					if( std::find(short_operators.begin(), short_operators.end(), c) != short_operators.end() ) { token += c; next(); break; }
-					if( c == '!'_b ) { token += "null"_b; next(); token += c; next(); break; }
-					if( (c == '#'_b && n == '@'_b) || c == '@'_b ) { state = State::Arg; token += c; break; }
+					if( c == '!' ) { token += "null"; next(); token += c; next(); break; }
+					if( (c == '#' && n == '@') || c == '@' ) { state = State::Arg; token += c; break; }
 					if( std::find(brackets.begin(), brackets.end(), bind( c, ' ' ) ) != brackets.end() ) { token += c; updateBrackets( c ); next(); break; }
 					if( std::find(brackets.begin(), brackets.end(), bind( c, n ) ) != brackets.end() ) { token += c; token += n; updateBrackets( n ); i ++; next(); break; }
-					if( c == ':'_b && n == ':'_b ) { token += "::"_b; i ++; next(); break; }
-					if( c == ','_b || c == ':'_b ) { token += c; next(); break; }
+					if( c == ':' && n == ':' ) { token += "::"; i ++; next(); break; }
+					if( c == ',' || c == ':' ) { token += c; next(); break; }
 
 					std::string msg = "char: '";
 					msg += (char) c;
@@ -3065,17 +3032,17 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 				}
 
 				case State::Comment:
-					if( (c == '/'_b && n == '/'_b) || c == '\n'_b ) {
+					if( (c == '/' && n == '/') || c == '\n' ) {
 						i ++;
 						state = State::Start;
 					}
 					break;
 
 				case State::String:
-					if( c == '\\'_b ) {
+					if( c == '\\' ) {
 						state = State::Escape;
-					}else if( c == '"'_b ) {
-						token += '"'_b;
+					}else if( c == '"' ) {
+						token += '"';
 						state = State::Start;
 						next();
 					}else{
@@ -3085,22 +3052,22 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 
 				case State::Escape:
 					switch( c ) {
-						case 'e'_b: token += '\e'_b; break;
-						case 'n'_b: token += '\n'_b; break;
-						case 't'_b: token += '\t'_b; break;
-						case 'r'_b: token += '\r'_b; break;
-						case '\\'_b: token += '\\'_b; break;
-						case '"'_b: token += '"'_b; break;
+						case 'e': token += '\e'; break;
+						case 'n': token += '\n'; break;
+						case 't': token += '\t'; break;
+						case 'r': token += '\r'; break;
+						case '\\': token += '\\'; break;
+						case '"': token += '"'; break;
 						default: fail( CompilerError( false, std::string("char '") + (char) c + std::string("'"), "escape code (n, t, r, \\ or \")", "string", line ) );
 					}
 					state = State::String;
 					break;
 
 				case State::Name: // or Tag
-					if( std::isalpha(c) || c == '_'_b ) token += c; else {
+					if( std::isalpha(c) || c == '_' ) token += c; else {
 
-						if( c == ':'_b ) {
-							if( std::isalpha(n) || n == '_'_b ) {
+						if( c == ':' ) {
+							if( std::isalpha(n) || n == '_' ) {
 								token += c;
 							}else{
 								state = State::Start;
@@ -3110,7 +3077,7 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 							break;
 						}
 
-						if( c == ';'_b ) {
+						if( c == ';' ) {
 							token += c;
 						}else{
 							flag = true;
@@ -3123,7 +3090,7 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 
 				case State::Number:
 					if( std::isdigit(c) ) token += c; else {
-						if( c == '.'_b ) {
+						if( c == '.' ) {
 							token += c;
 							state = State::Number2;
 						} else {
@@ -3143,14 +3110,14 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 					break;
 
 				case State::NumberSign:
-					if( c == '-'_b ) token += c; else {
+					if( c == '-' ) token += c; else {
 						state = State::Number;
 						flag = true;
 					}
 					break;
 
 				case State::Arg:
-					if( c == '@'_b ) token += c; else {
+					if( c == '@' ) token += c; else {
 						state = State::Start;
 						flag = true;
 						next();
@@ -3174,7 +3141,7 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( seq::string code ) {
 	return tokens;
 }
 
-seq::Compiler::Token seq::Compiler::construct( seq::string raw, unsigned int line ) {
+seq::Compiler::Token seq::Compiler::construct( std::string raw, unsigned int line ) {
 
 	// setup regex'es and string vectors
 	// bigger operator weight -> evaluated first
@@ -3185,62 +3152,62 @@ seq::Compiler::Token seq::Compiler::construct( seq::string raw, unsigned int lin
 	const static std::regex regex_number_1("^-{0,1}\\d+.\\d+$");
 	const static std::regex regex_number_2("^-{0,1}\\d+$");
 
-	const bool anchor = raw.front() == '#'_b;
-	seq::string clean = anchor ? raw.substr(1) : raw;
+	const bool anchor = raw.front() == '#';
+	std::string clean = anchor ? raw.substr(1) : raw;
 
 	auto make = [&] ( seq::Compiler::Token::Category c, long data ) -> seq::Compiler::Token {
 		return seq::Compiler::Token( line, data, anchor, c, raw, clean );
 	};
 
-	auto callTypeFromString = [] ( seq::string str ) -> long {
-		if( str == "return"_b ) return (byte) seq::type::VMCall::CallType::Return;
-		if( str == "break"_b ) return (byte) seq::type::VMCall::CallType::Break;
-		if( str == "exit"_b ) return (byte) seq::type::VMCall::CallType::Exit;
-		if( str == "again"_b ) return (byte) seq::type::VMCall::CallType::Again;
-		if( str == "final"_b ) return (byte) seq::type::VMCall::CallType::Final;
+	auto callTypeFromString = [] ( std::string str ) -> long {
+		if( str == "return" ) return (byte) seq::type::VMCall::CallType::Return;
+		if( str == "break" ) return (byte) seq::type::VMCall::CallType::Break;
+		if( str == "exit" ) return (byte) seq::type::VMCall::CallType::Exit;
+		if( str == "again" ) return (byte) seq::type::VMCall::CallType::Again;
+		if( str == "final" ) return (byte) seq::type::VMCall::CallType::Final;
 		return 0;
 	};
 
-	auto dataTypeFromString = [] ( seq::string str ) -> long {
-		if( str == "number"_b ) return (byte) seq::DataType::Number;
-		if( str == "bool"_b ) return (byte) seq::DataType::Bool;
-		if( str == "string"_b ) return (byte) seq::DataType::String;
-		if( str == "type"_b ) return (byte) seq::DataType::Type;
+	auto dataTypeFromString = [] ( std::string str ) -> long {
+		if( str == "number" ) return (byte) seq::DataType::Number;
+		if( str == "bool" ) return (byte) seq::DataType::Bool;
+		if( str == "string" ) return (byte) seq::DataType::String;
+		if( str == "type" ) return (byte) seq::DataType::Type;
 		return 0;
 	};
 
-	auto tagTypeFromString = [] ( seq::string str ) -> long {
-		if( str == "first;"_b ) return SEQ_TAG_FIRST;
-		if( str == "last;"_b ) return SEQ_TAG_LAST;
-		if( str == "end;"_b ) return SEQ_TAG_END;
+	auto tagTypeFromString = [] ( std::string str ) -> long {
+		if( str == "first;" ) return SEQ_TAG_FIRST;
+		if( str == "last;" ) return SEQ_TAG_LAST;
+		if( str == "end;" ) return SEQ_TAG_END;
 		return 0;
 	};
 
-	auto operatorDataFromString = [] ( seq::string str, unsigned int weight ) -> long {
+	auto operatorDataFromString = [] ( std::string str, unsigned int weight ) -> long {
 		seq::ExprOperator op;
-		if( str == "<"_b ) op = seq::ExprOperator::Less; else
-		if( str == ">"_b ) op = seq::ExprOperator::Greater; else
-		if( str == "="_b ) op = seq::ExprOperator::Equal; else
-		if( str == "!="_b ) op = seq::ExprOperator::NotEqual; else
-		if( str == "!>"_b ) op = seq::ExprOperator::NotGreater; else
-		if( str == "<="_b ) op = seq::ExprOperator::NotGreater; else
-		if( str == "!<"_b ) op = seq::ExprOperator::NotLess; else
-		if( str == ">="_b ) op = seq::ExprOperator::NotLess; else
-		if( str == "&&"_b ) op = seq::ExprOperator::And; else
-		if( str == "||"_b ) op = seq::ExprOperator::Or; else
-		if( str == "^^"_b ) op = seq::ExprOperator::Xor; else
-		if( str == "!"_b ) op = seq::ExprOperator::Not; else
-		if( str == "*"_b ) op = seq::ExprOperator::Multiplication; else
-		if( str == "/"_b ) op = seq::ExprOperator::Division; else
-		if( str == "+"_b ) op = seq::ExprOperator::Addition; else
-		if( str == "-"_b ) op = seq::ExprOperator::Subtraction; else
-		if( str == "%"_b ) op = seq::ExprOperator::Modulo; else
-		if( str == "**"_b ) op = seq::ExprOperator::Power; else
-		if( str == "&"_b ) op = seq::ExprOperator::BinaryAnd; else
-		if( str == "|"_b ) op = seq::ExprOperator::BinaryOr; else
-		if( str == "^"_b ) op = seq::ExprOperator::BinaryXor; else
-		if( str == "~"_b ) op = seq::ExprOperator::BinaryNot; else
-		if( str == "::"_b ) op = seq::ExprOperator::Accessor; else
+		if( str == "<" ) op = seq::ExprOperator::Less; else
+		if( str == ">" ) op = seq::ExprOperator::Greater; else
+		if( str == "=" ) op = seq::ExprOperator::Equal; else
+		if( str == "!=" ) op = seq::ExprOperator::NotEqual; else
+		if( str == "!>" ) op = seq::ExprOperator::NotGreater; else
+		if( str == "<=" ) op = seq::ExprOperator::NotGreater; else
+		if( str == "!<" ) op = seq::ExprOperator::NotLess; else
+		if( str == ">=" ) op = seq::ExprOperator::NotLess; else
+		if( str == "&&" ) op = seq::ExprOperator::And; else
+		if( str == "||" ) op = seq::ExprOperator::Or; else
+		if( str == "^^" ) op = seq::ExprOperator::Xor; else
+		if( str == "!" ) op = seq::ExprOperator::Not; else
+		if( str == "*" ) op = seq::ExprOperator::Multiplication; else
+		if( str == "/" ) op = seq::ExprOperator::Division; else
+		if( str == "+" ) op = seq::ExprOperator::Addition; else
+		if( str == "-" ) op = seq::ExprOperator::Subtraction; else
+		if( str == "%" ) op = seq::ExprOperator::Modulo; else
+		if( str == "**" ) op = seq::ExprOperator::Power; else
+		if( str == "&" ) op = seq::ExprOperator::BinaryAnd; else
+		if( str == "|" ) op = seq::ExprOperator::BinaryOr; else
+		if( str == "^" ) op = seq::ExprOperator::BinaryXor; else
+		if( str == "~" ) op = seq::ExprOperator::BinaryNot; else
+		if( str == "::" ) op = seq::ExprOperator::Accessor; else
 			throw seq::InternalError( "Invalid state!" );
 
 		long operatorCode = (long) op;
@@ -3258,33 +3225,33 @@ seq::Compiler::Token seq::Compiler::construct( seq::string raw, unsigned int lin
 		auto tagType = tagTypeFromString( raw );
 		if( tagType != 0 ) return make( seq::Compiler::Token::Category::Tag, tagType );
 
-		if( raw == "set"_b ) return make( seq::Compiler::Token::Category::Set, 0 );
-		if( raw == "load"_b ) return make( seq::Compiler::Token::Category::Load, 0 );
-		if( clean == "true"_b || clean == "false"_b ) return make( seq::Compiler::Token::Category::Bool, clean == "true"_b ? 1 : 0 );
-		if( clean == "null"_b ) return make( seq::Compiler::Token::Category::Null, 0 );
-		if( clean == "number"_b || clean == "bool"_b || clean == "string"_b || clean == "type"_b ) return make( seq::Compiler::Token::Category::Type, dataTypeFromString( clean ) );
-		if( std::regex_search( seq::util::toStdString(clean), regex_name) ) return make( seq::Compiler::Token::Category::Name, 0 );
-		if( std::regex_search( seq::util::toStdString(clean), regex_number_1) || std::regex_search(seq::util::toStdString(clean), regex_number_2) ) return make( seq::Compiler::Token::Category::Number, 0 );
-		if( raw == "<<"_b ) return make( seq::Compiler::Token::Category::Stream, 0 );
-		if( clean == "{"_b || raw == "}"_b ) return make( seq::Compiler::Token::Category::FuncBracket, clean == "{"_b ? 1 : -1 );
-		if( clean == "["_b || raw == "]"_b ) return make( seq::Compiler::Token::Category::FlowBracket, clean == "["_b ? 1 : -1 );
-		if( clean == "("_b || raw == ")"_b ) return make( seq::Compiler::Token::Category::MathBracket, clean == "("_b ? 1 : -1 );
-		if( raw == ","_b ) return make( seq::Compiler::Token::Category::Comma, 0 );
-		if( raw == ":"_b ) return make( seq::Compiler::Token::Category::Colon, 0 );
-		if( std::regex_search( seq::util::toStdString(clean), regex_arg) ) return make( seq::Compiler::Token::Category::Arg, clean.size() - 1 );
+		if( raw == "set" ) return make( seq::Compiler::Token::Category::Set, 0 );
+		if( raw == "load" ) return make( seq::Compiler::Token::Category::Load, 0 );
+		if( clean == "true" || clean == "false" ) return make( seq::Compiler::Token::Category::Bool, clean == "true" ? 1 : 0 );
+		if( clean == "null" ) return make( seq::Compiler::Token::Category::Null, 0 );
+		if( clean == "number" || clean == "bool" || clean == "string" || clean == "type" ) return make( seq::Compiler::Token::Category::Type, dataTypeFromString( clean ) );
+		if( std::regex_search( clean, regex_name) ) return make( seq::Compiler::Token::Category::Name, 0 );
+		if( std::regex_search( clean, regex_number_1) || std::regex_search(clean, regex_number_2) ) return make( seq::Compiler::Token::Category::Number, 0 );
+		if( raw == "<<" ) return make( seq::Compiler::Token::Category::Stream, 0 );
+		if( clean == "{" || raw == "}" ) return make( seq::Compiler::Token::Category::FuncBracket, clean == "{" ? 1 : -1 );
+		if( clean == "[" || raw == "]" ) return make( seq::Compiler::Token::Category::FlowBracket, clean == "[" ? 1 : -1 );
+		if( clean == "(" || raw == ")" ) return make( seq::Compiler::Token::Category::MathBracket, clean == "(" ? 1 : -1 );
+		if( raw == "," ) return make( seq::Compiler::Token::Category::Comma, 0 );
+		if( raw == ":" ) return make( seq::Compiler::Token::Category::Colon, 0 );
+		if( std::regex_search( clean, regex_arg) ) return make( seq::Compiler::Token::Category::Arg, clean.size() - 1 );
 
-		if( clean.front() == '"'_b && clean.back() == '"'_b ) {
+		if( clean.front() == '"' && clean.back() == '"' ) {
 			clean = clean.substr(1, clean.size() - 2);
 			return make( seq::Compiler::Token::Category::String, 0 );
 		}
 
-		auto it = std::find(operators.begin(), operators.end(), seq::util::toStdString(raw));
+		auto it = std::find( operators.begin(), operators.end(), raw );
 		if( it != operators.end() ) {
 			return make( seq::Compiler::Token::Category::Operator, operatorDataFromString( raw, operator_weights.at(it - operators.begin()) ) );
 		}
 	}
 
-	fail( seq::CompilerError( true, seq::util::toStdString( "token: "_b + raw ), "", "", line ) );
+	fail( seq::CompilerError( true, "token: " + raw, "", "", line ) );
 	throw seq::InternalError( "Critical error ignored!" );
 }
 
@@ -3427,7 +3394,7 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 					break;
 				}
 
-				fail( seq::CompilerError( false, seq::util::toStdString( "token '"_b + token.getRaw() + "'"_b ), "name, value, argument, function, expression or flow controller", "stream", token.getLine() ) );
+				fail( seq::CompilerError( false, "token '" + token.getRaw() + "'", "name, value, argument, function, expression or flow controller", "stream", token.getLine() ) );
 				break;
 
 			case State::Set:
@@ -3440,7 +3407,7 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 						fail( seq::CompilerError( false, "anchor after 'set' keyword", "name", "stream", token.getLine() ) );
 					}
 				}
-				fail( seq::CompilerError( false, seq::util::toStdString( "token: '"_b + token.getRaw() + "'"_b ), "name", "stream", token.getLine() ) );
+				fail( seq::CompilerError( false, "token: '" + token.getRaw() + "'", "name", "stream", token.getLine() ) );
 				break;
 
 			case State::Function: {
@@ -3475,7 +3442,7 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 
 			case State::Stream:
 				if( token.getCategory() != seq::Compiler::Token::Category::Stream ) {
-					fail( seq::CompilerError( false, seq::util::toStdString( "token '"_b + tokens.at(i).getRaw() + "'"_b ), "'<<'", "stream", token.getLine() ) );
+					fail( seq::CompilerError( false, "token '" + tokens.at(i).getRaw() + "'", "'<<'", "stream", token.getLine() ) );
 				}else{
 					state = State::Continue;
 				}
@@ -3520,7 +3487,7 @@ std::vector<byte> seq::Compiler::assemblePrimitive( seq::Compiler::Token token )
 				break;
 
 			case seq::Compiler::Token::Category::Number:
-				bw.putNumber(flag, seq::util::asFraction( std::stod( seq::util::toStdString( token.getClean() ) ) ) );
+				bw.putNumber(flag, seq::util::asFraction( std::stod( token.getClean() ) ) );
 				break;
 
 			case seq::Compiler::Token::Category::Type:
@@ -3572,7 +3539,7 @@ std::vector<byte> seq::Compiler::assembleFlowc( std::vector<seq::Compiler::Token
 			if( token.getCategory() == seq::Compiler::Token::Category::Comma ) {
 				expectSeparator = false;
 			}else{
-				fail( seq::CompilerError( false, "token '" + seq::util::toStdString(token.getRaw()) + "'", "','", "flow controller", tokens.at(i).getLine() ) );
+				fail( seq::CompilerError( false, "token '" + token.getRaw() + "'", "','", "flow controller", tokens.at(i).getLine() ) );
 			}
 
 		}else{
@@ -3599,7 +3566,7 @@ std::vector<byte> seq::Compiler::assembleFlowc( std::vector<seq::Compiler::Token
 							}
 
 						}else{
-							fail( seq::CompilerError( false, "token '" + seq::util::toStdString(tokens.at( i + 2 ).getRaw()) + "'", "number", "flow controller", tokens.at(i + 2).getLine() ) );
+							fail( seq::CompilerError( false, "token '" + tokens.at( i + 2 ).getRaw() + "'", "number", "flow controller", tokens.at(i + 2).getLine() ) );
 						}
 
 					}else{
@@ -3620,7 +3587,7 @@ std::vector<byte> seq::Compiler::assembleFlowc( std::vector<seq::Compiler::Token
 				}
 
 				default:
-					fail( seq::CompilerError( false, "token '" + seq::util::toStdString(token.getRaw()) + "'", "value or range", "flow controller", token.getLine() ) );
+					fail( seq::CompilerError( false, "token '" + token.getRaw() + "'", "value or range", "flow controller", token.getLine() ) );
 
 			}
 
@@ -3786,7 +3753,7 @@ std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::To
 	return ret;
 }
 
-int seq::Compiler::extractHeaderData( std::vector<Token>& tokens, std::vector<seq::string>* arrayPtr ) {
+int seq::Compiler::extractHeaderData( std::vector<Token>& tokens, std::vector<std::string>* arrayPtr ) {
 
 	int s = 0;
 
@@ -3807,13 +3774,13 @@ int seq::Compiler::extractHeaderData( std::vector<Token>& tokens, std::vector<se
 
 					// validate load statement
 					if( i + 1 >= size || (i + 2 >= size && (int) tokens.at( i + 2 ).getLine() == l) ) {
-						fail( seq::CompilerError( true, "token " + seq::util::toStdString( token.getRaw() ), "load statement", "header", l ) );
+						fail( seq::CompilerError( true, "token " + token.getRaw(), "load statement", "header", l ) );
 					}
 
 					auto& token2 = tokens[ i + 1 ];
 
 					if( token2.getCategory() != seq::Compiler::Token::Category::String || token2.getAnchor() ) {
-						fail( seq::CompilerError( true, "token " + seq::util::toStdString( token.getRaw() ), "load statement", "header", l ) );
+						fail( seq::CompilerError( true, "token " + token.getRaw(), "load statement", "header", l ) );
 					}
 
 					// add load to supplied load array

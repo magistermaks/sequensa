@@ -35,7 +35,7 @@ seq::Stream seq_std_eval( seq::Stream& input ) {
 
 		try{
 
-			seq::string code = seq::util::stringCast(arg).String().getString();
+			std::string code = seq::util::stringCast(arg).String().getString();
 			auto buf = seq::Compiler::compile( code );
 			seq::ByteBuffer bb( buf.data(), buf.size() );
 
@@ -60,7 +60,7 @@ seq::Stream seq_std_mixin( seq::Stream& input ) {
 
 		try{
 
-			seq::string code = seq::util::stringCast(arg).String().getString();
+			std::string code = seq::util::stringCast(arg).String().getString();
 			auto buf = seq::Compiler::compile( code );
 			seq::ByteBuffer bb( buf.data(), buf.size() );
 
@@ -82,8 +82,8 @@ INIT( seq::Executor* exe, seq::FileHeader* head ) {
 
 	executor = exe;
 
-	exe->inject( "std:mixin"_b, seq_std_mixin );
-	exe->inject( "std:eval"_b, seq_std_eval );
+	exe->inject( "std:mixin", seq_std_mixin );
+	exe->inject( "std:eval", seq_std_eval );
 
 	return INIT_SUCCESS;
 }

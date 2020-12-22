@@ -61,7 +61,7 @@ seq::Stream seq_std_in( seq::Stream& input ) {
 
 		std::string str;
 		std::cin >> str;
-		output.push_back( seq::util::newString( (seq::byte*) str.c_str() ) );
+		output.push_back( seq::util::newString( str.c_str() ) );
 
 	}
 
@@ -84,7 +84,7 @@ seq::Stream seq_std_inchr( seq::Stream& input ) {
 		std::string str;
 		str += nbi_std_input();
 
-		output.push_back( seq::util::newString( (seq::byte*) str.c_str() ) );
+		output.push_back( seq::util::newString( str.c_str() ) );
 
 	}
 
@@ -103,7 +103,7 @@ seq::Stream seq_std_nbinchr( seq::Stream& input ) {
 		if( chr != -1 ) {
 
 			str += chr;
-			output.push_back( seq::util::newString( (seq::byte*) str.c_str() ) );
+			output.push_back( seq::util::newString( str.c_str() ) );
 
 		}else{
 
@@ -118,14 +118,14 @@ seq::Stream seq_std_nbinchr( seq::Stream& input ) {
 
 INIT( seq::Executor* exe, seq::FileHeader* head ) {
 
-	exe->inject( "std:out"_b, seq_std_out );
-	exe->inject( "std:outln"_b, seq_std_outln );
-	exe->inject( "std:in"_b, seq_std_in );
-	exe->inject( "std:flush"_b, seq_std_flush );
-	exe->inject( "std:inchr"_b, seq_std_inchr );
-	exe->inject( "std:nbinchr"_b, seq_std_nbinchr );
+	exe->inject( "std:out", seq_std_out );
+	exe->inject( "std:outln", seq_std_outln );
+	exe->inject( "std:in", seq_std_in );
+	exe->inject( "std:flush", seq_std_flush );
+	exe->inject( "std:inchr", seq_std_inchr );
+	exe->inject( "std:nbinchr", seq_std_nbinchr );
 
-	exe->define( "std:br"_b, { seq::Generic( new seq::type::String( false, "\n"_b ) ) } );
+	exe->define( "std:br", { seq::Generic( new seq::type::String( false, "\n" ) ) } );
 
 	return INIT_SUCCESS;
 }

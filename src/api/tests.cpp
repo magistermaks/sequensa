@@ -13,7 +13,7 @@ void print_buffer( seq::ByteBuffer& bb ) {
 }
 
 seq::Stream native_join_strings( seq::Stream& input ) {
-	seq::string str;
+	std::string str;
 
 	for( auto& arg : input ) {
 		if( arg.getDataType() == seq::DataType::String ) {
@@ -72,11 +72,11 @@ TEST( buffer_writer_complex, {
     bw.putNumber( false, (seq::Fraction) {12, 1} );
     bw.putNumber( true, (seq::Fraction) {1, 2} );
     bw.putNumber( false, (seq::Fraction) {1422131241, 1} );
-    bw.putString( true, (byte*) "Hello World!" );
+    bw.putString( true, "Hello World!" );
     bw.putType( false, seq::DataType::Number );
     bw.putCall( false, seq::type::VMCall::CallType::Return );
     bw.putArg( false, 3 );
-    bw.putName( false, true, (byte*) "name" );
+    bw.putName( false, true, "name" );
 
     { // fraction (special case - default values for size 0)
     	bw.putOpcode( true, seq::Opcode::NUM );
@@ -120,7 +120,7 @@ TEST( buffer_writer_complex, {
         seq::TokenReader tr = br.next();
         CHECK( (byte) tr.getDataType(), (byte) seq::DataType::String );
         CHECK( tr.isAnchored(), true );
-        CHECK_ELSE( tr.getGeneric().String().getString(), seq::string( (byte*) "Hello World!" ) ) {
+        CHECK_ELSE( tr.getGeneric().String().getString(), std::string( "Hello World!" ) ) {
         	FAIL( "Invalid string!" );
         }
     }
@@ -153,7 +153,7 @@ TEST( buffer_writer_complex, {
         seq::Generic generic = tr.getGeneric();
         auto& name = generic.Name();
         CHECK( name.getDefine(), true );
-        CHECK_ELSE( name.getName(), seq::string( (byte*) "name" ) ) {
+        CHECK_ELSE( name.getName(), std::string( "name" ) ) {
             FAIL( "Invalid string! - " + std::string( (char*) name.getName().c_str() ) );
         }
     }
@@ -345,10 +345,10 @@ TEST( buffer_writer_file_header, {
     std::vector<byte> arr;
     seq::BufferWriter bw( arr );
 
-    std::map<seq::string, seq::string> data;
-    data[ (byte*) "test"] = (byte*) "Hello World!";
-    data[ (byte*) "Foo"] = (byte*) "Bar";
-    data[ (byte*) "number"] = (byte*) "123.4";
+    std::map<std::string, std::string> data;
+    data[ "test"] = "Hello World!";
+    data[ "Foo"] = "Bar";
+    data[ "number"] = "123.4";
 
     bw.putFileHeader( 1, 2, 3, data );
     bw.putByte( (byte) 'A' );
@@ -362,16 +362,16 @@ TEST( buffer_writer_file_header, {
     CHECK( header.checkPatch( 3 ), true );
     CHECK( header.checkPatch( 4 ), false );
 
-    CHECK_ELSE( header.getValue( (byte*) "test" ), seq::string( (byte*) "Hello World!" ) ) {
-        FAIL( "Invalid string! - " + std::string( (char*) header.getValue( (byte*) "test" ).c_str() ) );
+    CHECK_ELSE( header.getValue( "test" ), std::string( "Hello World!" ) ) {
+        FAIL( "Invalid string! - " + std::string( (char*) header.getValue( "test" ).c_str() ) );
     }
 
-    CHECK_ELSE( header.getValue( (byte*) "Foo" ), seq::string( (byte*) "Bar" ) ) {
-        FAIL( "Invalid string! - " + std::string( (char*) header.getValue( (byte*) "Foo" ).c_str() ) );
+    CHECK_ELSE( header.getValue( "Foo" ), std::string( "Bar" ) ) {
+        FAIL( "Invalid string! - " + std::string( (char*) header.getValue( "Foo" ).c_str() ) );
     }
 
-    CHECK_ELSE( header.getValue( (byte*) "number" ), seq::string( (byte*) "123.4" ) ) {
-        FAIL( "Invalid string! - " + std::string( (char*) header.getValue( (byte*) "number" ).c_str() ) );
+    CHECK_ELSE( header.getValue( "number" ), std::string( "123.4" ) ) {
+        FAIL( "Invalid string! - " + std::string( (char*) header.getValue( "number" ).c_str() ) );
     }
 
     CHECK( header.getVersionMajor(), 1 );
@@ -418,7 +418,7 @@ TEST( executor_hello_world, {
 		std::vector<byte> arr_1;
 		seq::BufferWriter bw_1( arr_1 );
 		bw_1.putCall( true, seq::type::VMCall::CallType::Exit );
-		bw_1.putString( false, (byte*) "Hello World!" );
+		bw_1.putString( false, "Hello World!" );
 
 		std::vector<byte> arr_2;
 		seq::BufferWriter bw_2( arr_2 );
@@ -430,7 +430,7 @@ TEST( executor_hello_world, {
 		exe.execute( bb );
 
 		CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
-		CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "Hello World!" ) ) {
+		CHECK_ELSE( exe.getResult().String().getString(), std::string( "Hello World!" ) ) {
 			FAIL( "Invalid String!" );
 		}
 
@@ -441,13 +441,13 @@ TEST( executor_hello_world_var, {
 
 	std::vector<byte> arr_1;
 	seq::BufferWriter bw_1( arr_1 );
-	bw_1.putName( false, true, (byte*) "var" );
-	bw_1.putString( false, (byte*) "Hello World!" );
+	bw_1.putName( false, true, "var" );
+	bw_1.putString( false, "Hello World!" );
 
 	std::vector<byte> arr_2;
 	seq::BufferWriter bw_2( arr_2 );
 	bw_2.putCall( true, seq::type::VMCall::CallType::Exit );
-	bw_2.putName( false, false, (byte*) "var" );
+	bw_2.putName( false, false, "var" );
 
 	std::vector<byte> arr_3;
 	seq::BufferWriter bw_3( arr_3 );
@@ -460,7 +460,7 @@ TEST( executor_hello_world_var, {
 	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
-	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "Hello World!" ) ) {
+	CHECK_ELSE( exe.getResult().String().getString(), std::string( "Hello World!" ) ) {
 		FAIL( "Invalid String!" );
 	}
 
@@ -471,7 +471,7 @@ TEST( executor_hello_world_func, {
 	std::vector<byte> arr_1;
 	seq::BufferWriter bw_1( arr_1 );
 	bw_1.putCall( true, seq::type::VMCall::CallType::Return );
-	bw_1.putString( false, (byte*) "Hello World!" );
+	bw_1.putString( false, "Hello World!" );
 
 	std::vector<byte> arr_2;
 	seq::BufferWriter bw_2( arr_2 );
@@ -479,13 +479,13 @@ TEST( executor_hello_world_func, {
 
 	std::vector<byte> arr_3;
 	seq::BufferWriter bw_3( arr_3 );
-	bw_3.putName( false, true, (byte*) "var" );
+	bw_3.putName( false, true, "var" );
 	bw_3.putFunc( false, arr_2, true );
 
 	std::vector<byte> arr_4;
 	seq::BufferWriter bw_4( arr_4 );
 	bw_4.putCall( true, seq::type::VMCall::CallType::Exit );
-	bw_4.putName( true, false, (byte*) "var" );
+	bw_4.putName( true, false, "var" );
 	bw_4.putNull( false );
 
 	std::vector<byte> arr_5;
@@ -499,7 +499,7 @@ TEST( executor_hello_world_func, {
 	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
-	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "Hello World!" ) ) {
+	CHECK_ELSE( exe.getResult().String().getString(), std::string( "Hello World!" ) ) {
 		FAIL( "Invalid String!" );
 	}
 
@@ -508,7 +508,7 @@ TEST( executor_hello_world_func, {
 TEST( executor_native, {
 
 	seq::Executor exe;
-	exe.inject( "sum"_b, [] ( seq::Stream& input ) -> seq::Stream {
+	exe.inject( "sum", [] ( seq::Stream& input ) -> seq::Stream {
 		double sum = 0;
 		for( auto& arg : input ) {
 			sum += seq::util::numberCast( arg ).Number().getDouble();
@@ -523,7 +523,7 @@ TEST( executor_native, {
 	std::vector<byte> arr_1;
 	seq::BufferWriter bw_1( arr_1 );
 	bw_1.putCall( true, seq::type::VMCall::CallType::Exit );
-	bw_1.putName( true, false, (byte*) "sum" );
+	bw_1.putName( true, false, "sum" );
 	bw_1.putNumber( false, (seq::Fraction) {1, 1} );
 	bw_1.putNumber( false, (seq::Fraction) {2, 1} );
 	bw_1.putNumber( false, (seq::Fraction) {3, 1} );
@@ -573,7 +573,7 @@ TEST( expression_simple, {
 
 TEST( tokenizer_basic, {
 
-	std::vector<seq::Compiler::Token> tokens = seq::Compiler::tokenize( "#exit << 1 << \"Hello\" << 3"_b );
+	std::vector<seq::Compiler::Token> tokens = seq::Compiler::tokenize( "#exit << 1 << \"Hello\" << 3" );
 
 	if( tokens.at(0).getCategory() != seq::Compiler::Token::Category::VMCall ) {
 		FAIL( "Expected 'VMCall' token at index 0, found " + tokens.at(0).toString() );
@@ -595,7 +595,7 @@ TEST( tokenizer_basic, {
 
 TEST( ce_hello_world, {
 
-	seq::string code = "#exit << \"Hello World!\""_b;
+	std::string code = "#exit << \"Hello World!\"";
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -604,7 +604,7 @@ TEST( ce_hello_world, {
 	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
-	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "Hello World!" ) ) {
+	CHECK_ELSE( exe.getResult().String().getString(), std::string( "Hello World!" ) ) {
 		FAIL( "Invalid String!" );
 	}
 
@@ -612,7 +612,7 @@ TEST( ce_hello_world, {
 
 TEST( ce_hello_world_func, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"set var << {\n"
 			"	#return << \"Hello World!\"\n"
 			"}\n"
@@ -628,7 +628,7 @@ TEST( ce_hello_world_func, {
 	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
-	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "Hello World!" ) ) {
+	CHECK_ELSE( exe.getResult().String().getString(), std::string( "Hello World!" ) ) {
 		FAIL( "Invalid String!" );
 	}
 
@@ -636,7 +636,7 @@ TEST( ce_hello_world_func, {
 
 TEST( ce_expression, {
 
-	seq::string code = (byte*) ("#exit << ( 1 + 2 + 3 + 4 )");
+	std::string code = "#exit << ( 1 + 2 + 3 + 4 )";
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -652,7 +652,7 @@ TEST( ce_expression, {
 
 TEST( ce_expression_nested_right, {
 
-	seq::string code = (byte*) ("#exit << ( 1 + ( 2 + 3 ) )");
+	std::string code = "#exit << ( 1 + ( 2 + 3 ) )";
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -667,7 +667,7 @@ TEST( ce_expression_nested_right, {
 
 TEST( ce_expression_nested_left, {
 
-	seq::string code = (byte*) ("#exit << ( ( 2 + 3 ) + 1 )");
+	std::string code = "#exit << ( ( 2 + 3 ) + 1 )";
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -683,7 +683,7 @@ TEST( ce_expression_nested_left, {
 
 TEST( ce_expression_nested_double, {
 
-	seq::string code = (byte*) ("#exit << ( ( 2 + 3 ) + ( 4 + 1 ) )");
+	std::string code = "#exit << ( ( 2 + 3 ) + ( 4 + 1 ) )";
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -698,7 +698,7 @@ TEST( ce_expression_nested_double, {
 
 TEST( ce_expression_float, {
 
-	seq::string code = (byte*) ("#exit << ( ( 2.14 + 3.41 ) * 100 )");
+	std::string code = "#exit << ( ( 2.14 + 3.41 ) * 100 )";
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -714,7 +714,7 @@ TEST( ce_expression_float, {
 
 TEST( ce_expression_complex, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"set var << {\n"
 			"	#return << @\n"
 			"}\n"
@@ -733,7 +733,7 @@ TEST( ce_expression_complex, {
 
 TEST( ce_arg, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#{\n"
 			"	#exit << #{\n"
 			"		#return << (@ + @@) \n"
@@ -754,7 +754,7 @@ TEST( ce_arg, {
 
 TEST( ce_string_escape_codes, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#exit << \"\\\\\\n\\t\\\"\\r\"");
 
 	auto buf = seq::Compiler::compile( code );
@@ -764,7 +764,7 @@ TEST( ce_string_escape_codes, {
 	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
-	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "\\\n\t\"\r" ) ) {
+	CHECK_ELSE( exe.getResult().String().getString(), std::string( "\\\n\t\"\r" ) ) {
 		FAIL( "Invalid String!" );
 	}
 
@@ -773,7 +773,7 @@ TEST( ce_string_escape_codes, {
 
 TEST( ce_flowc_1, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#exit << #[true] << true");
 
 	auto buf = seq::Compiler::compile( code );
@@ -789,7 +789,7 @@ TEST( ce_flowc_1, {
 
 TEST( ce_flowc_2, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#exit << #[true] << false << true");
 
 	auto buf = seq::Compiler::compile( code );
@@ -805,7 +805,7 @@ TEST( ce_flowc_2, {
 
 TEST( ce_flowc_3, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#exit << #[number] << true << null << \"Hello\" << 2");
 
 	auto buf = seq::Compiler::compile( code );
@@ -821,7 +821,7 @@ TEST( ce_flowc_3, {
 
 TEST( ce_flowc_4, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#exit << #[2] << true << null << \"Hello\" << 2");
 
 	auto buf = seq::Compiler::compile( code );
@@ -838,7 +838,7 @@ TEST( ce_flowc_4, {
 
 TEST( ce_type_cast_bool_1, {
 
-	seq::string code = (byte*) ("#exit << #bool << 1 << null << \"hello\"");
+	std::string code = ("#exit << #bool << 1 << null << \"hello\"");
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -861,7 +861,7 @@ TEST( ce_type_cast_bool_1, {
 
 TEST( ce_type_cast_bool_2, {
 
-	seq::string code = (byte*) ("#exit << #bool << 0 << 2 << 0.00234");
+	std::string code = ("#exit << #bool << 0 << 2 << 0.00234");
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -884,7 +884,7 @@ TEST( ce_type_cast_bool_2, {
 
 TEST( ce_type_cast_number_1, {
 
-	seq::string code = (byte*) ("#exit << #number << \"123\" << \"42.5\" << break");
+	std::string code = ("#exit << #number << \"123\" << \"42.5\" << break");
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -907,7 +907,7 @@ TEST( ce_type_cast_number_1, {
 
 TEST( ce_type_cast_number_2, {
 
-	seq::string code = (byte*) ("#exit << #number << true << 6 << null");
+	std::string code = ("#exit << #number << true << 6 << null");
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -930,7 +930,7 @@ TEST( ce_type_cast_number_2, {
 
 TEST( ce_type_cast_string_1, {
 
-	seq::string code = (byte*) ("#exit << #string << true << null << 69");
+	std::string code = ("#exit << #string << true << null << 69");
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -941,17 +941,17 @@ TEST( ce_type_cast_string_1, {
 	auto& res = exe.getResults();
 
 	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::String );
-	CHECK_ELSE( res.at(0).String().getString(), seq::string( (byte*) "true" ) ) {
+	CHECK_ELSE( res.at(0).String().getString(), std::string( "true" ) ) {
 		FAIL( "Invalid String!" );
 	}
 
 	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::String );
-	CHECK_ELSE( res.at(1).String().getString(), seq::string( (byte*) "null" ) ) {
+	CHECK_ELSE( res.at(1).String().getString(), std::string( "null" ) ) {
 		FAIL( "Invalid String!" );
 	}
 
 	CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::String );
-	CHECK_ELSE( res.at(2).String().getString(), seq::string( (byte*) "69" ) ) {
+	CHECK_ELSE( res.at(2).String().getString(), std::string( "69" ) ) {
 		FAIL( "Invalid String!" );
 	}
 
@@ -959,7 +959,7 @@ TEST( ce_type_cast_string_1, {
 
 TEST( ce_type_cast_string_2, {
 
-	seq::string code = (byte*) ("#exit << #string << 123.2 << 42 << \"hello\" ");
+	std::string code = ("#exit << #string << 123.2 << 42 << \"hello\" ");
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -970,13 +970,13 @@ TEST( ce_type_cast_string_2, {
 	auto& res = exe.getResults();
 
 	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::String );
-	CHECK( std::stod( seq::util::toStdString( res.at(0).String().getString() ) ), 123.2 );
+	CHECK( std::stod( res.at(0).String().getString() ), 123.2 );
 
 	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::String );
-	CHECK( std::stod( seq::util::toStdString( res.at(1).String().getString() ) ), 42.0 );
+	CHECK( std::stod( res.at(1).String().getString() ), 42.0 );
 
 	CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::String );
-	CHECK_ELSE( res.at(2).String().getString(), seq::string( (byte*) "hello" ) ) {
+	CHECK_ELSE( res.at(2).String().getString(), std::string( "hello" ) ) {
 		FAIL( "Invalid String!" );
 	}
 
@@ -985,7 +985,7 @@ TEST( ce_type_cast_string_2, {
 
 TEST( ce_stream_tags, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#exit << #join << #{\n"
             "	first; #return << \"first\"\n"
             "	last; #return << \"last\"\n"
@@ -997,12 +997,12 @@ TEST( ce_stream_tags, {
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
-	exe.inject( "join"_b, native_join_strings );
+	exe.inject( "join", native_join_strings );
 	exe.execute( bb );
 	exe.reset();
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
-	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "firstnonenonelastnoneend" ) ) {
+	CHECK_ELSE( exe.getResult().String().getString(), std::string( "firstnonenonelastnoneend" ) ) {
 		FAIL( "Invalid String!" );
 	}
 
@@ -1010,7 +1010,7 @@ TEST( ce_stream_tags, {
 
 TEST( ce_complex_sum, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#exit << #{\n"
 			"	first; set x << 0\n"
 			"	set x << #{\n"
@@ -1033,13 +1033,13 @@ TEST( ce_complex_sum, {
 
 TEST( ce_header, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"load \"test-1\" \n"
 			"load \"test-2\" \n"
 			"#exit << 1 \n"
 			);
 
-	std::vector<seq::string> loades;
+	std::vector<std::string> loades;
 
 	auto buf = seq::Compiler::compile( code, &loades );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -1051,11 +1051,11 @@ TEST( ce_header, {
 	CHECK( exe.getResult().Number().getLong(), 1l );
 	CHECK( (long) loades.size(), 2l );
 
-	CHECK_ELSE( loades.at(0), seq::string( (byte*) "test-1" ) ) {
+	CHECK_ELSE( loades.at(0), std::string( "test-1" ) ) {
 		FAIL( "Invalid String!" );
 	}
 
-	CHECK_ELSE( loades.at(1), seq::string( (byte*) "test-2" ) ) {
+	CHECK_ELSE( loades.at(1), std::string( "test-2" ) ) {
 		FAIL( "Invalid String!" );
 	}
 
@@ -1066,7 +1066,7 @@ TEST( ce_simple_loop, {
 
 	// TODO investigate why this is so slow (in valgrind)
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#exit << #join << #string << #{\n"
             "	#return << @\n"
             "	#again << #( @ - 1 ) << #[true] << ( @ > 0 )\n"
@@ -1077,12 +1077,12 @@ TEST( ce_simple_loop, {
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
-	exe.inject( "join"_b, native_join_strings );
+	exe.inject( "join", native_join_strings );
 	exe.execute( bb );
 
 	CHECK( (byte) exe.getResult().getDataType(), (byte) seq::DataType::String );
-	CHECK_ELSE( exe.getResult().String().getString(), seq::string( (byte*) "109876543210" ) ) {
-		std::cout << seq::util::toStdString( exe.getResult().String().getString() );
+	CHECK_ELSE( exe.getResult().String().getString(), std::string( "109876543210" ) ) {
+		std::cout << exe.getResult().String().getString();
 		FAIL( "Invalid String!" );
 	}
 
@@ -1091,7 +1091,7 @@ TEST( ce_simple_loop, {
 
 TEST( ce_fibonacci_recursion, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"set sum << { \n"
 			"	first; set x << 0 \n"
 			"	set x << #{ \n"
@@ -1133,7 +1133,7 @@ TEST( ce_fibonacci_recursion, {
 
 TEST( ce_prime_numbers, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"set isPrime << { \n"
 			"	#return << #{ \n"
 			"		#final << #false << #[true] << (@@ % @ = 0) \n"
@@ -1176,7 +1176,7 @@ TEST( ce_prime_numbers, {
 
 TEST( ce_factorial_recursion, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"set factorial << { \n"
 			"	#return << #{"
 			"		#final << #1 << #[true] << (@ <= 0) \n"
@@ -1214,7 +1214,7 @@ TEST( ce_factorial_recursion, {
 
 TEST( ce_order_1, {
 
-	seq::string code = (byte*) ("#exit << 1 << 2 << 3");
+	std::string code = ("#exit << 1 << 2 << 3");
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -1237,7 +1237,7 @@ TEST( ce_order_1, {
 
 TEST( ce_order_2, {
 
-	seq::string code = (byte*) ("#exit << #{ #return << @ } << 1 << 2 << 3");
+	std::string code = "#exit << #{ #return << @ } << 1 << 2 << 3";
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -1261,7 +1261,7 @@ TEST( ce_order_2, {
 
 TEST( ce_order_3, {
 
-	seq::string code = (byte*) ("#exit << #[number] << 1 << 2 << 3");
+	std::string code = "#exit << #[number] << 1 << 2 << 3";
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -1284,7 +1284,7 @@ TEST( ce_order_3, {
 
 TEST( ce_order_4, {
 
-	seq::string code = (byte*) ("#exit << #number << 1 << 2 << 3");
+	std::string code = "#exit << #number << 1 << 2 << 3";
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -1307,7 +1307,7 @@ TEST( ce_order_4, {
 
 TEST( ce_order_5, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"set var << 1 << 2 << 3 \n"
 			"#exit << var"
 			);
@@ -1333,7 +1333,7 @@ TEST( ce_order_5, {
 
 TEST( ce_expr_complex_math, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#exit << (\n"
 			"8 ** 2 * 9 - 5 * (( 12 + 12 - 25 ) ** 2) / 5 \n"
 			")"
@@ -1354,7 +1354,7 @@ TEST( ce_expr_complex_logic, {
 
 	// NEW MEMEORY PROBLEM
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#exit << (\n"
 			"(true || false) && ( true ^^ false ) && !false && !( 1 > 10 )\n"
 			")"
@@ -1373,7 +1373,7 @@ TEST( ce_expr_complex_logic, {
 
 TEST( ce_deep_function, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#exit << #{ #return << #{ #return << #{ #return << (@ * 2) } << (@ + 1) } << (@**2) } << 2"
 			);
 
@@ -1390,7 +1390,7 @@ TEST( ce_deep_function, {
 
 TEST( ce_top_args, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#exit << @"
 			);
 
@@ -1411,7 +1411,7 @@ TEST( ce_top_args, {
 
 TEST( ce_namespace, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 		"set foo:bar << 123 \n"
 		"#exit << foo:bar"
 	);
@@ -1442,8 +1442,8 @@ TEST( ce_blob, {
 				return new Thing( this->anchor, this->a, this->b );
 			}
 
-			seq::string toString() {
-				return "blobus"_b;
+			std::string toString() {
+				return "blobus";
 			}
 
 			int a;
@@ -1451,7 +1451,7 @@ TEST( ce_blob, {
 
 	};
 
-	seq::string code = (byte*) (
+	std::string code = (
 		"#exit << #unpack << #pack << null"
 	);
 
@@ -1459,18 +1459,18 @@ TEST( ce_blob, {
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
-	exe.inject( "pack"_b, [] ( seq::Stream& input ) -> seq::Stream {
+	exe.inject( "pack", [] ( seq::Stream& input ) -> seq::Stream {
 		return seq::Stream {
 			seq::Generic( new Thing( false, 123, 456 ) )
 		};
 	} );
 
-	exe.inject( "unpack"_b, [] ( seq::Stream& input ) -> seq::Stream {
+	exe.inject( "unpack", [] ( seq::Stream& input ) -> seq::Stream {
 		if( input[0].getDataType() != seq::DataType::Blob ) {
 			return seq::Stream();
 		}else{
 
-			if( input[0].Blob().toString() != "blobus"_b ) {
+			if( input[0].Blob().toString() != "blobus" ) {
 				FAIL( "Invalid blob string!" );
 			}
 
@@ -1495,7 +1495,7 @@ TEST( ce_blob, {
 
 TEST( ce_accessor_operator, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"set var << 123 << 456 << 789 \n"
 			"#exit << ( var :: 0 ) << ( var :: 1 ) << ( var :: 2 ) << ( var :: 3 )"
 			);
@@ -1523,7 +1523,7 @@ TEST( ce_accessor_operator, {
 
 TEST( c_fail_expression_anchor, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#exit << ( #0 < 1 )"
 			);
 
@@ -1539,7 +1539,7 @@ TEST( c_fail_expression_anchor, {
 
 TEST( c_fail_empty_identifier, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#exit << #"
 			);
 
@@ -1555,7 +1555,7 @@ TEST( c_fail_empty_identifier, {
 
 TEST( c_fail_stream_ending, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#exit <<"
 			);
 
@@ -1571,7 +1571,7 @@ TEST( c_fail_stream_ending, {
 
 TEST( c_fail_stream_double, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#exit << \n"
 			"<< 2"
 			);
@@ -1588,7 +1588,7 @@ TEST( c_fail_stream_double, {
 
 TEST( ce_value_cast, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#return << #1 << null\n"
 			"#return << #0.5 << null\n"
 			"#return << #\"hi\" << null\n"
@@ -1617,7 +1617,7 @@ TEST( ce_value_cast, {
 
 TEST( ce_expression_new, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#return << ( null = null ) << ( number = bool ) << ( type = type ) << ( 3 != null )"
 			);
 
@@ -1642,7 +1642,7 @@ TEST( ce_expression_new, {
 
 TEST( ce_simple_define, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#exit << var\n"
 			);
 
@@ -1651,7 +1651,7 @@ TEST( ce_simple_define, {
 
 	seq::Executor exe;
 
-	exe.define( "var"_b, (seq::Stream) {
+	exe.define( "var", (seq::Stream) {
 			seq::Generic( new seq::type::Number( false, 12.0 ) ),
 			seq::Generic( new seq::type::Number( false, 33.0 ) )
 	} );
@@ -1669,7 +1669,7 @@ TEST( ce_simple_define, {
 
 TEST( c_comments, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"// test \n"
 			"#exit << #{ \n"
 			"	#return << // test //111 \n"
@@ -1687,7 +1687,7 @@ TEST( c_comments, {
 
 TEST( ce_composite_order, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"set x << 1 \n"
 			"set y << 3 \n"
 			"set z << 4 \n"
@@ -1721,7 +1721,7 @@ TEST( ce_composite_order, {
 
 TEST( ce_flowc_cast, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#exit << #number << #[\"1\", \"5\", \"8\"] << \"5\" << \"8\""
 			);
 
@@ -1747,7 +1747,7 @@ TEST( ce_accessor_complex, {
 	// - ((v :: 0 - 1) + (v :: 1 - 1) * 3) should equal (v :: 0 - 1 + (v :: 1 - 1) * 3) but it doesn't
 	// UPDATE: tried fixing it in 1.4.4 but I'm not sure if it didn't break something else
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"set v << 2 << 4 << 6 \n"
 			"#exit << (v :: 2 + v :: 1) << (v :: 0 + v :: 1 * 3) << (1 + v :: 2 * 2) << (v :: 0 - 1 + (v :: 1 - 1) * 3) \n"
 			);
@@ -1776,7 +1776,7 @@ TEST( ce_accessor_complex, {
 
 TEST( ce_accessor_cast, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"set v << 7 \n"
 			"#exit << #(v :: 0) << 3 \n"
 			);
@@ -1797,7 +1797,7 @@ TEST( ce_accessor_cast, {
 
 TEST( ce_embedded_streams, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#exit << (<< 3 << 4) << 5 \n"
 			);
 
@@ -1822,7 +1822,7 @@ TEST( ce_embedded_streams, {
 
 TEST( ce_type_cast, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#exit << #string << #type << 3.14 \n"
 			);
 
@@ -1835,7 +1835,7 @@ TEST( ce_type_cast, {
 	auto& res = exe.getResults();
 
 	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::String );
-	CHECK_ELSE( res.at(0).String().getString(), seq::string( (byte*) "type" ) ) {
+	CHECK_ELSE( res.at(0).String().getString(), std::string( "type" ) ) {
 		FAIL( "Invalid string!" );
 	}
 
@@ -1843,7 +1843,7 @@ TEST( ce_type_cast, {
 
 TEST( ce_nested_stream_native, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"set var << (<< exit) << 1 \n"
 			"#var << 2"
 			);
@@ -1863,7 +1863,7 @@ TEST( ce_nested_stream_native, {
 
 TEST( ce_set_empty, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"set x << 1 \n"
 			"set x \n"
 			"#exit << x \n"
@@ -1885,7 +1885,7 @@ TEST( ce_set_empty, {
 
 TEST( ce_fail_undefined_var, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#exit << var"
 			);
 
@@ -1907,7 +1907,7 @@ TEST( ce_fail_undefined_var, {
 
 TEST( ce_negative_numbers, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#exit << -1 << #-2 << 0"
 			);
 
@@ -1929,7 +1929,7 @@ TEST( ce_negative_numbers, {
 
 TEST( ce_half_fail_math_modes, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#exit << (null = 1234)"
 			);
 
@@ -1950,7 +1950,7 @@ TEST( ce_half_fail_math_modes, {
 
 TEST( ce_vmcall_passing, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#exit << #{ \n"
 			"	#return << @ \n"
 			"} << exit \n"
@@ -1968,7 +1968,7 @@ TEST( ce_vmcall_passing, {
 
 TEST( ce_between_anchors, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#exit << 1 << #2 << 3"
 			);
 
@@ -1990,7 +1990,7 @@ TEST( ce_between_anchors, {
 
 TEST( ce_casts, {
 
-	seq::string code = "#exit << (<< #number << false) << (<< #string << false << [true] << exit << number)"_b;
+	std::string code = "#exit << (<< #number << false) << (<< #string << false << [true] << exit << number)";
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -2004,22 +2004,22 @@ TEST( ce_casts, {
 	CHECK( res.at(0).Number().getLong(), 0l );
 
 	CHECK( (byte) res.at(1).getDataType(), (byte) seq::DataType::String );
-	CHECK_ELSE( res.at(1).String().getString(), seq::string( "false"_b ) ) {
+	CHECK_ELSE( res.at(1).String().getString(), std::string( "false" ) ) {
 		FAIL( "Invalid string, expected 'false'!" );
 	}
 
 	CHECK( (byte) res.at(2).getDataType(), (byte) seq::DataType::String );
-	CHECK_ELSE( res.at(2).String().getString(), seq::string( "flowc"_b ) ) {
+	CHECK_ELSE( res.at(2).String().getString(), std::string( "flowc" ) ) {
 		FAIL( "Invalid string, expected 'flowc'!" );
 	}
 
 	CHECK( (byte) res.at(3).getDataType(), (byte) seq::DataType::String );
-	CHECK_ELSE( res.at(3).String().getString(), seq::string( "func"_b ) ) {
+	CHECK_ELSE( res.at(3).String().getString(), std::string( "func" ) ) {
 		FAIL( "Invalid string, expected 'func'!" );
 	}
 
 	CHECK( (byte) res.at(4).getDataType(), (byte) seq::DataType::String );
-	CHECK_ELSE( res.at(4).String().getString(), seq::string( "type"_b ) ) {
+	CHECK_ELSE( res.at(4).String().getString(), std::string( "type" ) ) {
 		FAIL( "Invalid string, expected 'type'!" );
 	}
 
@@ -2041,7 +2041,7 @@ TEST( util_simple, {
 	g = seq::util::newArg( 1 );
 	CHECK( (byte) g.getDataType(), (byte) seq::DataType::Arg );
 
-	g = seq::util::newString( "hello"_b );
+	g = seq::util::newString( "hello" );
 	CHECK( (byte) g.getDataType(), (byte) seq::DataType::String );
 
 	g = seq::util::newType( seq::DataType::Bool );
@@ -2080,22 +2080,22 @@ TEST( buffer_get_section, {
 	seq::BufferReader br1 = bb1.getReader( 1, 3 );
 	seq::ByteBuffer bb2 = br1.getSubBuffer();
 
-	CHECK( br1.nextByte(), 'B'_b );
-	CHECK( br1.nextByte(), 'C'_b );
-	CHECK( br1.nextByte(), 'D'_b );
+	CHECK( br1.nextByte(), (byte) 'B' );
+	CHECK( br1.nextByte(), (byte) 'C' );
+	CHECK( br1.nextByte(), (byte) 'D' );
 	CHECK( br1.hasNext(), false );
 
 	seq::BufferReader br2 = bb2.getReader( 1, 2 );
 
-	CHECK( br2.nextByte(), 'C'_b );
-	CHECK( br2.nextByte(), 'D'_b );
+	CHECK( br2.nextByte(), (byte) 'C' );
+	CHECK( br2.nextByte(), (byte) 'D' );
 	CHECK( br2.hasNext(), false );
 
 } );
 
 TEST( ce_flowc_range, {
 
-	seq::string code = "#exit << #[1:5] << 1 << null << 2 << \"hello\" << 3 << true << 4 << 5 << null"_b;
+	std::string code = "#exit << #[1:5] << 1 << null << 2 << \"hello\" << 3 << true << 4 << 5 << null";
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -2120,7 +2120,7 @@ TEST( ce_flowc_range, {
 
 TEST( ce_no_return, {
 
-	seq::string code = ""_b;
+	std::string code = "";
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -2137,7 +2137,7 @@ TEST( ce_no_return, {
 
 TEST( ce_binary_op, {
 
-	seq::string code = "#exit << ( ((6 & 2) | 1) ^ 7 )"_b;
+	std::string code = "#exit << ( ((6 & 2) | 1) ^ 7 )";
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -2156,110 +2156,110 @@ TEST( ce_binary_op, {
 TEST( c_fail_multiple, {
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << [[true]] "_b );
+		seq::Compiler::compile( " #exit << [[true]] " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << \"\\g\" "_b );
+		seq::Compiler::compile( " #exit << \"\\g\" " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " set #var << 123 "_b );
+		seq::Compiler::compile( " set #var << 123 " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << << 123 "_b );
+		seq::Compiler::compile( " #exit << << 123 " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << #[#123] << 123 "_b );
+		seq::Compiler::compile( " #exit << #[#123] << 123 " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << #[true false] << true "_b );
+		seq::Compiler::compile( " #exit << #[true false] << true " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << #[123:true] << true "_b );
+		seq::Compiler::compile( " #exit << #[123:true] << true " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << ( "_b );
+		seq::Compiler::compile( " #exit << ( " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << { "_b );
+		seq::Compiler::compile( " #exit << { " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << [ "_b );
+		seq::Compiler::compile( " #exit << [ " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << ) "_b );
+		seq::Compiler::compile( " #exit << ) " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << } "_b );
+		seq::Compiler::compile( " #exit << } " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << ] "_b );
+		seq::Compiler::compile( " #exit << ] " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << a:b: "_b );
+		seq::Compiler::compile( " #exit << a:b: " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << [@] "_b );
+		seq::Compiler::compile( " #exit << [@] " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << [] "_b );
+		seq::Compiler::compile( " #exit << [] " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << [{}] "_b );
+		seq::Compiler::compile( " #exit << [{}] " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << (<< #exit << 123) "_b );
+		seq::Compiler::compile( " #exit << (<< #exit << 123) " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " set { #exit << true } "_b );
+		seq::Compiler::compile( " set { #exit << true } " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << #[12:#34] << 123 "_b );
+		seq::Compiler::compile( " #exit << #[12:#34] << 123 " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << ( 123 123 ) "_b );
+		seq::Compiler::compile( " #exit << ( 123 123 ) " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << ( 123 + 321 + ) "_b );
+		seq::Compiler::compile( " #exit << ( 123 + 321 + ) " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << ( 123 + + 321 ) "_b );
+		seq::Compiler::compile( " #exit << ( 123 + + 321 ) " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << {} "_b );
+		seq::Compiler::compile( " #exit << {} " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " load "_b );
+		seq::Compiler::compile( " load " );
 	} );
 
 } );
 
 TEST( ce_long_namespace, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"set a:b:c:d:e << 123 \n"
 			"#exit << a:b:c:d:e"
 			);
@@ -2281,7 +2281,7 @@ TEST( ce_long_namespace, {
 
 TEST( ce_flowc_null, {
 
-	seq::string code = "#exit << (<< #[null] << null << true) << (<< #[false] << null << false)"_b;
+	std::string code = "#exit << (<< #[null] << null << true) << (<< #[false] << null << false)";
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -2299,7 +2299,7 @@ TEST( ce_flowc_null, {
 
 TEST( ce_function_break, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"#exit << #{ \n"
 			"	#break << null \n"
 			"	#return << 1234 \n"
@@ -2320,7 +2320,7 @@ TEST( ce_function_break, {
 
 TEST( ce_expression_strings, {
 
-	seq::string code = "#exit << (\"12\" + \"3\") << (\"12\" != \"3\") << (\"12\" = \"3\") << (\"12\" != \"12\") << (\"12\" = \"12\")"_b;
+	std::string code = "#exit << (\"12\" + \"3\") << (\"12\" != \"3\") << (\"12\" = \"3\") << (\"12\" != \"12\") << (\"12\" = \"12\")";
 
 	auto buf = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -2332,7 +2332,7 @@ TEST( ce_expression_strings, {
 
 	CHECK( (int) res.size(), (int) 5 )
 
-	CHECK_ELSE( res.at(0).String().getString(), seq::string( "123"_b ) ) {
+	CHECK_ELSE( res.at(0).String().getString(), std::string( "123" ) ) {
 		FAIL( "Invalid string, expected '123'!" );
 	}
 
@@ -2359,7 +2359,7 @@ TEST( c_error_handle, {
 		flag = false;
 	} );
 
-	auto buf = seq::Compiler::compile( "#exit << [#4]"_b );
+	auto buf = seq::Compiler::compile( "#exit << [#4]" );
 
 	seq::Compiler::setErrorHandle( seq::Compiler::defaultErrorHandle );
 
@@ -2371,7 +2371,7 @@ TEST( c_error_handle, {
 
 TEST( ce_executor_parenting, {
 
-	seq::string code = (byte*) (
+	std::string code = (
 			"set a << 42 \n"
 			"set b << 13 \n"
 			"#exit << #test_func << \"#exit << #inc_func << ((a :: 0) + (b :: 0) + 37)\""
@@ -2383,7 +2383,7 @@ TEST( ce_executor_parenting, {
 	static seq::Executor exe;
 	exe = seq::Executor();
 
-	exe.inject( "inc_func"_b, [] (seq::Stream& stream) -> seq::Stream {
+	exe.inject( "inc_func", [] (seq::Stream& stream) -> seq::Stream {
 		if( stream[0].getDataType() != seq::DataType::Number ) {
 			throw seq::RuntimeError("Expected number!");
 		}
@@ -2392,12 +2392,12 @@ TEST( ce_executor_parenting, {
 		return { seq::util::newNumber( i ) };
 	} );
 
-	exe.inject( "test_func"_b, [] (seq::Stream& stream) -> seq::Stream {
+	exe.inject( "test_func", [] (seq::Stream& stream) -> seq::Stream {
 		if( stream[0].getDataType() != seq::DataType::String ) {
 			throw seq::RuntimeError("Expected string!");
 		}
 
-		seq::string code = stream[0].String().getString();
+		std::string code = stream[0].String().getString();
 		auto buf = seq::Compiler::compile( code );
 		seq::ByteBuffer bb( buf.data(), buf.size() );
 
@@ -2419,7 +2419,7 @@ TEST( ce_executor_parenting, {
 
 TEST( c_namespace_accessor, {
 
-	auto buf = seq::Compiler::compile( "#exit << (a:b::0)"_b );
+	auto buf = seq::Compiler::compile( "#exit << (a:b::0)" );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 } );

@@ -81,8 +81,8 @@ seq::Stream seq_std_sleep( seq::Stream& input ) {
 
 INIT( seq::Executor* exe, seq::FileHeader* head ) {
 
-	exe->inject( "std:time"_b, seq_std_time );
-	exe->inject( "std:sleep"_b, seq_std_sleep );
+	exe->inject( "std:time", seq_std_time );
+	exe->inject( "std:sleep", seq_std_sleep );
 
 	return INIT_SUCCESS;
 }

@@ -47,12 +47,12 @@ seq::Stream seq_std_length( seq::Stream& input ) {
 
 INIT( seq::Executor* exe, seq::FileHeader* head ) {
 
-	exe->inject( "std:call"_b, seq_std_call );
-	exe->inject( "std:length"_b, seq_std_length );
+	exe->inject( "std:call", seq_std_call );
+	exe->inject( "std:length", seq_std_length );
 
 	const seq::Generic value_true = seq::util::newBool( true );
 
-	exe->define( "std:if"_b, {
+	exe->define( "std:if", {
 			seq::util::newFlowc( {
 					new seq::FlowCondition( seq::FlowCondition::Type::Value, value_true, value_true )
 			} )

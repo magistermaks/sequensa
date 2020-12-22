@@ -28,17 +28,17 @@
 
 bool failed = false;
 
-bool build( std::string input, std::vector<seq::byte>* buffer, std::vector<std::string>* dependencies, std::vector<seq::string>* natives, bool v ) {
+bool build( std::string input, std::vector<seq::byte>* buffer, std::vector<std::string>* dependencies, std::vector<std::string>* natives, bool v ) {
 
 	std::ifstream infile( input );
 	if( infile.good() ) {
 
-		std::vector<seq::string> headerData;
+		std::vector<std::string> headerData;
 		std::string base = get_directory( input );
 
 		try{
 
-			seq::string content( (std::istreambuf_iterator<char>(infile) ), (std::istreambuf_iterator<char>() ));
+			std::string content( (std::istreambuf_iterator<char>(infile) ), (std::istreambuf_iterator<char>() ));
 			*buffer = seq::Compiler::compile(content, &headerData);
 
 		}catch( seq::CompilerError& err ){
@@ -60,9 +60,9 @@ bool build( std::string input, std::vector<seq::byte>* buffer, std::vector<std::
 
 			int s = str.size();
 
-			if( s > 3 && str[ s - 1 ] == 'q'_b && str[ s - 2 ] == 's'_b && str[ s - 3 ] == '.'_b ) {
+			if( s > 3 && str[ s - 1 ] == 'q' && str[ s - 2 ] == 's' && str[ s - 3 ] == '.' ) {
 
-				(*dependencies).push_back( get_absolute_path( seq::util::toStdString(str), base ) );
+				(*dependencies).push_back( get_absolute_path( str, base ) );
 
 			}else{
 
@@ -96,9 +96,9 @@ bool build_tree( std::string input, std::string output, bool v ) {
 
 	std::vector<std::string> done;
 	std::map<size_t,CompiledUnit> units;
-	std::vector<seq::string> natives;
+	std::vector<std::string> natives;
 
-	auto build_targets = [&] ( std::map<size_t,CompiledUnit>* units, std::vector<std::string>* dependencies, std::vector<std::string>* targets, std::vector<std::string>* done, std::vector<seq::string>* natives ) -> bool {
+	auto build_targets = [&] ( std::map<size_t,CompiledUnit>* units, std::vector<std::string>* dependencies, std::vector<std::string>* targets, std::vector<std::string>* done, std::vector<std::string>* natives ) -> bool {
 
 		for( auto& target : *targets ) {
 
@@ -183,21 +183,21 @@ bool build_tree( std::string input, std::string output, bool v ) {
 
 		// write Sequensa header to file
 		{
-			std::map<seq::string, seq::string> header;
+			std::map<std::string, std::string> header;
 
 			{
-				seq::string load;
+				std::string load;
 
-				for( auto& native : natives ) load += native + ';'_b;
+				for( auto& native : natives ) load += native + ';';
 				if( !load.empty() ) load.pop_back();
 
-				header["load"_b] = load;
+				header["load"] = load;
 			}
 
-			header["api"_b] = (seq::byte*) SEQ_API_NAME;
-			header["std"_b] = (seq::byte*) SEQ_API_STANDARD;
-			header["time"_b] = (seq::byte*) std::to_string( std::time(0) ).c_str();
-			header["sys"_b] = (seq::byte*) SQ_TARGET;
+			header["api"] = SEQ_API_NAME;
+			header["std"] = SEQ_API_STANDARD;
+			header["time"] = std::to_string( std::time(0) ).c_str();
+			header["sys"] = SQ_TARGET;
 
 			std::vector<seq::byte> arr;
 			seq::BufferWriter bw(arr);

@@ -25,7 +25,7 @@
 
 #include "common.hpp"
 
-std::map<seq::string, seq::string> values;
+std::map<std::string, std::string> values;
 seq::byte major;
 seq::byte minor;
 seq::byte patch;
@@ -100,7 +100,7 @@ seq::Stream seq_std_meta_build_time( seq::Stream& input ) {
 
 		try{
 
-			output.push_back( seq::util::newNumber( std::stoi( (char*) values.at( "time"_b ).c_str() ) ) );
+			output.push_back( seq::util::newNumber( std::stoi( (char*) values.at( "time" ).c_str() ) ) );
 
 		}catch( std::out_of_range& err ) {
 
@@ -124,11 +124,11 @@ INIT( seq::Executor* exe, seq::FileHeader* head ) {
 	patch = head->getVersionPatch();
 	values = head->getValueMap();
 
-	exe->inject( "std:meta:major"_b, seq_std_meta_major );
-	exe->inject( "std:meta:minor"_b, seq_std_meta_minor );
-	exe->inject( "std:meta:patch"_b, seq_std_meta_patch );
-	exe->inject( "std:meta:value"_b, seq_std_meta_patch );
-	exe->inject( "std:meta:build_time"_b, seq_std_meta_build_time );
+	exe->inject( "std:meta:major", seq_std_meta_major );
+	exe->inject( "std:meta:minor", seq_std_meta_minor );
+	exe->inject( "std:meta:patch", seq_std_meta_patch );
+	exe->inject( "std:meta:value", seq_std_meta_patch );
+	exe->inject( "std:meta:build_time", seq_std_meta_build_time );
 
 	return INIT_SUCCESS;
 }

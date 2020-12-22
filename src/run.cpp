@@ -80,7 +80,7 @@ bool load_native_libs( seq::Executor& exe, seq::FileHeader& header, bool v ) {
 	std::string path = get_exe_path();
 	path = get_directory( path );
 
-	std::stringstream path_array( seq::util::toStdString( header.getValue("load"_b) ) );
+	std::stringstream path_array( header.getValue("load") );
 
 	std::string segment;
 	while( std::getline(path_array, segment, ';') ) {
@@ -188,7 +188,7 @@ void run( std::string input, Options opt ) {
 
 					for( auto& res : exe.getResults() ) {
 
-						std::cout << seq::util::toStdString( seq::util::stringCast( res ).String().getString() ) << " ";
+						std::cout << seq::util::stringCast( res ).String().getString() << " ";
 
 					}
 
