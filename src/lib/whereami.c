@@ -60,6 +60,7 @@ extern "C" {
 #pragma warning(push, 3)
 #endif
 #include <windows.h>
+#include <wchar.h>
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #endif

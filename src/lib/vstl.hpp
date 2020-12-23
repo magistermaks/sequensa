@@ -45,7 +45,7 @@
 #endif
 
 #define ASSERT( condition, message ) if( !(condition) ) FAIL( message )
-#define TEST( name, ... ) long __vstl_test__##name = vstl::Test( #name, __LINE__, [&] () -> void __VA_ARGS__ ).add();
+#define TEST( name, ... ) long __vstl_test__##name = vstl::Test( #name, __LINE__, [] () -> void __VA_ARGS__ ).add();
 #define FAIL( what ) throw vstl::TestFail( what );
 #define CHECK_ELSE( value, expected ) for( auto a = value, b = expected; a != b; )
 #define CHECK( value, expected ) CHECK_ELSE( value, expected ) FAIL( "Expected: " + std::to_string( b ) + " got: " + std::to_string( a ) )
