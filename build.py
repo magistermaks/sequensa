@@ -47,7 +47,7 @@ compilers_config = {
         "link": "clang -std=c++11 $args -o \"$output\" $input $libs",
         "shared": {
             "compiler": "-fPIC", 
-            "linker": "-compiler"
+            "linker": "-shared"
         },
         "libs": {
             "posix": "-ldl",
