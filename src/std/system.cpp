@@ -25,21 +25,8 @@
 
 #include "common.hpp"
 #include <fstream>
-
-#ifdef _WIN32
-#	include <windows.h>
-#	include <direct.h>
-#	define CWD_MAX_PATH MAX_PATH
-#	define POSIX_GETCWD _getcwd
-#	define POSIX_MKDIR(dir) _mkdir( dir )
-#else
-#	include <unistd.h>
-#	include <linux/limits.h>
-#	include <sys/stat.h>
-#	define CWD_MAX_PATH PATH_MAX
-#	define POSIX_GETCWD getcwd
-#	define POSIX_MKDIR(dir) mkdir( dir, ACCESSPERMS )
-#endif
+#include <sstream>
+#include "../lib/system.hpp"
 
 seq::Stream seq_std_read( seq::Stream& input ) {
 

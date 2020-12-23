@@ -24,15 +24,14 @@
  */
 
 #include "common.hpp"
-#include "../lib/detector.hpp"
 
-#ifdef SEQ_WINDOWS
-#	include <windows.h>
+#ifndef _WIN32
+#include "../lib/system.hpp"
 #endif
 
 void ms_sleep( long miliseconds ) {
 
-#ifdef SEQ_LINUX
+#ifdef __SEQ_USE_POSIX
 	struct timespec req, rem;
 
 	if(miliseconds > 999) {
@@ -46,7 +45,7 @@ void ms_sleep( long miliseconds ) {
 	nanosleep(&req , &rem);
 #endif
 
-#ifdef SEQ_WINDOWS
+#ifdef _WIN32
 	Sleep( miliseconds );
 #endif
 

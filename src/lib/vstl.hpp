@@ -146,9 +146,18 @@ bool vstl::Test::run( int mode ) {
         	}
         }
 
-        std::cerr << "Test '" + this->name + "' failed! Unregistered exception thrown! Error: " << (p ? p.__cxa_exception_type()->name() : "unknown") << std::endl;
-        vstl::failed_count ++;
-        return false;
+        try{
+        	std::rethrow_exception(p);
+        }catch( std::exception& err ) {
+        	std::cerr << "Test '" + this->name + "' failed! Unregistered exception thrown! Error: " << err.what() << std::endl;
+        	vstl::failed_count ++;
+        	return false;
+        }catch( ... ) {
+        	std::cerr << "Test '" + this->name + "' failed! Unregistered exception thrown! Error: unknown" << std::endl;
+        	vstl::failed_count ++;
+        	return false;
+        }
+
     }
 
     std::cout << "Test '" + this->name + "' successful!" << std::endl;

@@ -1651,7 +1651,7 @@ TEST( ce_simple_define, {
 
 	seq::Executor exe;
 
-	exe.define( "var", (seq::Stream) {
+	exe.define( "var", seq::Stream {
 			seq::Generic( new seq::type::Number( false, 12.0 ) ),
 			seq::Generic( new seq::type::Number( false, 33.0 ) )
 	} );

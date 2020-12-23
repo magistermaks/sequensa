@@ -23,46 +23,50 @@
  * SOFTWARE.
  */
 
-#ifndef MODES_HPP_
-#define MODES_HPP_
+#pragma once
 
-#define SQ_VER "1.0"
+#ifdef __linux__
+#	define __SEQ_USE_LINUX
+#endif
 
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <sstream>
+#ifdef __unix__
+#	define __SEQ_USE_LINUX
+#endif
 
-// SeqAPI is re-included in every module
-// because my IDE was complaining about "undefined symbols"
-#include "api/SeqAPI.hpp"
-#include "lib/argparse.hpp"
-#include "lib/whereami.h"
-#include "lib/system.hpp"
+// linux only headers
+#ifdef __SEQ_USE_LINUX
+#	define __SEQ_USE_POSIX
+#	include <linux/limits.h>
+#	define SEQ_LIB_NAME "native.so"
+#	define SQ_TARGET "linux"
+#endif
 
-typedef int (*DynLibInit) (seq::Executor*,seq::FileHeader*);
+// apple only headers
+#ifdef __APPLE__
+#	define __SEQ_USE_POSIX
+#	include <sys/syslimits.h>
+#	define SEQ_LIB_NAME "native.so"
+#	define SQ_TARGET "darwin"
+#endif
 
-// command line flags
-struct Options {
-	bool verbose: 1;
-	bool force_execution: 1;
-	bool print_all: 1;
-	bool print_none: 1;
-	bool strict_math: 1;
-	bool multi_error: 1;
-};
+// generic posix
+#ifdef __SEQ_USE_POSIX
+#	include <unistd.h>
+#	include <sys/stat.h>
+#	define LIBLOAD_LINUX
+#	define CWD_MAX_PATH PATH_MAX
+#	define POSIX_GETCWD getcwd
+#	define POSIX_MKDIR(dir) mkdir( dir, ACCESSPERMS )
+#endif
 
-void help( ArgParse& argp, Options opt );
-void build( ArgParse& argp, Options opt );
-void run( ArgParse& argp, Options opt );
-
-// utils - implemented in utils.cpp
-bool file_exist( const char *path );
-std::string get_exe_path();
-std::string get_cwd_path();
-std::string get_base_name( std::string path );
-size_t get_path_hash( std::string path );
-std::string get_absolute_path( std::string relative, std::string base );
-std::string get_directory( std::string& path );
-
-#endif /* MODES_HPP_ */
+// windows only headers
+#ifdef _WIN32
+#	include <windows.h>
+#	include <direct.h>
+#	define SEQ_LIB_NAME "native.dll"
+#	define LIBLOAD_WINDOWS
+#	define CWD_MAX_PATH MAX_PATH
+#	define POSIX_GETCWD _getcwd
+#	define SQ_TARGET "windows"
+#	define POSIX_MKDIR(dir) _mkdir( dir )
+#endif

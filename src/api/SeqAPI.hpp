@@ -197,15 +197,17 @@
 #include <cmath>
 #include <vector>
 #include <unordered_map>
+#include <map>
 #include <regex>
 #include <cfloat>
+#include <cstdlib>
 
 // public metadata
 #define SEQ_API_NAME "SeqAPI"
 #define SEQ_API_STANDARD "2020-10-20"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 7
-#define SEQ_API_VERSION_PATCH 9
+#define SEQ_API_VERSION_PATCH 10
 
 // enum ranges
 #define SEQ_MIN_OPCODE 1
@@ -1172,7 +1174,7 @@ void seq::BufferWriter::putNumber( bool anchor, seq::Fraction f ) {
 		this->putByte( (byte) f.numerator );
 	}else{
 		bool sign = std::signbit( f.numerator );
-		unsigned long n = std::abs( f.numerator );
+		unsigned long n = std::labs( f.numerator );
 
 		this->putOpcode( anchor, seq::Opcode::NUM );
 		byte a = seq::type::Number::sizeOf( n << 1 );
