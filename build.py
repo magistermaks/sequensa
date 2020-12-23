@@ -271,9 +271,13 @@ else:
 if not args.Xpath:
     lpath = localize_path( syscfg["path"] )
     if not lpath in os.environ['PATH']:
-        add_to_path( lpath )
-        print( "\nSequensa added to PATH" )
-        print( "Please restart shell for changes to take effect" )
+        if add_to_path( lpath ):
+            print( "\nSequensa added to PATH" )
+            print( "Please restart shell for changes to take effect" )
+        else:
+            print( "\nWarning: Failed to add Sequensa to PATH!" )
+            print( " * Try checking installer permissions" )
+            print( " * Try manually adding Sequensa to PATH" )
 
 # create alias for "sequensa"
 if not args.Xalias:
