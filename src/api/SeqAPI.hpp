@@ -85,13 +85,13 @@
  * 		function pointer (seq::type::Native). the given function must take seq::Stream as an argument and return
  * 		seq::Stream.
  *
- * 			exe.inject( "myfunc"_b, [] (seq::Stream args) -> seq::Stream {
+ * 			exe.inject( "myfunc", [] (seq::Stream args) -> seq::Stream {
  * 				// ...
  * 			} );
  *
  * 		`define` method takes two parameters: name of the variable and stream to be stored as the variable's value.
  *
- * 			exe.define( "myval"_b, {
+ * 			exe.define( "myval", {
  * 				seq::util::newNull()
  * 			} );
  *
@@ -170,21 +170,7 @@
  *		The default error handler can be restored using:
  *			seq::Compiler::setErrorHandle( seq::Compiler::defaultErrorHandle );
  *
- * 8. seq::string, seq::byte and C++11 literals
- *
- * 		seq::byte is alias for unsigned char,
- * 		seq::string is a std::basic_string of seq::bytes it can be used to store utf-8 data
- * 		(on linux and macos char is unsigned by default making it 100% to safe to cast between
- * 		std::string and seq::string using the seq::util::toStdString and seq::util::toSeqString functions,
- * 		but it should still work correctly on windows at least as long as only ASCII data is used)
- *
- * 		To create seq::string the following syntax can be used:
- * 			seq::string text = "Hello Text!"_b;
- *
- * 		The `_b` literal can also be used to create seq::bytes:
- * 			seq::byte b = 'A'_b;
- *
- * 9. Sequensa API meta-data
+ * 8. Sequensa API meta-data
  *
  * 		All metadata can be found in the SEQ_API_* macros
  *
@@ -194,7 +180,7 @@
  * 		SEQ_API_VERSION_MINOR - byte - Minor component of the version number
  * 		SEQ_API_VERSION_PATCH - byte - Patch component of the version number
  *
- * 10. Preprocessor
+ * 9. Preprocessor
  *
  * 		All those preprocessor defines should be placed before `#include` of the API
  *
@@ -219,7 +205,7 @@
 #define SEQ_API_STANDARD "2020-10-20"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 7
-#define SEQ_API_VERSION_PATCH 8
+#define SEQ_API_VERSION_PATCH 9
 
 // enum ranges
 #define SEQ_MIN_OPCODE 1
@@ -2278,7 +2264,7 @@ seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream& 
 	this->stack.pop_back();
 
 	// return all accumulated entities
-	return std::move(acc);
+	return acc;
 }
 
 seq::CommandResult seq::Executor::executeCommand( seq::TokenReader* tr, byte tags ) {
@@ -2779,7 +2765,7 @@ seq::Stream seq::Executor::executeFlowc( std::vector<seq::FlowCondition*> fcs, s
 	}
 
 	// return matching entities
-	return std::move(acc);
+	return acc;
 }
 
 seq::Generic seq::Executor::executeCast( seq::Generic cast, seq::Generic arg ) {
