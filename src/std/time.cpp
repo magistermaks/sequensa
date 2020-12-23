@@ -24,10 +24,7 @@
  */
 
 #include "common.hpp"
-
-#ifndef _WIN32
 #include "../lib/system.hpp"
-#endif
 
 void ms_sleep( long miliseconds ) {
 
