@@ -16,8 +16,9 @@ parser.add_argument( "--test", help="run Sequensa API unit tests", action="store
 parser.add_argument( "--Xalias", help="don't create 'sq' alias", action="store_true" )
 parser.add_argument( "--Xpath", help="don't attempt to add sequensa to PATH", action="store_true" )
 parser.add_argument( "--compiler", help="specify compiler to use [g++, clang]", type=str, default="g++" )
-parser.add_argument( "--workspace", help="preserve workspace", action="store_true"  )
-parser.add_argument( "--uninstall", help="uninstall Sequensa", action="store_true"  )
+parser.add_argument( "--workspace", help="preserve workspace", action="store_true" )
+parser.add_argument( "--uninstall", help="uninstall Sequensa", action="store_true" )
+parser.add_argument( "--force", help="don't ask for confirmations", action="store_true" )
 args = parser.parse_args()
 
 # get temporary workspace
@@ -97,12 +98,14 @@ print( "Platform: " + platform.system() + ", Selected '" + args.compiler + "' co
 
 if args.uninstall:
     print( "\nSequensa will be uninstalled from: " + syscfg["path"] )
-    print( "That dir will be deleted with all Sequensa libraries, do you wish to continue? y/n" )
     
-    # exit if user did not select 'yes'
-    if input() != "y":
-        print( "\nUninstalation aborted!" )
-        exit()
+    if not args.force:
+        print( "That dir will be deleted with all Sequensa libraries, do you wish to continue? y/n" )
+    
+        # exit if user did not select 'yes'
+        if input() != "y":
+            print( "\nUninstalation aborted!" )
+            exit()
         
     # uninstall
     rem_dir( syscfg["path"] )
@@ -192,12 +195,14 @@ if args.test:
 
 # warn about target directory
 print( "\nSequensa will be installed in: " + syscfg["path"] )
-print( "If that dir already exists it will be deleted, do you wish to continue? y/n" )
 
-# exit if user did not select 'yes'
-if input() != "y":
-    print( "\nInstalation aborted!" )
-    exit()
+if not args.force:
+    print( "If that dir already exists it will be deleted, do you wish to continue? y/n" )
+
+    # exit if user did not select 'yes'
+    if input() != "y":
+        print( "\nInstalation aborted!" )
+        exit()
 
 # print build status
 print( "\nBuilding Targets..." )
