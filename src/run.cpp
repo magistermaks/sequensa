@@ -82,7 +82,13 @@ bool load_native_lib( seq::Executor& exe, seq::FileHeader& header, const char* p
 
 bool load_module( seq::Executor& exe, seq::FileHeader& header, const char* path, bool verbose ) {
 
-	// TODO :D
+	// TODO VERY IMPORTANT
+
+	// Options:
+	// 1. Execute recursively (slow, but simple)
+	// 2. Copy dependencies to parent, init parent, execute module as child, execute parent (fast, but complex)
+
+	// in every scenario special function '#export' must be provided by the VM
 
 }
 
