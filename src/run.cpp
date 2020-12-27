@@ -239,7 +239,7 @@ void run( ArgParse& argp, Options opt ) {
 
 	}else{
 
-		std::cout << "Expected filename!" << std::endl;
+		std::cout << "Expected one filename!" << std::endl;
 		std::cout << "Use '--help' for usage help." << std::endl;
 
 	}
