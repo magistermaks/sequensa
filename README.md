@@ -15,7 +15,7 @@ This repository contains:
 
 #### Sequensa API
 
-The API is located in `/src/api/SeqAPI.hpp` and contains the all basic documentation to get you started
+The API is located in `/src/api/SeqAPI.hpp` and contains all the basic documentation to get you started
 
 ```C++
 #define SEQ_IMPLEMENT
