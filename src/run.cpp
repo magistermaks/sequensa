@@ -29,11 +29,22 @@
 #define LIBLOAD_IMPLEMENT
 #include "lib/libload.hpp"
 
+#define TRY_LOADING( module, path ) \
+	paths.push_back( path ); \
+	if( file_exist( (path).c_str() ) ) { \
+		if( module ) { \
+			if( !load_module( exe, header, (path).c_str(), verbose ) ) return false; \
+		}else{ \
+			if( !load_native_lib( exe, header, (path).c_str(), verbose ) ) return false; \
+		} \
+		continue; \
+	}
+
 std::vector<DynamicLibrary> dls;
 
-bool load_native_lib( seq::Executor& exe, seq::FileHeader& header, std::string& path, bool v ) {
+bool load_native_lib( seq::Executor& exe, seq::FileHeader& header, const char* path, bool v ) {
 
-	DynamicLibrary dl( path.c_str() );
+	DynamicLibrary dl( path );
 	if( dl.isLoaded() ) {
 
 		int status = 0;
@@ -51,12 +62,12 @@ bool load_native_lib( seq::Executor& exe, seq::FileHeader& header, std::string& 
 
 		if( status != 0 ) {
 
-			std::cout << "Failed to load native library from: '" + path + "', error: " << status << "!" << std::endl;
+			std::cout << "Failed to load native library from: '" << path << "', error: " << status << "!" << std::endl;
 			return false;
 
 		}else if(v) {
 
-			std::cout << "Successfully loaded native library: '" + path + "'!" << std::endl;
+			std::cout << "Successfully loaded native library: '" << path << "'!" << std::endl;
 
 		}
 
@@ -64,8 +75,14 @@ bool load_native_lib( seq::Executor& exe, seq::FileHeader& header, std::string& 
 
 	}
 
-	std::cout << "Failed to load native library from: '" + path + "', error: " << dl.getMessage() << "!" << std::endl;
+	std::cout << "Failed to load native library from: '" << path << "', error: " << dl.getMessage() << "!" << std::endl;
 	return false;
+
+}
+
+bool load_module( seq::Executor& exe, seq::FileHeader& header, const char* path, bool verbose ) {
+
+	// TODO :D
 
 }
 
@@ -75,7 +92,7 @@ void unload_native_libs() {
 
 }
 
-bool load_native_libs( seq::Executor& exe, seq::FileHeader& header, bool v ) {
+bool load_native_libs( seq::Executor& exe, seq::FileHeader& header, bool verbose ) {
 
 	std::string path = get_exe_path();
 	path = get_directory( path );
@@ -85,28 +102,23 @@ bool load_native_libs( seq::Executor& exe, seq::FileHeader& header, bool v ) {
 	std::string segment;
 	while( std::getline(path_array, segment, ';') ) {
 
-		// check for lib in compiler directory
-		std::string lib_path_1 = (path + "/lib/" + segment + "/" + SEQ_LIB_NAME);
+		std::vector<std::string> paths;
 
-		if( file_exist( lib_path_1.c_str() ) ) {
-			if( !load_native_lib( exe, header, lib_path_1, v ) ) return false;
-			continue;
-		}
+		TRY_LOADING( false, path + "/lib/" + segment + "/" + SEQ_LIB_NAME );
+		TRY_LOADING( false, path + "./lib/" + segment + "/" + SEQ_LIB_NAME );
+		TRY_LOADING( true, path + "/lib/module/" + segment + ".sqm" );
+		TRY_LOADING( true, path + "./lib/" + segment + ".sqm" );
+		TRY_LOADING( true, path + "./lib/module/" + segment + ".sqm" );
+		TRY_LOADING( true, path + "./" + segment + ".sqm" );
+#		undef TRY_LOADING
 
-		// check for lib in CWD
-		std::string lib_path_2 = ("./lib/" + segment + "/" + SEQ_LIB_NAME);
+		std::cout << "Unable to find native library or module: '" << segment << "'!" << std::endl;
 
-		if( file_exist( lib_path_2.c_str() ) ) {
-			if( !load_native_lib( exe, header, lib_path_2, v ) ) return false;
-			continue;
-		}
+		if( verbose ) {
 
-		std::cout << "Unable to find native library: '" << segment << "'!" << std::endl;
-
-		if( v ) {
-
-			std::cout << " * Tried: '" << lib_path_1 << "'" << std::endl;
-			std::cout << " * Tried: '" << lib_path_2 << "'" << std::endl;
+			for( std::string& path : paths ) {
+				std::cout << " * Tried: '" << path << "'" << std::endl;
+			}
 
 		}
 
@@ -132,6 +144,12 @@ void run( std::string input, Options opt ) {
 			header = br.getHeader();
 		} catch( seq::InternalError& err ) {
 			std::cout << "Error! Failed to parse file header, invalid signature!" << std::endl;
+			return;
+		}
+
+		// allow only for execution of master files
+		if( header.getValue("type") != SQ_TYPE_MASTER ) {
+			std::cout << "Error! Unable to execute " << header.getValue("type") << " file!" << std::endl;
 			return;
 		}
 

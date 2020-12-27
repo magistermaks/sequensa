@@ -33,6 +33,9 @@
 #include <vector>
 #include <sstream>
 
+#define SQ_TYPE_MODULE "module"
+#define SQ_TYPE_MASTER "master"
+
 // SeqAPI is re-included in every module
 // because my IDE was complaining about "undefined symbols"
 #include "api/SeqAPI.hpp"
@@ -50,6 +53,7 @@ struct Options {
 	bool print_none: 1;
 	bool strict_math: 1;
 	bool multi_error: 1;
+	bool module: 1;
 };
 
 void help( ArgParse& argp, Options opt );
