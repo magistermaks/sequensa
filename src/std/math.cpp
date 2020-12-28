@@ -41,7 +41,6 @@ seq::Stream seq_std_rand( seq::Stream& input ) {
 }
 
 seq::Stream seq_std_srand( seq::Stream& input ) {
-	seq::Stream output;
 
 	for( auto& arg : input ) {
 
@@ -49,7 +48,7 @@ seq::Stream seq_std_srand( seq::Stream& input ) {
 
 	}
 
-	return output;
+	return EMPTY;
 }
 
 seq::Stream seq_std_sin( seq::Stream& input ) {
@@ -236,6 +235,10 @@ INIT( seq::Executor* exe, seq::FileHeader* head ) {
 	exe->inject( "std:deg", seq_std_deg );
 	exe->inject( "std:rand", seq_std_rand );
 	exe->inject( "std:srand", seq_std_srand );
+
+	exe->define( "std:pi", seq::Stream {
+		seq::util::newNumber( PI )
+	} );
 
 	return INIT_SUCCESS;
 }
