@@ -23,7 +23,7 @@ The API is located in `/src/api/SeqAPI.hpp` and contains all the basic documenta
 
 int main() {
 
-	seq::string code = "#exit << \"Hello World!\""_b;
+	std::string code = "#exit << \"Hello World!\"";
 	
 	auto buffer = seq::Compiler::compile( code );
 	seq::ByteBuffer bb( buffer.data(), buffer.size() );
