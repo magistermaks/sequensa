@@ -38,7 +38,7 @@
  *
  * 1. Compiling and executing
  *
- *		seq::Compiler::compile( seq::string code, std::vector<seq::string>* headerData = nullptr )
+ *		seq::Compiler::compile( std::string code, std::vector<std::string>* headerData = nullptr )
  *		The seq::Compiler::compile function can be used to generate executable Sequesa binary buffer.
  *		If provided with the `headerData` pointer it will store an array of found dependence names in it.
  * 		The returned buffer is of type `std::vector<seq::byte> `
@@ -155,7 +155,7 @@
  *
  *			seq::Compiler::setErrorHandle( [] (seq::CompilerError err) {
  *
- *				// your code to handle the exception
+ *				// your code to handle the exception, eg. print it to console
  *
  *				// if the error is critical it MUST be thrown
  *				if( err.isCritical() ) {
@@ -204,10 +204,10 @@
 
 // public metadata
 #define SEQ_API_NAME "SeqAPI"
-#define SEQ_API_STANDARD "2020-10-20"
+#define SEQ_API_STANDARD "2020-12-28"
 #define SEQ_API_VERSION_MAJOR 1
 #define SEQ_API_VERSION_MINOR 7
-#define SEQ_API_VERSION_PATCH 10
+#define SEQ_API_VERSION_PATCH 11
 
 // enum ranges
 #define SEQ_MIN_OPCODE 1
