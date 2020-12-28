@@ -87,7 +87,7 @@ bool build( std::string input, std::vector<seq::byte>* buffer, std::vector<std::
 
 }
 
-bool build_tree( std::string input, std::string output, bool verbose, bool module ) {
+bool build_tree( std::string input, std::string output, bool verbose ) {
 
 	struct CompiledUnit {
 		std::vector<std::string> dependencies;
@@ -198,7 +198,6 @@ bool build_tree( std::string input, std::string output, bool verbose, bool modul
 			header["std"] = SEQ_API_STANDARD;
 			header["time"] = std::to_string( std::time(0) ).c_str();
 			header["sys"] = SQ_TARGET;
-			header["type"] = module ? SQ_TYPE_MODULE : SQ_TYPE_MASTER;
 
 			std::vector<seq::byte> arr;
 			seq::BufferWriter bw(arr);
@@ -241,7 +240,7 @@ void build( ArgParse& argp, Options opt ) {
 			} );
 		}
 
-		if( !build_tree( vars.at(0), vars.at(1), opt.verbose, opt.module ) ) {
+		if( !build_tree( vars.at(0), vars.at(1), opt.verbose ) ) {
 
 			std::cout << "Build failed!" << std::endl;
 

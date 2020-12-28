@@ -29,14 +29,10 @@
 #define LIBLOAD_IMPLEMENT
 #include "lib/libload.hpp"
 
-#define TRY_LOADING( module, path ) \
+#define TRY_LOADING( path ) \
 	paths.push_back( path ); \
 	if( file_exist( (path).c_str() ) ) { \
-		if( module ) { \
-			if( !load_module( exe, header, (path).c_str(), verbose ) ) return false; \
-		}else{ \
-			if( !load_native_lib( exe, header, (path).c_str(), verbose ) ) return false; \
-		} \
+		if( !load_native_lib( exe, header, (path).c_str(), verbose ) ) return false; \
 		continue; \
 	}
 
@@ -80,18 +76,6 @@ bool load_native_lib( seq::Executor& exe, seq::FileHeader& header, const char* p
 
 }
 
-bool load_module( seq::Executor& exe, seq::FileHeader& header, const char* path, bool verbose ) {
-
-	// TODO VERY IMPORTANT
-
-	// Options:
-	// 1. Execute recursively (slow, but simple)
-	// 2. Copy dependencies to parent, init parent, execute module as child, execute parent (fast, but complex)
-
-	// in every scenario special function '#export' must be provided by the VM
-
-}
-
 void unload_native_libs() {
 
 	for( auto& lib : dls ) lib.close();
@@ -110,12 +94,8 @@ bool load_native_libs( seq::Executor& exe, seq::FileHeader& header, bool verbose
 
 		std::vector<std::string> paths;
 
-		TRY_LOADING( false, path + "/lib/" + segment + "/" + SEQ_LIB_NAME );
-		TRY_LOADING( false, path + "./lib/" + segment + "/" + SEQ_LIB_NAME );
-		TRY_LOADING( true, path + "/lib/module/" + segment + ".sqm" );
-		TRY_LOADING( true, path + "./lib/" + segment + ".sqm" );
-		TRY_LOADING( true, path + "./lib/module/" + segment + ".sqm" );
-		TRY_LOADING( true, path + "./" + segment + ".sqm" );
+		TRY_LOADING( path + "/lib/" + segment + "/" + SEQ_LIB_NAME );
+		TRY_LOADING( path + "./lib/" + segment + "/" + SEQ_LIB_NAME );
 #		undef TRY_LOADING
 
 		std::cout << "Unable to find native library or module: '" << segment << "'!" << std::endl;
@@ -150,12 +130,6 @@ void run( std::string input, Options opt ) {
 			header = br.getHeader();
 		} catch( seq::InternalError& err ) {
 			std::cout << "Error! Failed to parse file header, invalid signature!" << std::endl;
-			return;
-		}
-
-		// allow only for execution of master files
-		if( header.getValue("type") != SQ_TYPE_MASTER ) {
-			std::cout << "Error! Unable to execute " << header.getValue("type") << " file!" << std::endl;
 			return;
 		}
 

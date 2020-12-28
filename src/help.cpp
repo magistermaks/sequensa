@@ -32,7 +32,6 @@ void help( ArgParse& argp, Options opt ) {
 	std::cout << "  Use --help  to see this help page." << std::endl;
 	std::cout << "  Use --build to compile Sequensa program." << std::endl;
 	std::cout << "  Use --run   to execute compiled Sequensa program." << std::endl;
-	std::cout << "  Use -M      to compile as Sequensa module." << std::endl;
 	std::cout << "  Use -v      to enable verbose mode." << std::endl;
 	std::cout << "  Use -f      to force execution regardless of version mismatch." << std::endl;
 	std::cout << "  Use -a      to print entire exit stream." << std::endl;

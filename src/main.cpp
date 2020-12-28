@@ -46,18 +46,10 @@ int main( int argc, char **argv ) {
 	options.print_none = argp.hasFlag("-n");
 	options.strict_math = argp.hasFlag("-s");
 	options.multi_error = argp.hasFlag("-m");
-	options.module = argp.hasFlag("-M");
 
 	if( options.print_all && options.print_none ) {
 
 		std::cout << "Unable to combine '-a' and '-n'!" << std::endl;
-		return 0;
-
-	}
-
-	if( options.module && (mode & 2) ) {
-
-		std::cout << "Flag '-M' requires '--build'!" << std::endl;
 		return 0;
 
 	}
