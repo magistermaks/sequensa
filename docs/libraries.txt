@@ -1,0 +1,140 @@
+
+>Sequensa Standard - 2020-12-28 - (c) Copyright darktree.net
+
+:STANDARD LIBRARIES
+	<p>
+		All Sequensa standard libraries can be loaded using <code>load "name"</code> statment,<br>
+		variables defined in standard libraries are always part of the "std" namespace, and can be accessed using <br>
+		<code>std:name</code> syntax where "name" is the name of the variable, eg. <code>std:out</code>.<br>
+		All standard libraries are provided by the Virtual Machine.
+	</p>
+:
+
+:LIST OF STANDARD LIBRARIES
+	<ul>
+		<li><a href="#page_1">stdio</a> Input/output library</li>
+		<li><a href="#page_2">utils</a> Utility library</li>
+		<li><a href="#page_3">math</a> Mathematical library</li>
+		<li><a href="#page_4">string</a> String library</li>  
+		<li><a href="#page_5">time</a> Time library</li>
+		<li><a href="#page_6">meta</a> Meta library</li>
+		<li><a href="#page_7">system</a> System library</li>
+		<li><a href="#page_8">lang</a> Sequensa library</li>
+	</ul>
+:
+
+:STDIO
+	<p>
+		Standard input/output library.
+	</p>
+	<ul>
+		<li><code>std:out</code> Prints given stream to standard output</li>
+		<li><code>std:outln</code> Prints every stream element as new line to standard output</li>
+		<li><code>std:flush</code> Flushes standard output</li>
+		<li><code>std:in</code> Reads lines from standard input and returns it as strings</li>
+		<li><code>std:inchr</code> Reads chars from standard input and returns it as strings</li>
+		<li><code>std:nbinchr</code> Reads chars from standard input and returns it as strings, if no data is waiting in input, returns null</li>
+	</ul>
+:
+
+:UTILS
+	<p>
+		Simple utilities library.
+	</p>
+	<ul>
+		<li><code>std:if</code> An alias for <code>[true]</code></li>
+		<li><code>std:call</code> Returns N null values, where N is the given argument</li>
+		<li><code>std:length</code> Returns length of the given stream</li>
+	</ul>
+:
+
+:MATH
+	<p>
+		Provides basic mathematical functions.
+	</p>
+	<ul>
+		<li><code>std:sin</code> Returns sin of given radian</li> 
+		<li><code>std:cos</code> Returns cos of given radian</li>
+		<li><code>std:tan</code> Returns tan of given radian</li>
+		<li><code>std:abs</code> Returns absolute value</li>
+		<li><code>std:sum</code> Returns sum of all given values</li>
+		<li><code>std:min</code> Returns smallest given value</li>
+		<li><code>std:max</code> Returns biggest given value</li>
+		<li><code>std:sqrt</code> Returns square root of given value</li>
+		<li><code>std:round</code> Returns rounded value</li>
+		<li><code>std:floor</code> Returns rounded down value</li>
+		<li><code>std:ceil</code> Returns rounded up value</li>
+		<li><code>std:deg</code> Converts degrees to radians</li>
+		<li><code>std:srand</code> Sets rundom number generator seed</li>
+		<li><code>std:rand</code> Returns random integer</li>
+		<li><code>std:pi</code> Contains PI</li>
+	</ul>
+:
+
+:STRING
+	<p>
+		Provides basic string manipulation functions.
+	</p>
+	<ul>
+		<li><code>std:uppercase</code> Returns uppercase version of given string</li>
+		<li><code>std:lowercase</code> Returns lowercase version of given string</li>
+		<li><code>std:concat</code> Concatenates given strings and returns the result </li>
+		<li><code>std:split</code> Treated first argument as delimiter, splits all following strings on that delimiter</li>
+		<li><code>std:explode</code> Split given string to char stream</li>
+		<li><code>std:to_code</code> Return ASCII code for first char of given string</li>
+		<li><code>std:from_code</code> Return char for ASCII code given</li>
+		<li><code>std:substr</code> Reads two numbers from stream (start and end) and cuts given strings at those points</li>
+		<li><code>std:findstr</code> Reads one string from string and searches for that string in every subsequent strings</li>
+	</ul>
+:
+
+:TIME
+	<p>
+		Standard time library.
+	</p>
+	<ul>
+		<li><code>std:sleep</code> Stops execution for given amount of milliseconds</li>
+		<li><code>std:time</code> Returns unix timestamp</li>
+	</ul>
+:
+
+:META
+	<p>
+		Provides basic program metadata.
+	</p>
+	<ul>
+		<li><code>std:meta:major</code> Returns major version component</li>
+		<li><code>std:meta:minor</code> Returns minor version component</li>
+		<li><code>std:meta:patch</code> Returns patch version component</li>
+		<li><code>std:meta:value</code> Returnes file header data for given key, or null if that key does not exist</li>
+		<li><code>std:meta:build_time</code> Returns unix timestamp of when the program was compiled</li>
+	</ul>
+:
+
+:SYSTEM
+	<p>
+		Provides basic operating system integration.
+	</p>
+	<ul>
+		<li><code>std:read</code> Read contens of file which path is given</li>
+		<li><code>std:write</code> Appends to file (starting from the beginning) to which the path is given</li>
+		<li><code>std:append</code> Appends to file (starting from the end) to which the path is given</li>
+		<li><code>std:mkfile</code> Created file to which the path is given</li>
+		<li><code>std:mkdir</code> Created directory to which the path is given</li>
+		<li><code>std:remove</code> Removes file or directory to which the path is given</li>
+		<li><code>std:exists</code> Checks if given path points to an existing file</li>
+		<li><code>std:cwd</code> Returns current working directory</li>
+		<li><code>std:system_name</code> Returns operating system name</li>
+		<li><code>std:invoke</code> Invokes given system command</li>
+	</ul>
+:
+
+:LANG
+	<p>
+		Sequensa self-integration.
+	</p>
+	<ul>
+		<li><code>std:eval</code> Execute given string as new Sequnesa program</li>
+		<li><code>std:mixin</code> Execute given string as part of current Sequnesa program</li>
+	</ul>
+:
