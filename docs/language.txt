@@ -25,244 +25,232 @@
 :
 
 :ARGUMENTS
-            <p>
-                The function's argument in Sequensa is represented using '<code>@</code>' symbol.
-            </p>
-            <pre>#{<br>    #out &lt;&lt; @ <br>} &lt;&lt; "Sequensa"<br>// prints "Sequensa"</pre>
-            <p>
-                The the number of this symbols in series designates the relative stack level to access.<br>
-                If requested stack level doesn't exist argument token will be equal to null.
-            </p>
-            <pre>#{<br>    #out &lt;&lt; #{<br>        #return &lt;&lt; @@<br>    } &lt;&lt; null <br>} &lt;&lt; "Sequensa"<br>// prints "Sequensa"</pre>
-            <p>
-                Function arguments of any stack level are immutable.
-            </p>
-        </div> 
-
-        <div>
-            <h1 id="page_4">FUNCTIONS</h1>
-            <p>
-                All functions in Sequensa are anonymous, but they can be stored in a variable as an one element long stream.
-            </p>
-            <pre>set function &lt;&lt; {<br>    //function body<br>}</pre>
-            <p>
-                Function (or any stream entity) can be called by pushing a value into it. This can be done by directing a stream to an anchored entity.
-            </p>
-            <pre>#out &lt;&lt; "Hello World!"<br>#function &lt;&lt; 100</pre>
-            <p>
-                Function can take one argument at a time. Inside a function this argument can be accessed using '<code>@</code>' symbol.
-            </p>
-            <pre>#out &lt;&lt; #{ #return &lt;&lt; (@ * 100) } &lt;&lt; 0.01</pre>
-            <p>
-                In this example float 0.01 is pushed into a function then inside of that function multiplied by 100 and returned to standard output.<br><br>
-                Sequensa allows any stream entity to be called, not only functions.
-            </p>
-            <ul>
-                <li>Calling a value returns that value. <code> #out &lt;&lt; #"Hi!" &lt;&lt; "Bye!" // prints "Hi!" </code> </li>
-                <li>Calling a type (e.g. number, string, bool) casts pushed value into that type. <code> #out &lt;&lt; #number &lt;&lt; true // prints "1" </code> </li>
-            </ul>
-            <p>
-                Calling a function without an argument, is not possible. If functions don't expect any argument (e.g. <code>@</code> is ignored in function body) any value can be passed in order to execute it: (or use <code>emit</code> native function)
-            </p>
-            <pre>#out &lt;&lt; #func &lt;&lt; null</pre> 
-        </div> 
-
-        <div>
-            <h1 id="page_5">FLOW CONTROLLERS</h1>
-            <p>
-                Flow controller discards non-matching entities from the stream.
-            </p>
-            <pre>#out &lt;&lt; #[number] &lt;&lt; "hello" &lt;&lt; 'A' &lt;&lt; 1 &lt;&lt; 3.14<br>// prints "13.14"</pre>
-            <p>
-                It consists of comma-separated value selectors, of one of following types:
-            </p>
-            <ul>
-                <li><b>range</b> <code>[1:10]</code> Accepts exclusive value range (only possible for <code>number</code> values)</li>
-                <li><b>value</b> <code>[7]</code> Accepts only one value</li>
-                <li><b>type</b> <code>[string]</code> Accepts only one type</li>
-            </ul>
-            <p>
-                <code>#[string,bool]</code> Allows <code>string</code> <b>or</b> <code>bool</code> values,<br>
-                <code>#[0,0:127] &lt;&lt; #[number]</code> Allows only values that are both <code>number</code> <b>and</b> fall in range &lt;0-127).
-            </p>
-            <p>
-                There is no 'if-else' or 'switch-case' syntax in Sequensa, but simillar logic structures can be implemented using flow controllers. <br>
-                By discarding false values from streams, if-like branching can be achived.
-            </p>
-            <pre>#if_true_then &lt;&lt; #[true] &lt;&lt; some_boolean_condition </pre>
-            <pre>#{ #out &lt;&lt; #@ &lt;&lt; #[true] &lt;&lt; (@ % 2 = 0) } &lt;&lt; #number &lt;&lt; #in &lt;&lt; null</pre>
-            <p>
-                The above example program asks user for a number, and if the given value is divisible by 2, prints it.
-            </p>
+	<p>
+		The function's argument in Sequensa is represented using '<code>@</code>' symbol.
+	</p>
+	<pre>#{<br>    #out &lt;&lt; @ <br>} &lt;&lt; "Sequensa"<br>// prints "Sequensa"</pre>
+	<p>
+		The the number of this symbols in series designates the relative stack level to access.<br>
+		If requested stack level doesn't exist argument token will be equal to null.
+	</p>
+	<pre>#{<br>    #out &lt;&lt; #{<br>        #return &lt;&lt; @@<br>    } &lt;&lt; null <br>} &lt;&lt; "Sequensa"<br>// prints "Sequensa"</pre>
+	<p>
+		Function arguments of any stack level are immutable.
+	</p>
 :
 
+:FUNCTIONS
+	<p>
+		All functions in Sequensa are anonymous, but they can be stored in a variable as an one element long stream.
+	</p>
+	<pre>set function &lt;&lt; {<br>    //function body<br>}</pre>
+	<p>
+		Function (or any stream entity) can be called by pushing a value into it. This can be done by directing a stream to an anchored entity.
+	</p>
+	<pre>#out &lt;&lt; "Hello World!"<br>#function &lt;&lt; 100</pre>
+	<p>
+		Function can take one argument at a time. Inside a function this argument can be accessed using '<code>@</code>' symbol.
+	</p>
+	<pre>#out &lt;&lt; #{ #return &lt;&lt; (@ * 100) } &lt;&lt; 0.01</pre>
+	<p>
+		In this example float 0.01 is pushed into a function then inside of that function multiplied by 100 and returned to standard output.<br><br>
+		Sequensa allows any stream entity to be called, not only functions.
+	</p>
+	<ul>
+		<li>Calling a value returns that value. <code> #out &lt;&lt; #"Hi!" &lt;&lt; "Bye!" // prints "Hi!" </code> </li>
+		<li>Calling a type (e.g. number, string, bool) casts pushed value into that type. <code> #out &lt;&lt; #number &lt;&lt; true // prints "1" </code> </li>
+	</ul>
+	<p>
+		Calling a function without an argument, is not possible. If functions don't expect any argument (e.g. <code>@</code> is ignored in function body) any value can be passed in order to execute it: (or use <code>emit</code> native function)
+	</p>
+	<pre>#out &lt;&lt; #func &lt;&lt; null</pre> 
+:
 
+:FLOW CONTROLLERS
+	<p>
+		Flow controller discards non-matching entities from the stream.
+	</p>
+	<pre>#out &lt;&lt; #[number] &lt;&lt; "hello" &lt;&lt; 'A' &lt;&lt; 1 &lt;&lt; 3.14<br>// prints "13.14"</pre>
+	<p>
+		It consists of comma-separated value selectors, of one of following types:
+	</p>
+	<ul>
+		<li><b>range</b> <code>[1:10]</code> Accepts exclusive value range (only possible for <code>number</code> values)</li>
+		<li><b>value</b> <code>[7]</code> Accepts only one value</li>
+		<li><b>type</b> <code>[string]</code> Accepts only one type</li>
+	</ul>
+	<p>
+		<code>#[string,bool]</code> Allows <code>string</code> <b>or</b> <code>bool</code> values,<br>
+		<code>#[0,0:127] &lt;&lt; #[number]</code> Allows only values that are both <code>number</code> <b>and</b> fall in range &lt;0-127).
+	</p>
+	<p>
+		There is no 'if-else' or 'switch-case' syntax in Sequensa, but simillar logic structures can be implemented using flow controllers. <br>
+		By discarding false values from streams, if-like branching can be achived.
+	</p>
+	<pre>#if_true_then &lt;&lt; #[true] &lt;&lt; some_boolean_condition </pre>
+	<pre>#{ #out &lt;&lt; #@ &lt;&lt; #[true] &lt;&lt; (@ % 2 = 0) } &lt;&lt; #number &lt;&lt; #in &lt;&lt; null</pre>
+	<p>
+		The above example program asks user for a number, and if the given value is divisible by 2, prints it.
+	</p>
+:
 
-        <div>
-            <h1 id="page_6">LOGICAL, MATHEMATICAL AND BINARY OPERATORS</h1>
-            <p>
-                Logical operators:
-            </p>
-            <ul>    
-                <li><code>&lt;</code> less</li>
-                <li><code>&gt;</code> greater</li>
-                <li><code>=</code> equal</li>
-                <li><code>!=</code> not equal</li>
-                <li><code>&lt;=</code>, <code>!&gt;</code> less or equal (not greater)</li>
-                <li><code>&gt;=</code>, <code>!&lt;</code> greater or equal (not less)</li>
-                <li><code>&&</code> logical AND</li>
-                <li><code>||</code> logical OR</li>
-                <li><code>^^</code> logical XOR</li>
-                <li><code>!</code> logical NOT</li>
-            </ul>
-            <p>
-                Mathematical operators:
-            </p>
-            <ul>    
-                <li><code>*</code> multiplication</li>
-                <li><code>/</code> division</li>
-                <li><code>+</code> addition</li>
-                <li><code>-</code> subtraction</li>
-                <li><code>%</code> modulo</li>
-                <li><code>**</code> power</li>
-            </ul>
-            <p>
-                Binary operators:
-            </p>
-            <ul>    
-                <li><code>&</code> binary AND</li>
-                <li><code>|</code> binary OR</li>
-                <li><code>^</code> binary XOR</li>
-                <li><code>~</code> binary NOT</li>
-            </ul>
-            <p>
-                Stream operators:
-            </p>
-            <ul>    
-                <li><code>::</code> Access operator</li>
-            </ul>
-            <p>
-                All those operators (except access operator) can only be applied to an argument and/or value.<br>
-                All expressions in Sequensa must be surrounded by round brackets.<br>
-                Example:
-            </p>
-            <pre>#out &lt;&lt; #{<br>    #return &lt;&lt; (@ * 2) &lt;&lt; ' ' &lt;&lt; @<br>} &lt;&lt; 10<br>// prints "20 10"</pre>
-            <p>
-                Access operator can be used to access nth element of stream inside expression,<br>
-                if requested element doesn't exist null is returned in it's place.<br>
-                Access operator will silently round index value to nearest integer. Stream indexes in Sequensa are zero-based.
-            </p>
-            <pre>set var &lt;&lt; 123 &lt;&lt; 456 &lt;&lt; 678<br>#out &lt;&lt; ( var :: 0 ) // prints "123"<br>#out &lt;&lt; ( var :: 3 ) // prints "null"<br>#out &lt;&lt; ( var :: 1.01 ) // prints "456"</pre>
-        </div> 
+:LOGICAL, MATHEMATICAL AND BINARY OPERATORS
+	<p>
+		Logical operators:
+	</p>
+	<ul>    
+		<li><code>&lt;</code> less</li>
+		<li><code>&gt;</code> greater</li>
+		<li><code>=</code> equal</li>
+		<li><code>!=</code> not equal</li>
+		<li><code>&lt;=</code>, <code>!&gt;</code> less or equal (not greater)</li>
+		<li><code>&gt;=</code>, <code>!&lt;</code> greater or equal (not less)</li>
+		<li><code>&&</code> logical AND</li>
+		<li><code>||</code> logical OR</li>
+		<li><code>^^</code> logical XOR</li>
+		<li><code>!</code> logical NOT</li>
+	</ul>
+	<p>
+		Mathematical operators:
+	</p>
+	<ul>    
+		<li><code>*</code> multiplication</li>
+		<li><code>/</code> division</li>
+		<li><code>+</code> addition</li>
+		<li><code>-</code> subtraction</li>
+		<li><code>%</code> modulo</li>
+		<li><code>**</code> power</li>
+	</ul>
+	<p>
+		Binary operators:
+	</p>
+	<ul>    
+		<li><code>&</code> binary AND</li>
+		<li><code>|</code> binary OR</li>
+		<li><code>^</code> binary XOR</li>
+		<li><code>~</code> binary NOT</li>
+	</ul>
+	<p>
+		Stream operators:
+	</p>
+	<ul>    
+		<li><code>::</code> Access operator</li>
+	</ul>
+	<p>
+		All those operators (except access operator) can only be applied to an argument and/or value.<br>
+		All expressions in Sequensa must be surrounded by round brackets.<br>
+		Example:
+	</p>
+	<pre>#out &lt;&lt; #{<br>    #return &lt;&lt; (@ * 2) &lt;&lt; ' ' &lt;&lt; @<br>} &lt;&lt; 10<br>// prints "20 10"</pre>
+	<p>
+		Access operator can be used to access nth element of stream inside expression,<br>
+		if requested element doesn't exist null is returned in it's place.<br>
+		Access operator will silently round index value to nearest integer. Stream indexes in Sequensa are zero-based.
+	</p>
+	<pre>set var &lt;&lt; 123 &lt;&lt; 456 &lt;&lt; 678<br>#out &lt;&lt; ( var :: 0 ) // prints "123"<br>#out &lt;&lt; ( var :: 3 ) // prints "null"<br>#out &lt;&lt; ( var :: 1.01 ) // prints "456"</pre>
+:
 
-        <div>
-            <h1 id="page_9">STREAM EXPRESSIONS</h1> 
-            <p>
-                Stream expressions are streams nested in other streams, <br>
-                their accumulated value is added to parent stream on exit. <br>
-                Usage of (anchored) build-in functions (<i>return, exit, final, break, again</i>) is <b>not</b> allowed inside of embedded streams. <br>
-                Nested stream must be surrounded by round brackets, and start with single stream operator (<code>&lt;&lt;</code>)
-            </p>
-            <pre>#out &lt;&lt; ( &lt;&lt; nested_stream ) </pre>
-            <p>
-                Usage example:
-            </p>
-            <pre>#exit &lt;&lt; (&lt;&lt; #[0] &lt;&lt; var) &lt;&lt; 1</pre>
-            <p>
-                Above snippet stops execution with exit code '<code>0</code>' if variable '<code>var</code>' contains that value, otherwise '<code>1</code>' is returned.
-            </p>
-        </div> 
+:STREAM EXPRESSIONS
+	<p>
+		Stream expressions are streams nested in other streams, <br>
+		their accumulated value is added to parent stream on exit. <br>
+		Usage of (anchored) build-in functions (<i>return, exit, final, break, again</i>) is <b>not</b> allowed inside of embedded streams. <br>
+		Nested stream must be surrounded by round brackets, and start with single stream operator (<code>&lt;&lt;</code>)
+	</p>
+	<pre>#out &lt;&lt; ( &lt;&lt; nested_stream ) </pre>
+	<p>
+		Usage example:
+	</p>
+	<pre>#exit &lt;&lt; (&lt;&lt; #[0] &lt;&lt; var) &lt;&lt; 1</pre>
+	<p>
+		Above snippet stops execution with exit code '<code>0</code>' if variable '<code>var</code>' contains that value, otherwise '<code>1</code>' is returned.
+	</p>
+:
 
-        <div>
-            <h1 id="page_7">DATA TYPES</h1>
-            <p>
-                List of all Sequensa data types:
-            </p>
-            <ul>    
-                <li><code>bool</code> Boolean value</li>
-                <li><code>number</code> Number value</li>
-                <li><code>string</code> String value</li>
-                <li><code>type</code> Type of types</li>  
-                <li><code>null</code> Null value / type</li>
-                <li><code>func</code> Function</li>
-                <li><code>flowc</code> Flow controller</li>
-                <li><code>blob</code> External data</li>
-            </ul>
-            <pre>#out &lt;&lt; #int &lt;&lt; 3.14 // prints "3"<br>#out &lt;&lt; #type &lt;&lt; 7 // prints "number"<br>#out &lt;&lt; #type &lt;&lt; number // prints "type"<br>#out &lt;&lt; #type &lt;&lt; {} // prints "func"<br>#out &lt;&lt; #type &lt;&lt; [number] // prints "flowc"</pre>
-        </div> 
+:DATA TYPES
+	<p>
+		List of all Sequensa data types:
+	</p>
+	<ul>    
+		<li><code>bool</code> Boolean value</li>
+		<li><code>number</code> Number value</li>
+		<li><code>string</code> String value</li>
+		<li><code>type</code> Type of types</li>  
+		<li><code>null</code> Null value / type</li>
+		<li><code>func</code> Function</li>
+		<li><code>flowc</code> Flow controller</li>
+		<li><code>blob</code> External data</li>
+	</ul>
+	<pre>#out &lt;&lt; #int &lt;&lt; 3.14 // prints "3"<br>#out &lt;&lt; #type &lt;&lt; 7 // prints "number"<br>#out &lt;&lt; #type &lt;&lt; number // prints "type"<br>#out &lt;&lt; #type &lt;&lt; {} // prints "func"<br>#out &lt;&lt; #type &lt;&lt; [number] // prints "flowc"</pre>
+:
 
-        <div>
-            <h1 id="page_8">BUILT-IN FUNCTIONS AND TAGS</h1>
-            <p>
-                These native functions are part of the Sequensa language itself, not the standard library:<br>
-                (All those functions, terminate stream execution and by that making any subsequent code in the same stream unreachable)
-            </p>
-            <ul>
-                <li><code>return</code> Returns element from scope to output stream</li>
-                <li><code>break</code> Breaks curent scope, and discards all arguments left in input stream</li>
-                <li><code>exit</code> Exits program, with given value as the stop code</li>
-                <li><code>again</code> Calls current scope again (in the same stack)</li>
-                <li><code>final</code> Returns element from scope to output stream and breaks current scope</li>
-            </ul>
-            <p>
-                Tags can be used to conditionaly execute part of function's code:
-            </p>
-            <ul>    
-                <li><code>first</code> executes this line only once for the <u>first</u> entity of current input stream</li>
-                <li><code>last</code> executes this line for the <u>last</u> entity of current input stream</li>
-                <li><code>end</code> executes <u>only</u> this line <u>after</u> the last entity of current input stream (<code>@</code> is set to <code>null</code>)</li>
-            </ul>
-        </div> 
+:BUILT-IN FUNCTIONS AND TAGS
+	<p>
+		These native functions are part of the Sequensa language itself, not the standard library:<br>
+		(All those functions, terminate stream execution and by that making any subsequent code in the same stream unreachable)
+	</p>
+	<ul>
+		<li><code>return</code> Returns element from scope to output stream</li>
+		<li><code>break</code> Breaks curent scope, and discards all arguments left in input stream</li>
+		<li><code>exit</code> Exits program, with given value as the stop code</li>
+		<li><code>again</code> Calls current scope again (in the same stack)</li>
+		<li><code>final</code> Returns element from scope to output stream and breaks current scope</li>
+	</ul>
+	<p>
+		Tags can be used to conditionaly execute part of function's code:
+	</p>
+	<ul>    
+		<li><code>first</code> executes this line only once for the <u>first</u> entity of current input stream</li>
+		<li><code>last</code> executes this line for the <u>last</u> entity of current input stream</li>
+		<li><code>end</code> executes <u>only</u> this line <u>after</u> the last entity of current input stream (<code>@</code> is set to <code>null</code>)</li>
+	</ul>
+:
 
-        <div>
-            <h1 id="page_9">LOOPS AND RECURSION</h1> 
-            <p>
-                Storing function in variable and calling it can be used to create recursive functions,<br>
-                but for looping it is preferable to use <code>again</code> build-in function as it is more optimal for such task. <br>
-                Recursion requires creation of new stack for each call, while <code>again</code> modifies current stack to execute function again.<br>
-                <b>Note:</b> <code>again</code> injects argument to function input stream so it is possible that in certain situations <code>last</code> tag can be triggered multiple times.
-            </p>
-            <pre>#{<br>    // loop body<br>    #again &lt;&lt; #( @ - 1 ) &lt;&lt; #[true] &lt;&lt; ( @ > 0 )<br>} &lt;&lt; 10</pre>
-        </div> 
+:LOOPS AND RECURSION
+	<p>
+		Storing function in variable and calling it can be used to create recursive functions,<br>
+		but for looping it is preferable to use <code>again</code> build-in function as it is more optimal for such task. <br>
+		Recursion requires creation of new stack for each call, while <code>again</code> modifies current stack to execute function again.<br>
+		<b>Note:</b> <code>again</code> injects argument to function input stream so it is possible that in certain situations <code>last</code> tag can be triggered multiple times.
+	</p>
+	<pre>#{<br>    // loop body<br>    #again &lt;&lt; #( @ - 1 ) &lt;&lt; #[true] &lt;&lt; ( @ > 0 )<br>} &lt;&lt; 10</pre>
+:
 
-        <div>
-            <h1 id="page_10">DISSOLVING ENTITIES</h1> 
-            <p>
-                Expressions and variables dissolve in streams, which means that they don't need to be 'anchor called' like functions.<br>
-            </p>
-            <pre>#{ // code // } &lt;&lt; null // functions need to be 'anchor called',<br>#out &lt;&lt; variable &lt;&lt; (@ + 2) // but variables and expressions do not</pre>
-        </div> 
+:DISSOLVING ENTITIES
+	<p>
+		Expressions and variables dissolve in streams, which means that they don't need to be 'anchor called' like functions.<br>
+	</p>
+	<pre>#{ // code // } &lt;&lt; null // functions need to be 'anchor called',<br>#out &lt;&lt; variable &lt;&lt; (@ + 2) // but variables and expressions do not</pre>
+:
 
-        <div>
-            <h1 id="page_11">LOAD KEYWORD</h1> 
-            <p>
-                <code>load</code> keyword is used to include other Sequensa files at compile time<br>
-                and request native functions (and libraries) from Virtual Machine environment at runtime.
-                Syntax:
-            </p>
-            <pre>load "filename.sq" // include file (at compile time)<br>load "filename" // import native library (at runtime)</pre>
-            <p>
-                Native library file paths must be supplied without file extension and point to library directory.<br>Sequesa should use <b>.sq</b> and <b>.sqc</b> file extensions for source code and compiled source code files respectively.
-            </p>
-        </div> 
+:LOAD KEYWORD</h1> 
+	<p>
+		<code>load</code> keyword is used to include other Sequensa files at compile time<br>
+		and request native functions (and libraries) from Virtual Machine environment at runtime.
+		Syntax:
+	</p>
+	<pre>load "filename.sq" // include file (at compile time)<br>load "filename" // import native library (at runtime)</pre>
+	<p>
+		Native library file paths must be supplied without file extension and point to library directory.<br>Sequesa should use <b>.sq</b> and <b>.sqc</b> file extensions for source code and compiled source code files respectively.
+	</p>
+:
 
-        <div>
-            <h1 id="page_12">STRING NOTATION</h1> 
-            <p>
-                Sequensa strings use utf-8 encoding. Strings must always end before the end of line <br>
-                and be enclosed using double apostrophes (<code>"</code>).<br>
-                To split long strings into multiple lines <code>+</code> operator can be used:<br>
-            </p>
-            <pre>set var &lt;&lt; ( "some long string " +<br> "that spans multiple lines" )</pre>
-            <p>
-                To denote some non-printable and special characters folowing escape codes can be used:
-            </p>
-            <ul>
-                <li><code>\\</code> backslash</li>
-                <li><code>\"</code> apostrophe</li>
-                <li><code>\n</code> new line</li>
-                <li><code>\t</code> horizontal tab</li>
-                <li><code>\r</code> carriage return</li>
-            <ul>
-        </div>
+:STRING NOTATION
+	<p>
+		Sequensa strings use utf-8 encoding. Strings must always end before the end of line <br>
+		and be enclosed using double apostrophes (<code>"</code>).<br>
+		To split long strings into multiple lines <code>+</code> operator can be used:<br>
+	</p>
+	<pre>set var &lt;&lt; ( "some long string " +<br> "that spans multiple lines" )</pre>
+	<p>
+		To denote some non-printable and special characters folowing escape codes can be used:
+	</p>
+	<ul>
+		<li><code>\\</code> backslash</li>
+		<li><code>\"</code> apostrophe</li>
+		<li><code>\n</code> new line</li>
+		<li><code>\t</code> horizontal tab</li>
+		<li><code>\r</code> carriage return</li>
+	<ul>
+:
         
