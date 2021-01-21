@@ -12,14 +12,14 @@
 
 :LIST OF STANDARD LIBRARIES
 	<ul>
-		<li><a href="#page_1">stdio</a> Input/output library</li>
-		<li><a href="#page_2">utils</a> Utility library</li>
-		<li><a href="#page_3">math</a> Mathematical library</li>
-		<li><a href="#page_4">string</a> String library</li>  
-		<li><a href="#page_5">time</a> Time library</li>
-		<li><a href="#page_6">meta</a> Meta library</li>
-		<li><a href="#page_7">system</a> System library</li>
-		<li><a href="#page_8">lang</a> Sequensa library</li>
+		<li><a href="#page_3">stdio</a> Input/output library</li>
+		<li><a href="#page_4">utils</a> Utility library</li>
+		<li><a href="#page_5">math</a> Mathematical library</li>
+		<li><a href="#page_6">string</a> String library</li>  
+		<li><a href="#page_7">time</a> Time library</li>
+		<li><a href="#page_8">meta</a> Meta library</li>
+		<li><a href="#page_9">system</a> System library</li>
+		<li><a href="#page_10">lang</a> Sequensa library</li>
 	</ul>
 :
 
