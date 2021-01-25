@@ -1,0 +1,7 @@
+
+// Simple Hello World, MIT licence
+// Prints "Hello World!"
+
+load "stdio"
+
+#std:out << "Hello World!" << std:br
