@@ -133,7 +133,7 @@
  *
  * 		seq::CompilerError
  * 			Error generated only by the seq::Compile set of functions,
- * 			it signals the the compilation was unsuccessful and provides a standard error message.
+ * 			it signals that the compilation was unsuccessful and provides a standard error message.
  * 			If you are interested in seeing more than one error at a time see section 7.
  *
  * 		seq::RuntimeError
@@ -155,7 +155,7 @@
  *
  *			seq::Compiler::setErrorHandle( [] (seq::CompilerError err) {
  *
- *				// your code to handle the exception, eg. print it to console
+ *				// your code to handle the exception, e.g. print it to console
  *
  *				// if the error is critical it MUST be thrown
  *				if( err.isCritical() ) {
@@ -2474,7 +2474,6 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 #	define SQSTR( g ) ((seq::type::String*) g)->getString()
 #	define SQBOL( g ) ((seq::type::Bool*) g)->getBool()
 #	define SQTYP( g ) ((seq::type::Type*) g)->getType()
-#	define SQPAD
 
 	static const ExprFunc null_expr_func = SQEFN { return new seq::type::Null(f); };
 	static const TypeFunc null_type_func = SQTFN { return new seq::type::Null(f); };
@@ -2892,7 +2891,7 @@ std::vector<byte> seq::Compiler::compile( std::string code, std::vector<std::str
 	// get rid of the first function opcode
 	int functionOffset = (buffer.at(1) >> 4) + 2;
 
-	// if that is NOT the case something weird has happened/the file is empty
+	// if that is NOT the case something weird has happened
 	// but we will pretend that everything is OK and just skip this step
 	if( functionOffset < (long) buffer.size() ) {
 		buffer.erase( buffer.begin(), buffer.begin() + functionOffset );
