@@ -30,6 +30,7 @@ compilers_config = {
         "alias": "",
         "compile": "g++ -O3 -g0 -Wall -std=c++11 -c $args -o \"$output\" $input",
         "link": "g++ -std=c++11 $args -o \"$output\" $input $libs",
+        "binary": "g++",
         "shared": {
             "compiler": "-fPIC", 
             "linker": "-shared"
@@ -46,6 +47,7 @@ compilers_config = {
         "alias": "",
         "compile": "clang -O3 -g0 -Wall -std=c++11 -c $args -o \"$output\" $input",
         "link": "clang -std=c++11 $args -o \"$output\" $input $libs",
+        "binary": "clang",
         "shared": {
             "compiler": "-fPIC", 
             "linker": "-shared"
@@ -78,7 +80,7 @@ def get_compiler_config( key ):
     if compilers_config[ key ]["alias"] == "":
         return compilers_config[ key ]
     else:
-        return compiler_config( compilers_config[key]["alias"] )
+        return get_compiler_config( compilers_config[key]["alias"] )
 
 if os.name == "posix":
     patform_config["posix"]["path"] = os.getenv('HOME') + "/sequensa"
@@ -114,12 +116,12 @@ if args.uninstall:
     exit();
 
 # warn about non-standard compiler
-if args.compiler != "g++":
+if comcfg["binary"] != "g++":
     print("\nWarning: Selected compiler is non-default!")
     print("Warning: Expected g++, this may cause problems.")
 
 # if no compiler avaible exit with error
-if not test_for_command( args.compiler + syscfg["exe"] ):
+if not test_for_command( comcfg["binary"] + syscfg["exe"] ):
     print( "\nError: Compiler not found!" )
 
     if os.name == "posix":
