@@ -919,7 +919,7 @@ namespace seq {
 }
 
 using seq::byte;
-#define SEQ_IMPLEMENT
+
 #ifdef SEQ_IMPLEMENT
 
 byte seq::util::packTags( const long pos, const long end ) noexcept {
