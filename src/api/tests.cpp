@@ -69,9 +69,12 @@ TEST( buffer_writer_complex, {
 
     bw.putByte( 'S' );
     bw.putBool( true, true );
-    bw.putNumber( false, (seq::Fraction) {12, 1} );
-    bw.putNumber( true, (seq::Fraction) {1, 2} );
-    bw.putNumber( false, (seq::Fraction) {1422131241, 1} );
+	seq::Fraction frac1{ 12, 1 };
+	seq::Fraction frac2{ 1, 2 };
+	seq::Fraction frac3{ 1422131241, 1 };
+    bw.putNumber( false,  frac1 );
+    bw.putNumber( true, frac2 );
+    bw.putNumber( false, frac3 );
     bw.putString( true, "Hello World!" );
     bw.putType( false, seq::DataType::Number );
     bw.putCall( false, seq::type::VMCall::CallType::Return );
@@ -269,8 +272,10 @@ TEST( buffer_writer_flowc, {
 
     std::vector<byte> a_arr;
     seq::BufferWriter a_bw( a_arr );
-    a_bw.putNumber( false, (seq::Fraction) {12, 1} );
-    a_bw.putNumber( false, (seq::Fraction) {24, 1} );
+	seq::Fraction fraction1 { 12, 1 };
+	seq::Fraction fraction2 { 24, 1 };
+    a_bw.putNumber( false, fraction1 );
+    a_bw.putNumber( false, fraction2 );
 
     std::vector<byte> b_arr;
     seq::BufferWriter b_bw( b_arr );
@@ -524,10 +529,14 @@ TEST( executor_native, {
 	seq::BufferWriter bw_1( arr_1 );
 	bw_1.putCall( true, seq::type::VMCall::CallType::Exit );
 	bw_1.putName( true, false, "sum" );
-	bw_1.putNumber( false, (seq::Fraction) {1, 1} );
-	bw_1.putNumber( false, (seq::Fraction) {2, 1} );
-	bw_1.putNumber( false, (seq::Fraction) {3, 1} );
-	bw_1.putNumber( false, (seq::Fraction) {4, 1} );
+	seq::Fraction fract1{ 1, 1 };
+	seq::Fraction fract2{ 2, 1 };
+	seq::Fraction fract3{ 3, 1 };
+	seq::Fraction fract4{ 4, 1 };
+	bw_1.putNumber( false, fract1 );
+	bw_1.putNumber( false, fract2 );
+	bw_1.putNumber( false, fract3 );
+	bw_1.putNumber( false, fract4 );
 
 	std::vector<byte> arr_2;
 	seq::BufferWriter bw_2( arr_2 );
@@ -546,11 +555,13 @@ TEST( expression_simple, {
 
 	std::vector<byte> arr_1;
 	seq::BufferWriter bw_1( arr_1 );
-	bw_1.putNumber( false, (seq::Fraction) {6, 1} );
+	seq::Fraction fract1{ 6, 1 };
+	bw_1.putNumber( false, fract1 );
 
 	std::vector<byte> arr_2;
 	seq::BufferWriter bw_2( arr_2 );
-	bw_2.putNumber( false, (seq::Fraction) {7, 1} );
+	seq::Fraction fract2{ 7, 1 };
+	bw_2.putNumber( false, fract2 );
 
 	std::vector<byte> arr_3;
 	seq::BufferWriter bw_3( arr_3 );
