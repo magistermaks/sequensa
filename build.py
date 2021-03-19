@@ -152,7 +152,7 @@ if not test_for_command( comcfg["binary"] + syscfg["exe"] ):
 # define function used to invoke compiler
 def compile( path, cargs = "" ):
     path = localize_path( path )
-    target = os.path.splitext( path )[0] + ".obj"
+    target = os.path.splitext( path )[0] + ".o"
     
     command = comcfg["compile"].replace( "$input", path )
     command = command.replace( "$output", tmp_path + syscfg["sep"] + target )
@@ -198,7 +198,7 @@ if args.test:
     
     # link target
     print( "\nLinking Target..." )
-    link( tmp_path + "/tests" + syscfg["exe"], ["/src/api/seqapi.obj", "/src/api/tests.obj"] )
+    link( tmp_path + "/tests" + syscfg["exe"], ["/src/api/seqapi.o", "/src/api/tests.o"] )
 
     # execute target
     print( "\nRunning Target..." )
@@ -275,15 +275,15 @@ print( "\nLinking Targets..." )
 
 # link targets
 shared = comcfg["shared"]["linker"]
-link( syscfg["path"] + "/sequensa" + syscfg["exe"], ["/src/api/seqapi.obj", "/src/lib/whereami.obj", "/src/main.obj", "/src/help.obj", "/src/build.obj", "/src/run.obj", "/src/utils.obj"] )
-link( syscfg["path"] + "/lib/stdio/native" + syscfg["lib"], ["/src/api/seqapi.obj", "/src/std/stdio.obj"], shared )
-link( syscfg["path"] + "/lib/math/native" + syscfg["lib"], ["/src/api/seqapi.obj", "/src/std/math.obj"], shared )
-link( syscfg["path"] + "/lib/meta/native" + syscfg["lib"], ["/src/api/seqapi.obj", "/src/std/meta.obj"], shared )
-link( syscfg["path"] + "/lib/utils/native" + syscfg["lib"], ["/src/api/seqapi.obj", "/src/std/utils.obj"], shared )
-link( syscfg["path"] + "/lib/string/native" + syscfg["lib"], ["/src/api/seqapi.obj", "/src/std/string.obj"], shared )
-link( syscfg["path"] + "/lib/time/native" + syscfg["lib"], ["/src/api/seqapi.obj", "/src/std/time.obj"], shared )
-link( syscfg["path"] + "/lib/system/native" + syscfg["lib"], ["/src/api/seqapi.obj", "/src/std/system.obj"], shared )
-link( syscfg["path"] + "/lib/lang/native" + syscfg["lib"], ["/src/api/seqapi.obj", "/src/std/lang.obj"], shared )
+link( syscfg["path"] + "/sequensa" + syscfg["exe"], ["/src/api/seqapi.o", "/src/lib/whereami.o", "/src/main.o", "/src/help.o", "/src/build.o", "/src/run.o", "/src/utils.o"] )
+link( syscfg["path"] + "/lib/stdio/native" + syscfg["lib"], ["/src/api/seqapi.o", "/src/std/stdio.o"], shared )
+link( syscfg["path"] + "/lib/math/native" + syscfg["lib"], ["/src/api/seqapi.o", "/src/std/math.o"], shared )
+link( syscfg["path"] + "/lib/meta/native" + syscfg["lib"], ["/src/api/seqapi.o", "/src/std/meta.o"], shared )
+link( syscfg["path"] + "/lib/utils/native" + syscfg["lib"], ["/src/api/seqapi.o", "/src/std/utils.o"], shared )
+link( syscfg["path"] + "/lib/string/native" + syscfg["lib"], ["/src/api/seqapi.o", "/src/std/string.o"], shared )
+link( syscfg["path"] + "/lib/time/native" + syscfg["lib"], ["/src/api/seqapi.o", "/src/std/time.o"], shared )
+link( syscfg["path"] + "/lib/system/native" + syscfg["lib"], ["/src/api/seqapi.o", "/src/std/system.o"], shared )
+link( syscfg["path"] + "/lib/lang/native" + syscfg["lib"], ["/src/api/seqapi.o", "/src/std/lang.o"], shared )
 
 # delete tmp directory
 if not args.workspace:
