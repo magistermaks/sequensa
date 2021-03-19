@@ -60,7 +60,7 @@ compilers_config = {
     "msvc": {
         "alias": "",
         "compile": "cl /O2 /c $args $input /Fo\"$output\" /EHsc",
-        "link": "link $args $input /FORCE:MULTIPLE /OUT:\"$output\" $libs",
+        "link": "link $args $input /OUT:\"$output\" $libs",
         "binary": "cl",
         "shared": {
             "compiler": "", 
