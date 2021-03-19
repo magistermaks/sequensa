@@ -56,6 +56,23 @@ compilers_config = {
             "posix": "-ldl",
             "nt": ""
         }
+    },
+    "msvc": {
+        "alias": "",
+        "compile": "cl /O2 /c $args $input /Fo\"$output\" /EHsc",
+        "link": "link $args $input /OUT:\"$output\" $libs",
+        "binary": "cl",
+        "shared": {
+            "compiler": "", 
+            "linker": "/DLL"
+        },
+        "libs": {
+            "posix": "",
+            "nt": ""
+        }
+    },
+    "cl": {
+        "alias": "msvc"
     }
 }
 

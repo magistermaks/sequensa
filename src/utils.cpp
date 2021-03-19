@@ -32,10 +32,12 @@ bool file_exist( const char *path ) {
 
 std::string get_exe_path() {
 	int length = wai_getExecutablePath(NULL, 0, NULL);
-	char path[length + 1];
+	char* path = new char[length + 1];
 	wai_getExecutablePath(path, length, NULL);
 	path[length] = '\0';
-	return std::string( path );
+	auto path_str = std::string(path);
+	delete[] path;
+	return path_str;
 }
 
 std::string get_cwd_path() {

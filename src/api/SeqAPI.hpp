@@ -1173,7 +1173,7 @@ void seq::BufferWriter::putNumber( bool anchor, seq::Fraction f ) {
 		this->putOpcode( anchor, seq::Opcode::INT );
 		this->putByte( (byte) f.numerator );
 	}else{
-		bool sign = std::signbit( f.numerator );
+		bool sign = (f.numerator < 0);
 		unsigned long n = std::labs( f.numerator );
 
 		this->putOpcode( anchor, seq::Opcode::NUM );
@@ -1415,7 +1415,8 @@ const seq::Fraction seq::type::Number::getFraction() {
 
 	multiplier /= hcf;
 
-	return (seq::Fraction) { (long) (sign * ( (part / hcf) + (whole * multiplier) )), (long) multiplier };
+	seq::Fraction fraction{ (long)(sign * ((part / hcf) + (whole * multiplier))), (long)multiplier };
+	return fraction;
 }
 
 byte seq::type::Number::sizeOf( unsigned long value ) {
@@ -1917,7 +1918,7 @@ seq::type::Number* seq::TokenReader::loadNumber() {
 		if( !d ) throw seq::InternalError( "Invalid denominator! size: " + std::to_string( (int) b ) + " value: " + std::to_string( (int) d ) );
 
 		unsigned long s = (1ul << ((unsigned long) a * 8ul - 1ul));
-		return new seq::type::Number( this->anchor, (n & s) ? -(s ^ n) : n, d );
+		return new seq::type::Number( this->anchor, (n & s) ? -(long)(s ^ n) : n, d );
 
 	}else{
 
@@ -1992,7 +1993,10 @@ seq::type::Expression* seq::TokenReader::loadExpr() {
 
 	if( !(l && r) ) throw seq::InternalError( "Invalid expression size!" );
 
-	return new seq::type::Expression( this->anchor, op, this->reader.nextBlock( l ), this->reader.nextBlock( r ) );
+	seq::BufferReader* left = this->reader.nextBlock(l);
+	seq::BufferReader* right = this->reader.nextBlock(r);
+
+	return new seq::type::Expression(this->anchor, op, left, right);
 }
 
 seq::type::Flowc* seq::TokenReader::loadFlowc() {
@@ -2856,7 +2860,7 @@ const bool seq::Compiler::Token::isPrimitive() {
 }
 
 std::string seq::Compiler::Token::toString() {
-	std::string catstr = (const char *[]) {
+	const char* ccatstr[]{
 		"Tag",
 		"Set",
 		"Load",
@@ -2875,9 +2879,11 @@ std::string seq::Compiler::Token::toString() {
 		"Colon",
 		"Arg",
 		"VMCall"
-	}[ (byte) getCategory() ];
+	};
+	std::string catstr(ccatstr[(byte)getCategory()]);
 	return catstr + "::" + this->getRaw();
 }
+
 
 std::vector<byte> seq::Compiler::compile( std::string code, std::vector<std::string>* headerData ) {
 	auto tokens = seq::Compiler::tokenize( code );
