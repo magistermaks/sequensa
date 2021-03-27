@@ -2,6 +2,8 @@
 
 <img src="./logo.png" align="right" alt="Logo" title="Sequensa Logo" width="130.75" height="80" />
 
+__This is an experimental branch!__
+
 __General info:__  Sequensa is a esoteric programing language based on C++ stream syntax that is good enough to actually use it.
 
 Read more about Sequensa programming language [here](http://darktree.net/projects/sequensa/)  
