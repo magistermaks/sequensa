@@ -36,30 +36,61 @@
  * 		For more informations about Sequensa Language itself see:
  * 		http://darktree.net/projects/sequensa/
  *
+ * 		Sections:
+ * 			1. Compiling and executing
+ * 			2. Execution arguments
+ * 			3. Injecting (and removing) functions (and variables) to/from Sequensa
+ * 			4. Obtaining results
+ * 			5. Using Sequensa streams and data types
+ * 			6. Exceptions and their meaning
+ * 			7. Compiler error handle
+ * 			8. Optimization
+ * 			9. Preprocessor
+ *
  * 1. Compiling and executing
  *
- *		seq::Compiler::compile( std::string code, std::vector<std::string>* headerData = nullptr )
- *		The seq::Compiler::compile function can be used to generate executable Sequesa binary buffer.
- *		If provided with the `headerData` pointer it will store an array of found dependence names in it.
- * 		The returned buffer is of type `std::vector<seq::byte> `
+ *		seq::Compiler::compileStatic( std::string code, seq::StringTable* headerData = nullptr )
+ *		The seq::Compiler::compileStatic method can be used to generate executable Sequesa binary buffer.
+ *		If provided with the `headerData` pointer it will store an array of found dependences names in it.
+ * 		The returned buffer is of type `std::vector<seq::byte>`
  *
  * 		To execute returned buffer it first must be encased in ByteBuffer object, the first expected constructor
  * 		argument is the pointer to the buffer, and the second one is the buffer size:
  * 		seq::ByteBuffer bb( buf.data(), buf.size() )
- * 		where `buf` is the std::vector returned by seq::Copiler::compile.
+ * 		where `buf` is the std::vector returned by seq::Compiler::compileStatic.
  *
- * 		Then the ByteBuffer can be passed to the seq::Executor's execute method:
+ * 		Then the ByteBuffer can be passed to the seq::Executor's execute method.
  * 		Full example:
  *
  * 			// Compile the code and save bytecode in the ByteBuffer
- * 			auto buf = seq::Compiler::compile( code_to_excecute );
+ * 			auto buf = seq::Compiler::compileStatic( code_to_excecute );
  * 			seq::ByteBuffer bb( buf.data(), buf.size() );
  *
  * 			// Execute the bytecode
  * 			seq::Executor exe;
  * 			exe.execute( bb );
  *
- * 2. Execution argument(s)
+ * 		To gain access to more advanced compiler settings a `Compiler` object must be created first,
+ * 		then specific options can be set using the provided methods. The bytecode can be obtained
+ * 		from this compiler using the `compile( std::string code )` method.
+ *
+ * 			// Create the Compiler object
+ * 			seq::Compiler compiler;
+ *
+ * 			// Extended compiler API
+ * 			compiler.setLoadTable( ... ); // Optional: an replacement for the second argument of `compileStatic()`.
+ * 			compiler.setNameTable( ... ); // Optional: sets the name table, more on that in section 8.
+ * 			compiler.setErrorHandle( ... ); // Optional: sets error handle, more on that in section 7.
+ *
+ * 			// Compile the program using the created compiler
+ * 			auto buf = compiler.compile( code_to_excecute );
+ * 			seq::ByteBuffer bb( buf.data(), buf.size() );
+ *
+ * 			// Execute the bytecode
+ * 			seq::Executor exe;
+ * 			exe.execute( bb );
+ *
+ * 2. Execution arguments
  *
  *		The seq::Excecutor's execute method can also accept additional argument 'args'
  *		which contains the stream of top-level arguments (using more than one argument is
@@ -118,7 +149,7 @@
  * 			// use this to get the Generic's type
  * 			seq::DataType type = val.getDataType();
  *
- * 			// If you know the type of the value you can access it
+ * 			// If you know the type of the value you can access it,
  * 			// Never directly access generics without checking the type - that would cause an
  * 			// undefined behavior and most probably crash your program.
  * 			if( type == seq::DataType::Number ) {
@@ -150,10 +181,13 @@
  *
  * 7. Compiler error handle
  *
- *		its a function executed when compiler encounters a error, it can be registered as follows:
- *		Warning: This is a global state!
+ *		Error handle its a function invoked when compiler encounters a error, to change the default one
+ *		(which simply throws the given error) you need to create the `Compiler` object and set it using the
+ *		`setErrorHandle` method.
  *
- *			seq::Compiler::setErrorHandle( [] (seq::CompilerError err) {
+ *			seq::Compiler compiler;
+ *
+ *			compiler.setErrorHandle( [] (seq::CompilerError err) {
  *
  *				// your code to handle the exception, e.g. print it to console
  *
@@ -168,25 +202,28 @@
  *		and should be discarded.
  *
  *		The default error handler can be restored using:
- *			seq::Compiler::setErrorHandle( seq::Compiler::defaultErrorHandle );
+ *			compiler.setErrorHandle( seq::Compiler::defaultErrorHandle );
  *
- * 8. Sequensa API meta-data
+ * 8. Optimization
  *
- * 		All metadata can be found in the SEQ_API_* macros
- *
- *		SEQ_API_NAME - string - name of the API
- * 		SEQ_API_STANDARD - string - version of the Sequensa Standard implemented by the API
- * 		SEQ_API_VERSION_MAJOR - byte - Major component of the version number
- * 		SEQ_API_VERSION_MINOR - byte - Minor component of the version number
- * 		SEQ_API_VERSION_PATCH - byte - Patch component of the version number
+ * 		TODO
  *
  * 9. Preprocessor
  *
- * 		All those preprocessor defines should be placed before `#include` of the API
+ * 		All metadata provided by the API can be found in the SEQ_API_* macros:
  *
- * 		#define SEQ_IMPLEMENT - to implement the Sequensa API
- * 		#define SEQ_EXCLUDE_COMPILER - to exclude compiler code from the API
- * 		#define SEQ_PUBLIC_EXECUTOR - make some seq::Executor methods public
+ *			SEQ_API_NAME 					- string - name of the API
+ * 			SEQ_API_STANDARD 				- string - version of the Sequensa Standard implemented by the API
+ * 			SEQ_API_VERSION_MAJOR 			- byte - Major component of the version number
+ * 			SEQ_API_VERSION_MINOR 			- byte - Minor component of the version number
+ * 			SEQ_API_VERSION_PATCH 			- byte - Patch component of the version number
+ *
+ *		Following preprocessor statements can be used to changed some aspects of the API at compile time.
+ *		Warning: They must be placed BEFORE the inclusion of the API.
+ *
+ *			#define SEQ_IMPLEMENT 			- To implement the Sequensa API
+ * 			#define SEQ_EXCLUDE_COMPILER 	- To exclude compiler code from the API
+ * 			#define SEQ_PUBLIC_EXECUTOR 	- Make some seq::Executor methods public (deprecated)
  *
  */
 
