@@ -28,18 +28,20 @@
 
 bool failed = false;
 
-bool build( std::string input, std::vector<seq::byte>* buffer, std::vector<std::string>* dependencies, std::vector<std::string>* natives, bool verbose ) {
+bool build( std::string input, std::vector<seq::byte>* buffer, std::vector<std::string>* dependencies, std::vector<std::string>* natives, bool verbose, seq::Compiler& compiler ) {
 
 	std::ifstream infile( input );
 	if( infile.good() ) {
 
 		std::vector<std::string> headerData;
 		std::string base = get_directory( input );
+		compiler.setLoadTable( &headerData );
 
 		try{
 
-			std::string content( (std::istreambuf_iterator<char>(infile) ), (std::istreambuf_iterator<char>() ));
-			*buffer = seq::Compiler::compile(content, &headerData);
+			// The extra brackets are needed or things break, because C++
+			std::string content( (std::istreambuf_iterator<char>(infile)), (std::istreambuf_iterator<char>()) );
+			*buffer = compiler.compile(content);
 
 		}catch( seq::CompilerError& err ){
 
@@ -47,6 +49,9 @@ bool build( std::string input, std::vector<seq::byte>* buffer, std::vector<std::
 			failed = true;
 
 		}
+
+		// not really needed, but just to be sure (tm)
+		compiler.setLoadTable( &headerData );
 
 		// set by error handle
 		if( failed ) {
@@ -87,7 +92,7 @@ bool build( std::string input, std::vector<seq::byte>* buffer, std::vector<std::
 
 }
 
-bool build_tree( std::string input, std::string output, bool verbose ) {
+bool build_tree( std::string input, std::string output, bool verbose, seq::Compiler& compiler ) {
 
 	struct CompiledUnit {
 		std::vector<std::string> dependencies;
@@ -108,7 +113,7 @@ bool build_tree( std::string input, std::string output, bool verbose ) {
 
 			CompiledUnit unit;
 
-			if( !build( target, &unit.buffer, &unit.dependencies, natives, verbose ) ){
+			if( !build( target, &unit.buffer, &unit.dependencies, natives, verbose, compiler ) ){
 				return false;
 			}
 
@@ -225,11 +230,12 @@ void build( ArgParse& argp, Options opt ) {
 
 	failed = false;
 	auto vars = argp.getValues();
+	seq::Compiler compiler;
 
 	if( vars.size() == 2 ) {
 
 		if( opt.multi_error ) {
-			seq::Compiler::setErrorHandle( [] (seq::CompilerError err) {
+			compiler.setErrorHandle( [] (seq::CompilerError err) {
 				if( err.isCritical() ) {
 					std::cout << "Fatal: ";
 					throw err;
@@ -240,7 +246,7 @@ void build( ArgParse& argp, Options opt ) {
 			} );
 		}
 
-		if( !build_tree( vars.at(0), vars.at(1), opt.verbose ) ) {
+		if( !build_tree( vars.at(0), vars.at(1), opt.verbose, compiler ) ) {
 
 			std::cout << "Build failed!" << std::endl;
 

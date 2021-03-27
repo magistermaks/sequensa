@@ -2436,6 +2436,24 @@ TEST( c_namespace_accessor, {
 
 } );
 
+TEST( util_insert_unique, {
+
+	seq::StringTable table = {
+			"aaa", "bbb", "ccc", "ddd", "eee"
+	};
+
+	int a = seq::util::insertUnique( &table, "bbb" );
+	int b = seq::util::insertUnique( &table, "eee" );
+	int c = seq::util::insertUnique( &table, "fff" );
+	int d = seq::util::insertUnique( &table, "fff" );
+
+	CHECK( a, 1 );
+	CHECK( b, 4 );
+	CHECK( c, 5 );
+	CHECK( d, 5 );
+
+} );
+
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
 REGISTER_EXCEPTION( seq_runtime_error, seq::RuntimeError );

@@ -613,6 +613,8 @@ namespace seq {
 		seq::Generic newStream( byte tags, BufferReader* reader, bool anchor = false ) noexcept;
 		seq::Generic newNull( bool anchor = false ) noexcept;
 
+		int insertUnique( StringTable* table, std::string entry );
+
 	}
 
 	/// define shorthand for stream
@@ -970,7 +972,7 @@ namespace seq {
 			std::vector<byte> assembleExpression( std::vector<Token>& tokens, int start, int end, bool anchor, bool top );
 			std::vector<byte> assembleFunction( std::vector<Token>& tokens, int start, int end, bool anchor );
 
-			int extractHeaderData( std::vector<Token>& tokens, std::vector<std::string>* arrayPtr );
+			int extractHeaderData( std::vector<Token>& tokens, StringTable* arrayPtr );
 
 	};
 #endif // SEQ_EXCLUDE_COMPILER
@@ -1187,6 +1189,17 @@ seq::Generic seq::util::newStream( byte tags, BufferReader* reader, bool anchor 
 
 seq::Generic seq::util::newNull( bool anchor ) noexcept {
 	return seq::Generic( new seq::type::Null( anchor ) );
+}
+
+int seq::util::insertUnique( seq::StringTable* table, std::string entry ) {
+	auto it = std::find(table->begin(), table->end(), entry);
+	int index = std::distance(table->begin(), it);
+
+	if( it == table->end() ) {
+		table->push_back( entry );
+	}
+
+	return index;
 }
 
 seq::BufferWriter::BufferWriter( std::vector<byte>& _buffer ): buffer( _buffer ) {}
@@ -2971,7 +2984,7 @@ std::vector<byte> seq::Compiler::compile( std::string code ) {
 	return buffer;
 }
 
-std::vector<byte> seq::Compiler::compileStatic( std::string code, std::vector<std::string>* headerData ) {
+std::vector<byte> seq::Compiler::compileStatic( std::string code, StringTable* headerData ) {
 	Compiler compiler;
 	compiler.setLoadTable( headerData );
 	return compiler.compile(code);
@@ -3575,8 +3588,8 @@ std::vector<byte> seq::Compiler::assemblePrimitive( seq::Compiler::Token token )
 				break;
 			}
 
+			// Name is not a primitive value but this simplifies some things
 			case seq::Compiler::Token::Category::Name:
-				// Name is not a primitive value but this simplifies some things
 				bw.putName( token.getAnchor(), false, token.getClean().c_str() );
 				break;
 
@@ -3825,7 +3838,7 @@ std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::To
 	return ret;
 }
 
-int seq::Compiler::extractHeaderData( std::vector<Token>& tokens, std::vector<std::string>* arrayPtr ) {
+int seq::Compiler::extractHeaderData( std::vector<Token>& tokens, StringTable* table ) {
 
 	int s = 0;
 
@@ -3856,8 +3869,8 @@ int seq::Compiler::extractHeaderData( std::vector<Token>& tokens, std::vector<st
 					}
 
 					// add load to supplied load array
-					if( arrayPtr != nullptr ) {
-						arrayPtr->push_back( token2.getClean() );
+					if( table != nullptr ) {
+						seq::util::insertUnique(table, token2.getClean());
 					}
 
 					s = i;
