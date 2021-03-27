@@ -1,6 +1,7 @@
 
 import os
 import shutil
+import subprocess
 
 # localize given path
 def localize_path( pth ):
@@ -18,6 +19,12 @@ def rem_dir( pth ):
         shutil.rmtree( pth )
     except:
         pass
+    
+# stolen from github gist
+# https://gist.github.com/jotaelesalinas/f809d702e4d3e24b19b77b83c9bf5d9e
+def run_command(cmd):
+    proc = subprocess.Popen(cmd, shell=True)
+    return proc.wait()
 
 # stolen from stackoverflow
 # https://stackoverflow.com/a/377028

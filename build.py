@@ -19,6 +19,7 @@ parser.add_argument( "--compiler", help="specify compiler to use [g++, clang]", 
 parser.add_argument( "--workspace", help="preserve workspace", action="store_true" )
 parser.add_argument( "--uninstall", help="uninstall Sequensa", action="store_true" )
 parser.add_argument( "--force", help="don't ask for confirmations", action="store_true" )
+parser.add_argument( "--ignoreStatus", help="ignore task exit codes", action="store_true" )
 args = parser.parse_args()
 
 # get temporary workspace
@@ -30,6 +31,7 @@ compilers_config = {
         "alias": "",
         "compile": "g++ -O3 -g0 -Wall -std=c++11 -c $args -o \"$output\" $input",
         "link": "g++ -std=c++11 $args -o \"$output\" $input $libs",
+        "ignore_exit_code": False,
         "binary": "g++",
         "shared": {
             "compiler": "-fPIC", 
@@ -47,6 +49,7 @@ compilers_config = {
         "alias": "",
         "compile": "clang -O3 -g0 -Wall -std=c++11 -c $args -o \"$output\" $input",
         "link": "clang -std=c++11 $args -o \"$output\" $input $libs",
+        "ignore_exit_code": False,
         "binary": "clang",
         "shared": {
             "compiler": "-fPIC", 
@@ -61,6 +64,7 @@ compilers_config = {
         "alias": "",
         "compile": "cl /O2 /c $args $input /Fo\"$output\" /EHsc",
         "link": "link $args $input /OUT:\"$output\" $libs",
+        "ignore_exit_code": False,
         "binary": "cl",
         "shared": {
             "compiler": "", 
@@ -136,6 +140,11 @@ if args.uninstall:
 if comcfg["binary"] != "g++":
     print("\nWarning: Selected compiler is non-default!")
     print("Warning: Expected g++, this may cause problems.")
+    
+# warn about problems this flag may cause
+if args.ignoreStatus:
+    print("\nWarning: Using the `--ignoreStatus` flag!")
+    print("Warning: Future errors will be ignored.")
 
 # if no compiler avaible exit with error
 if not test_for_command( comcfg["binary"] + syscfg["exe"] ):
@@ -149,6 +158,18 @@ if not test_for_command( comcfg["binary"] + syscfg["exe"] ):
     print(" * Try selecting different compiler using the '--compiler' flag")
     exit()
     
+# define exit code checking function
+def check_exit_code( code ):
+    if code != 0 and not comcfg["ignore_exit_code"]:
+        if not args.ignoreStatus:
+            print( "\nError: Task returned non-zero exit code!" )
+            print( " * Try running with `--ignoreStatus` to supress this error" )
+            print( " * Try reporting this to project maintainers" )
+            exit()
+        else:
+            print( "\nWarning: Task returned non-zero exit code!" )
+            print( " * Try reporting this to project maintainers" )
+    
 # define function used to invoke compiler
 def compile( path, cargs = "" ):
     path = localize_path( path )
@@ -159,7 +180,7 @@ def compile( path, cargs = "" ):
     command = command.replace( "$args", cargs )
     
     print( "Compiling '." + syscfg["sep"] + path + "' => '" + tmp_path + syscfg["sep"] + target + "'" )
-    os.system( command ) 
+    check_exit_code( run_command( command ) )
 
 # define function used to invoke linker
 def link( target, paths, largs = "" ):
@@ -175,7 +196,7 @@ def link( target, paths, largs = "" ):
     command = command.replace( "$args", largs )
     
     print( "Linking '" + target + "'" )
-    os.system( command ) 
+    check_exit_code( run_command( command ) )
 
 # build API unit tests
 if args.test:
