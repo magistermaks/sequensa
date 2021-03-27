@@ -584,7 +584,7 @@ TEST( expression_simple, {
 
 TEST( tokenizer_basic, {
 
-	std::vector<seq::Compiler::Token> tokens = seq::Compiler::tokenize( "#exit << 1 << \"Hello\" << 3" );
+	std::vector<seq::Compiler::Token> tokens = seq::Compiler::tokenizeStatic( "#exit << 1 << \"Hello\" << 3" );
 
 	if( tokens.at(0).getCategory() != seq::Compiler::Token::Category::VMCall ) {
 		FAIL( "Expected 'VMCall' token at index 0, found " + tokens.at(0).toString() );
@@ -608,7 +608,7 @@ TEST( ce_hello_world, {
 
 	std::string code = "#exit << \"Hello World!\"";
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -630,9 +630,9 @@ TEST( ce_hello_world_func, {
 			"#exit << #var << null\n"
 			);
 
-	auto tokens = seq::Compiler::tokenize( code );
+	auto tokens = seq::Compiler::tokenizeStatic( code );
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -649,7 +649,7 @@ TEST( ce_expression, {
 
 	std::string code = "#exit << ( 1 + 2 + 3 + 4 )";
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -665,7 +665,7 @@ TEST( ce_expression_nested_right, {
 
 	std::string code = "#exit << ( 1 + ( 2 + 3 ) )";
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -680,7 +680,7 @@ TEST( ce_expression_nested_left, {
 
 	std::string code = "#exit << ( ( 2 + 3 ) + 1 )";
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -696,7 +696,7 @@ TEST( ce_expression_nested_double, {
 
 	std::string code = "#exit << ( ( 2 + 3 ) + ( 4 + 1 ) )";
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -711,7 +711,7 @@ TEST( ce_expression_float, {
 
 	std::string code = "#exit << ( ( 2.14 + 3.41 ) * 100 )";
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -731,7 +731,7 @@ TEST( ce_expression_complex, {
 			"}\n"
 			"#exit << #var << 10\n");
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -751,7 +751,7 @@ TEST( ce_arg, {
 			"	} << 20\n"
 			"} << 10\n");
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -768,7 +768,7 @@ TEST( ce_string_escape_codes, {
 	std::string code = (
 			"#exit << \"\\\\\\n\\t\\\"\\r\"");
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -787,7 +787,7 @@ TEST( ce_flowc_1, {
 	std::string code = (
 			"#exit << #[true] << true");
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -803,7 +803,7 @@ TEST( ce_flowc_2, {
 	std::string code = (
 			"#exit << #[true] << false << true");
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -819,7 +819,7 @@ TEST( ce_flowc_3, {
 	std::string code = (
 			"#exit << #[number] << true << null << \"Hello\" << 2");
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -835,7 +835,7 @@ TEST( ce_flowc_4, {
 	std::string code = (
 			"#exit << #[2] << true << null << \"Hello\" << 2");
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -851,7 +851,7 @@ TEST( ce_type_cast_bool_1, {
 
 	std::string code = ("#exit << #bool << 1 << null << \"hello\"");
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -874,7 +874,7 @@ TEST( ce_type_cast_bool_2, {
 
 	std::string code = ("#exit << #bool << 0 << 2 << 0.00234");
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -897,7 +897,7 @@ TEST( ce_type_cast_number_1, {
 
 	std::string code = ("#exit << #number << \"123\" << \"42.5\" << break");
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -920,7 +920,7 @@ TEST( ce_type_cast_number_2, {
 
 	std::string code = ("#exit << #number << true << 6 << null");
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -943,7 +943,7 @@ TEST( ce_type_cast_string_1, {
 
 	std::string code = ("#exit << #string << true << null << 69");
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -972,7 +972,7 @@ TEST( ce_type_cast_string_2, {
 
 	std::string code = ("#exit << #string << 123.2 << 42 << \"hello\" ");
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1004,7 +1004,7 @@ TEST( ce_stream_tags, {
             "	end; #return << \"end\"\n"
 			"} << 1 << 2 << 3");
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1031,7 +1031,7 @@ TEST( ce_complex_sum, {
 			"} << 1 << 2 << 3 << 4\n"
 			);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1052,7 +1052,7 @@ TEST( ce_header, {
 
 	std::vector<std::string> loades;
 
-	auto buf = seq::Compiler::compile( code, &loades );
+	auto buf = seq::Compiler::compileStatic( code, &loades );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1084,7 +1084,7 @@ TEST( ce_simple_loop, {
             "} << 10\n"
 			);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1119,7 +1119,7 @@ TEST( ce_fibonacci_recursion, {
 			"#exit << #fib << 9 << 11 << 6 << 12 \n"
 	);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1156,7 +1156,7 @@ TEST( ce_prime_numbers, {
 			"#exit << #isPrime << 7 << 11 << 6 << 13 << 64 << 4 \n"
 	);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1200,7 +1200,7 @@ TEST( ce_factorial_recursion, {
 			"#exit << #factorial << 1 << 5 << 7 << 3 \n"
 	);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1227,7 +1227,7 @@ TEST( ce_order_1, {
 
 	std::string code = ("#exit << 1 << 2 << 3");
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1250,7 +1250,7 @@ TEST( ce_order_2, {
 
 	std::string code = "#exit << #{ #return << @ } << 1 << 2 << 3";
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1274,7 +1274,7 @@ TEST( ce_order_3, {
 
 	std::string code = "#exit << #[number] << 1 << 2 << 3";
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1297,7 +1297,7 @@ TEST( ce_order_4, {
 
 	std::string code = "#exit << #number << 1 << 2 << 3";
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1323,7 +1323,7 @@ TEST( ce_order_5, {
 			"#exit << var"
 			);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1350,7 +1350,7 @@ TEST( ce_expr_complex_math, {
 			")"
 			);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1371,7 +1371,7 @@ TEST( ce_expr_complex_logic, {
 			")"
 			);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1388,7 +1388,7 @@ TEST( ce_deep_function, {
 			"#exit << #{ #return << #{ #return << #{ #return << (@ * 2) } << (@ + 1) } << (@**2) } << 2"
 			);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1405,7 +1405,7 @@ TEST( ce_top_args, {
 			"#exit << @"
 			);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Stream args = {
@@ -1427,7 +1427,7 @@ TEST( ce_namespace, {
 		"#exit << foo:bar"
 	);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1466,7 +1466,7 @@ TEST( ce_blob, {
 		"#exit << #unpack << #pack << null"
 	);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1511,7 +1511,7 @@ TEST( ce_accessor_operator, {
 			"#exit << ( var :: 0 ) << ( var :: 1 ) << ( var :: 2 ) << ( var :: 3 )"
 			);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1539,7 +1539,7 @@ TEST( c_fail_expression_anchor, {
 			);
 
 	try{
-		seq::Compiler::compile( code );
+		seq::Compiler::compileStatic( code );
 	}catch( seq::CompilerError& err ) {
 		return;
 	}
@@ -1555,7 +1555,7 @@ TEST( c_fail_empty_identifier, {
 			);
 
 	try{
-		seq::Compiler::compile( code );
+		seq::Compiler::compileStatic( code );
 	}catch( seq::CompilerError& err ) {
 		return;
 	}
@@ -1571,7 +1571,7 @@ TEST( c_fail_stream_ending, {
 			);
 
 	try{
-		seq::Compiler::compile( code );
+		seq::Compiler::compileStatic( code );
 	}catch( seq::CompilerError& err ) {
 		return;
 	}
@@ -1588,7 +1588,7 @@ TEST( c_fail_stream_double, {
 			);
 
 	try{
-		seq::Compiler::compile( code );
+		seq::Compiler::compileStatic( code );
 	}catch( seq::CompilerError& err ) {
 		return;
 	}
@@ -1606,7 +1606,7 @@ TEST( ce_value_cast, {
 			"#return << #null << 123\n"
 			);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1632,7 +1632,7 @@ TEST( ce_expression_new, {
 			"#return << ( null = null ) << ( number = bool ) << ( type = type ) << ( 3 != null )"
 			);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1657,7 +1657,7 @@ TEST( ce_simple_define, {
 			"#exit << var\n"
 			);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1689,7 +1689,7 @@ TEST( c_comments, {
 			);
 
 	try{
-		seq::Compiler::compile( code );
+		seq::Compiler::compileStatic( code );
 	}catch( seq::CompilerError& err ) {
 		FAIL( "Unexpected exception!" )
 	}
@@ -1705,7 +1705,7 @@ TEST( ce_composite_order, {
 			"#exit << 0 << x << 2 << y << z \n"
 			);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1736,7 +1736,7 @@ TEST( ce_flowc_cast, {
 			"#exit << #number << #[\"1\", \"5\", \"8\"] << \"5\" << \"8\""
 			);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1763,7 +1763,7 @@ TEST( ce_accessor_complex, {
 			"#exit << (v :: 2 + v :: 1) << (v :: 0 + v :: 1 * 3) << (1 + v :: 2 * 2) << (v :: 0 - 1 + (v :: 1 - 1) * 3) \n"
 			);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1792,7 +1792,7 @@ TEST( ce_accessor_cast, {
 			"#exit << #(v :: 0) << 3 \n"
 			);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1812,7 +1812,7 @@ TEST( ce_embedded_streams, {
 			"#exit << (<< 3 << 4) << 5 \n"
 			);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1837,7 +1837,7 @@ TEST( ce_type_cast, {
 			"#exit << #string << #type << 3.14 \n"
 			);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1859,7 +1859,7 @@ TEST( ce_nested_stream_native, {
 			"#var << 2"
 			);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1881,7 +1881,7 @@ TEST( ce_set_empty, {
 			"#exit << 42 "
 			);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1902,7 +1902,7 @@ TEST( ce_fail_undefined_var, {
 
 	try{
 
-		auto buf = seq::Compiler::compile( code );
+		auto buf = seq::Compiler::compileStatic( code );
 		seq::ByteBuffer bb( buf.data(), buf.size() );
 
 		seq::Executor exe;
@@ -1922,7 +1922,7 @@ TEST( ce_negative_numbers, {
 			"#exit << -1 << #-2 << 0"
 			);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1944,7 +1944,7 @@ TEST( ce_half_fail_math_modes, {
 			"#exit << (null = 1234)"
 			);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1967,7 +1967,7 @@ TEST( ce_vmcall_passing, {
 			"} << exit \n"
 			);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -1983,7 +1983,7 @@ TEST( ce_between_anchors, {
 			"#exit << 1 << #2 << 3"
 			);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -2003,7 +2003,7 @@ TEST( ce_casts, {
 
 	std::string code = "#exit << (<< #number << false) << (<< #string << false << [true] << exit << number)";
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -2108,7 +2108,7 @@ TEST( ce_flowc_range, {
 
 	std::string code = "#exit << #[1:5] << 1 << null << 2 << \"hello\" << 3 << true << 4 << 5 << null";
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -2133,7 +2133,7 @@ TEST( ce_no_return, {
 
 	std::string code = "";
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -2150,7 +2150,7 @@ TEST( ce_binary_op, {
 
 	std::string code = "#exit << ( ((6 & 2) | 1) ^ 7 )";
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -2167,103 +2167,103 @@ TEST( ce_binary_op, {
 TEST( c_fail_multiple, {
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << [[true]] " );
+		seq::Compiler::compileStatic( " #exit << [[true]] " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << \"\\g\" " );
+		seq::Compiler::compileStatic( " #exit << \"\\g\" " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " set #var << 123 " );
+		seq::Compiler::compileStatic( " set #var << 123 " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << << 123 " );
+		seq::Compiler::compileStatic( " #exit << << 123 " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << #[#123] << 123 " );
+		seq::Compiler::compileStatic( " #exit << #[#123] << 123 " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << #[true false] << true " );
+		seq::Compiler::compileStatic( " #exit << #[true false] << true " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << #[123:true] << true " );
+		seq::Compiler::compileStatic( " #exit << #[123:true] << true " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << ( " );
+		seq::Compiler::compileStatic( " #exit << ( " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << { " );
+		seq::Compiler::compileStatic( " #exit << { " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << [ " );
+		seq::Compiler::compileStatic( " #exit << [ " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << ) " );
+		seq::Compiler::compileStatic( " #exit << ) " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << } " );
+		seq::Compiler::compileStatic( " #exit << } " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << ] " );
+		seq::Compiler::compileStatic( " #exit << ] " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << a:b: " );
+		seq::Compiler::compileStatic( " #exit << a:b: " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << [@] " );
+		seq::Compiler::compileStatic( " #exit << [@] " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << [] " );
+		seq::Compiler::compileStatic( " #exit << [] " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << [{}] " );
+		seq::Compiler::compileStatic( " #exit << [{}] " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << (<< #exit << 123) " );
+		seq::Compiler::compileStatic( " #exit << (<< #exit << 123) " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " set { #exit << true } " );
+		seq::Compiler::compileStatic( " set { #exit << true } " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << #[12:#34] << 123 " );
+		seq::Compiler::compileStatic( " #exit << #[12:#34] << 123 " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << ( 123 123 ) " );
+		seq::Compiler::compileStatic( " #exit << ( 123 123 ) " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << ( 123 + 321 + ) " );
+		seq::Compiler::compileStatic( " #exit << ( 123 + 321 + ) " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << ( 123 + + 321 ) " );
+		seq::Compiler::compileStatic( " #exit << ( 123 + + 321 ) " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " #exit << {} " );
+		seq::Compiler::compileStatic( " #exit << {} " );
 	} );
 
 	EXPECT_ERR( {
-		seq::Compiler::compile( " load " );
+		seq::Compiler::compileStatic( " load " );
 	} );
 
 } );
@@ -2276,7 +2276,7 @@ TEST( ce_long_namespace, {
 			);
 
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -2294,7 +2294,7 @@ TEST( ce_flowc_null, {
 
 	std::string code = "#exit << (<< #[null] << null << true) << (<< #[false] << null << false)";
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -2316,7 +2316,7 @@ TEST( ce_function_break, {
 			"	#return << 1234 \n"
 			"} << 678");
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -2333,7 +2333,7 @@ TEST( ce_expression_strings, {
 
 	std::string code = "#exit << (\"12\" + \"3\") << (\"12\" != \"3\") << (\"12\" = \"3\") << (\"12\" != \"12\") << (\"12\" = \"12\")";
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
@@ -2366,13 +2366,14 @@ TEST( c_error_handle, {
 	static bool flag;
 	flag = true;
 
-	seq::Compiler::setErrorHandle( [] (seq::CompilerError err) {
+	seq::Compiler compiler;
+
+	compiler.setErrorHandle( [] (seq::CompilerError err) {
 		flag = false;
 	} );
 
-	auto buf = seq::Compiler::compile( "#exit << [#4]" );
-
-	seq::Compiler::setErrorHandle( seq::Compiler::defaultErrorHandle );
+	compiler.compile( "#exit << [#4]" );
+	compiler.setErrorHandle( seq::Compiler::defaultErrorHandle );
 
 	if( flag ) {
 		FAIL( "Error handle test failed!" );
@@ -2388,7 +2389,7 @@ TEST( ce_executor_parenting, {
 			"#exit << #test_func << \"#exit << #inc_func << ((a :: 0) + (b :: 0) + 37)\""
 			);
 
-	auto buf = seq::Compiler::compile( code );
+	auto buf = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	static seq::Executor exe;
@@ -2409,7 +2410,7 @@ TEST( ce_executor_parenting, {
 		}
 
 		std::string code = stream[0].String().getString();
-		auto buf = seq::Compiler::compile( code );
+		auto buf = seq::Compiler::compileStatic( code );
 		seq::ByteBuffer bb( buf.data(), buf.size() );
 
 		seq::Executor local_exe( &exe );
@@ -2430,7 +2431,7 @@ TEST( ce_executor_parenting, {
 
 TEST( c_namespace_accessor, {
 
-	auto buf = seq::Compiler::compile( "#exit << (a:b::0)" );
+	auto buf = seq::Compiler::compileStatic( "#exit << (a:b::0)" );
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 } );

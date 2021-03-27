@@ -235,9 +235,8 @@ namespace seq {
 	/// define "byte" (unsigned char)
 	typedef unsigned char byte;
 
-}
-
-namespace seq {
+	// define StringTable, used for passing string arrays
+	typedef std::vector<std::string> StringTable;
 
 	/// forward definition of all sequensa API classes
 	class FileHeader;
@@ -835,83 +834,106 @@ namespace seq {
 			bool strictMath: 1;
 	};
 
+//	class Executable {
+//
+//		public:
+//			Executable( byte* data, size_t size, bool has_header );
+//			Executable();
+//			ByteBuffer getBuffer();
+//			FileHeader getHeader();
+//
+//	};
+
 #ifndef SEQ_EXCLUDE_COMPILER
-	namespace Compiler {
 
-		// define error handle signature
-		typedef void(*ErrorHandle)(seq::CompilerError);
+	class Compiler {
 
-		class Token {
+		public:
 
-			public:
-				enum class Category: byte {
-					Tag = 0,
-					Set = 1,
-					Load = 2,
-					Bool = 3,
-					Null = 4,
-					Type = 5,
-					Name = 6,
-					Number = 7,
-					Stream = 8,
-					Operator = 9,
-					String = 10,
-					FuncBracket = 11,
-					FlowBracket = 12,
-					MathBracket = 13,
-					Comma = 14,
-					Colon = 15,
-					Arg = 16,
-					VMCall = 17
-				};
+			// define error handle signature
+			typedef void(*ErrorHandle)(seq::CompilerError);
 
-				Token( unsigned int line, long data, bool anchor, Category category, std::string& raw, std::string& clean );
-				Token( const Token& token );
-				Token( Token&& token );
-				const unsigned int getLine();
-				const Category getCategory();
-				const std::string& getRaw();
-				const std::string& getClean();
-				const bool isPrimitive();
-				const long getData();
-				const bool getAnchor();
-				std::string toString();
+			class Token {
 
-			private:
-				const unsigned int line;
-				const long data;
-				const bool anchor;
-				const Category category;
-				const std::string raw;
-				const std::string clean;
+				public:
+					enum class Category: byte {
+						Tag = 0,
+						Set = 1,
+						Load = 2,
+						Bool = 3,
+						Null = 4,
+						Type = 5,
+						Name = 6,
+						Number = 7,
+						Stream = 8,
+						Operator = 9,
+						String = 10,
+						FuncBracket = 11,
+						FlowBracket = 12,
+						MathBracket = 13,
+						Comma = 14,
+						Colon = 15,
+						Arg = 16,
+						VMCall = 17
+					};
 
-		};
+					Token( unsigned int line, long data, bool anchor, Category category, std::string& raw, std::string& clean );
+					Token( const Token& token );
+					Token( Token&& token );
+					const unsigned int getLine();
+					const Category getCategory();
+					const std::string& getRaw();
+					const std::string& getClean();
+					const bool isPrimitive();
+					const long getData();
+					const bool getAnchor();
+					std::string toString();
 
-		std::vector<byte> compile( std::string code, std::vector<std::string>* headerData = nullptr );
+				private:
+					const unsigned int line;
+					const long data;
+					const bool anchor;
+					const Category category;
+					const std::string raw;
+					const std::string clean;
 
-		std::vector<Token> tokenize( std::string code );
-		Token construct( std::string raw, unsigned int line );
-		int findStreamEnd( std::vector<Token>& tokens, int start, int end );
-		int findOpening( std::vector<Token>& tokens, int index, Token::Category type );
-		int findClosing( std::vector<Token>& tokens, int index, Token::Category type );
+			};
 
-		std::vector<byte> assembleStream( std::vector<Token>& tokens, int start, int end, byte tags, bool embedded );
-		std::vector<byte> assemblePrimitive( Token );
-		std::vector<byte> assembleFlowc( std::vector<Token>& tokens, int start, int end, bool anchor );
-		std::vector<byte> assembleExpression( std::vector<Token>& tokens, int start, int end, bool anchor, bool top );
-		std::vector<byte> assembleFunction( std::vector<Token>& tokens, int start, int end, bool anchor );
-		int extractHeaderData( std::vector<Token>& tokens, std::vector<std::string>* arrayPtr );
+		private:
+			StringTable* names;
+			StringTable* loades;
+			ErrorHandle fail;
 
-		void defaultErrorHandle( CompilerError err );
-		void setErrorHandle( ErrorHandle handle );
+		public:
+			Compiler();
 
-		namespace {
-#ifndef SEQ_IMPLEMENT
-			extern ErrorHandle fail;
-#else
-			ErrorHandle fail = defaultErrorHandle;
-#endif
-		}
+			void setNameTable( StringTable* strings );
+			void setLoadTable( StringTable* strings );
+			void setErrorHandle( ErrorHandle handle );
+
+			std::vector<byte> compile( std::string code );
+			std::vector<Token> tokenize( std::string code );
+
+			static void defaultErrorHandle( CompilerError err );
+
+			// Legacy API
+			static std::vector<byte> compileStatic( std::string codec, StringTable* headerData = nullptr );
+			static std::vector<Token> tokenizeStatic( std::string code );
+
+		private:
+			Token construct( std::string raw, unsigned int line );
+
+			int findStreamEnd( std::vector<Token>& tokens, int start, int end );
+			int findOpening( std::vector<Token>& tokens, int index, Token::Category type );
+			int findClosing( std::vector<Token>& tokens, int index, Token::Category type );
+
+			std::vector<byte> assembleStream( std::vector<Token>& tokens, int start, int end, byte tags, bool embedded );
+			std::vector<byte> assemblePrimitive( Token );
+			std::vector<byte> assembleFlowc( std::vector<Token>& tokens, int start, int end, bool anchor );
+			std::vector<byte> assembleExpression( std::vector<Token>& tokens, int start, int end, bool anchor, bool top );
+			std::vector<byte> assembleFunction( std::vector<Token>& tokens, int start, int end, bool anchor );
+
+			int extractHeaderData( std::vector<Token>& tokens, std::vector<std::string>* arrayPtr );
 
 	};
 #endif // SEQ_EXCLUDE_COMPILER
@@ -2884,15 +2906,21 @@ std::string seq::Compiler::Token::toString() {
 	return catstr + "::" + this->getRaw();
 }
 
+seq::Compiler::Compiler() {
+	fail = seq::Compiler::defaultErrorHandle;
+	loades = nullptr;
+	names = nullptr;
+}
 
-std::vector<byte> seq::Compiler::compile( std::string code, std::vector<std::string>* headerData ) {
-	auto tokens = seq::Compiler::tokenize( code );
+std::vector<byte> seq::Compiler::compile( std::string code ) {
+
+	auto tokens = tokenize( code );
 
 	// skip empty files
 	if( tokens.empty() ) return std::vector<byte>();
 
-	int offset = seq::Compiler::extractHeaderData( tokens, headerData );
-	auto buffer = seq::Compiler::assembleFunction( tokens, offset, tokens.size(), true );
+	int offset = extractHeaderData( tokens, loades );
+	auto buffer = assembleFunction( tokens, offset, tokens.size(), true );
 
 	// get rid of the first function opcode
 	int functionOffset = (buffer.at(1) >> 4) + 2;
@@ -2904,6 +2932,20 @@ std::vector<byte> seq::Compiler::compile( std::string code, std::vector<std::str
 	}
 
 	return buffer;
+}
+
+std::vector<byte> seq::Compiler::compileStatic( std::string code, std::vector<std::string>* headerData ) {
+	Compiler compiler;
+	compiler.setLoadTable( headerData );
+	return compiler.compile(code);
+}
+
+std::vector<seq::Compiler::Token> seq::Compiler::tokenizeStatic( std::string code ) {
+	return Compiler().tokenize( code );
+}
+
+seq::Compiler obj() {
+	return seq::Compiler();
 }
 
 std::vector<seq::Compiler::Token> seq::Compiler::tokenize( std::string code ) {
@@ -3802,7 +3844,15 @@ void seq::Compiler::defaultErrorHandle( seq::CompilerError err ) {
 }
 
 void seq::Compiler::setErrorHandle( seq::Compiler::ErrorHandle handle ) {
-	fail = handle;
+	this->fail = handle;
+}
+
+void seq::Compiler::setNameTable( seq::StringTable* strings ) {
+	this->names = strings;
+}
+
+void seq::Compiler::setLoadTable( seq::StringTable* strings ) {
+	this->loades = strings;
 }
 
 

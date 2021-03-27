@@ -27,7 +27,7 @@ int main() {
 
 	std::string code = "#exit << \"Hello World!\"";
 	
-	auto buffer = seq::Compiler::compile( code );
+	auto buffer = seq::Compiler::compileStatic( code );
 	seq::ByteBuffer bb( buffer.data(), buffer.size() );
 
 	seq::Executor exe;
