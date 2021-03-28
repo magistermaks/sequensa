@@ -225,8 +225,6 @@
  *
  *			#define SEQ_IMPLEMENT 			- To implement the Sequensa API
  * 			#define SEQ_EXCLUDE_COMPILER 	- To exclude compiler code from the API
- * 			#define SEQ_PUBLIC_EXECUTOR 	- Make some seq::Executor methods public (deprecated)
- *
  */
 
 #pragma once
@@ -262,12 +260,6 @@
 #define SEQ_TAG_FIRST 1
 #define SEQ_TAG_LAST 2
 #define SEQ_TAG_END 4
-
-#ifdef SEQ_PUBLIC_EXECUTOR
-#	define EXECUTOR_ACCESS public
-#else
-#	define EXECUTOR_ACCESS private
-#endif
 
 namespace seq {
 
@@ -785,6 +777,9 @@ namespace seq {
 			void putStream( bool anchor, byte tags, std::vector<byte>& buf );
 			void putFileHeader( byte seq_major, byte seq_minor, byte seq_patch, const std::map<std::string, std::string>& data );
 
+			// Currently it only supports pure types
+			void putGeneric( Generic& gereric );
+
 		public: // Only use if you REALLY know what are you doing!
 			void putByte( byte b );
 			void putString( const char* str );
@@ -863,7 +858,7 @@ namespace seq {
 			void setStrictMath( bool flag );
 			void execute( ByteBuffer bb, seq::Stream args = { seq::Generic( new type::Null( false ) ) } );
 
-		EXECUTOR_ACCESS: // use these methods only if you know what you are doing //
+		public: // use these methods only if you know what you are doing
 			void exit( seq::Stream& stream, byte code );
 			Stream executeFunction( BufferReader br, Stream& stream, bool end );
 			CommandResult executeCommand( TokenReader* br, byte tags );
@@ -897,29 +892,34 @@ namespace seq {
 
 #ifndef SEQ_EXCLUDE_COMPILER
 
+	// Optimizations bitfield type
 	typedef unsigned int oflag_t;
 
 	enum struct Optimizations: oflag_t {
 
 		// Disables all forms of compile-time optimization,
-		// can result in slightly faster compilation
-		None = 0b000,
+		// this can result in slightly faster compilation
+		None = 0b0000,
 
 		// Enables all forms of compile-time optimization,
-		// this may not always the desired option
-		All = 0b111,
+		// this may not always be the desired option
+		All = 0b1111,
+
+		// Enables all non-intrusive optimizations,
+		// this is the default behavior
+		Default = 0b0111,
 
 		// Enables string table, requires NameTable to
 		// be supplied to the compiler, or it will be ignored
-		Name = 0b100,
+		Name = 0b1000,
 
 		// Optimizes expressions that only use static values
 		// e.g. (2 / 3), (3.1415 * (3 - 1))
-		// TODO: StaticExpr = 0b010,
+		// TODO: StaticExpr = 0b0100,
 
 		// Optimizes common, static stream access patterns to a single instruction
 		// e.g. (var :: 0), from `EXP ACCESS BYTE/BYTE A: VAR "var" B: INT 0` to `SAC 0 "var"`
-		// TODO: StaticAccess = 0b001
+		// TODO: StaticAccess = 0b0010,
 
 	};
 
@@ -962,6 +962,7 @@ namespace seq {
 					const std::string& getRaw();
 					const std::string& getClean();
 					const bool isPrimitive();
+					const bool isPure();
 					const long getData();
 					const bool getAnchor();
 					std::string toString();
@@ -1009,7 +1010,7 @@ namespace seq {
 			std::vector<byte> assembleStream( std::vector<Token>& tokens, int start, int end, byte tags, bool embedded );
 			std::vector<byte> assemblePrimitive( Token );
 			std::vector<byte> assembleFlowc( std::vector<Token>& tokens, int start, int end, bool anchor );
-			std::vector<byte> assembleExpression( std::vector<Token>& tokens, int start, int end, bool anchor, bool top );
+			std::vector<byte> assembleExpression( std::vector<Token>& tokens, int start, int end, bool anchor, bool top, bool* pure = nullptr );
 			std::vector<byte> assembleFunction( std::vector<Token>& tokens, int start, int end, bool anchor );
 
 			int extractHeaderData( std::vector<Token>& tokens, StringTable* arrayPtr );
@@ -1395,6 +1396,22 @@ void seq::BufferWriter::putFileHeader( byte seq_major, byte seq_minor, byte seq_
 	for( const byte& b : data_string ) {
 		this->putByte( b );
 	}
+}
+
+void seq::BufferWriter::putGeneric( seq::Generic& generic ) {
+
+	bool anchor = generic.getAnchor();
+
+	switch( generic.getDataType() ) {
+		case seq::DataType::Bool: putBool(anchor, generic.Bool().getBool()); break;
+		case seq::DataType::Number: putNumber(anchor, generic.Number().getFraction()); break;
+		case seq::DataType::String: putString(anchor, generic.String().getString().c_str()); break;
+		case seq::DataType::Null: putNull(anchor); break;
+		case seq::DataType::Type: putType(anchor, generic.Type().getDataType()); break;
+
+		default: throw seq::InternalError("Encoding of non-pure generics is not supported!");
+	}
+
 }
 
 seq::FileHeader::FileHeader(): seq_major( 0 ), seq_minor( 0 ), seq_patch( 0 ), properties( {} ) {};
@@ -3004,6 +3021,14 @@ const bool seq::Compiler::Token::isPrimitive() {
 	return false;
 }
 
+const bool seq::Compiler::Token::isPure() {
+
+	if( this->category == seq::Compiler::Token::Category::Arg ) return false;
+	if( this->category == seq::Compiler::Token::Category::VMCall ) return false;
+	return this->isPrimitive();
+
+}
+
 std::string seq::Compiler::Token::toString() {
 	const char* ccatstr[]{
 		"Tag",
@@ -3033,7 +3058,7 @@ seq::Compiler::Compiler() {
 	fail = seq::Compiler::defaultErrorHandle;
 	loades = nullptr;
 	names = nullptr;
-	flags = (oflag_t) seq::Optimizations::None;
+	flags = (oflag_t) seq::Optimizations::Default;
 }
 
 std::vector<byte> seq::Compiler::compile( std::string code ) {
@@ -3633,10 +3658,6 @@ std::vector<byte> seq::Compiler::assemblePrimitive( seq::Compiler::Token token )
 
 		switch( token.getCategory() ) {
 
-			case seq::Compiler::Token::Category::Arg:
-				bw.putArg(flag, token.getData() );
-				break;
-
 			case seq::Compiler::Token::Category::Null:
 				bw.putNull(flag);
 				break;
@@ -3661,6 +3682,10 @@ std::vector<byte> seq::Compiler::assemblePrimitive( seq::Compiler::Token token )
 				bw.putCall(flag, (seq::type::VMCall::CallType) token.getData());
 				break;
 			}
+
+			case seq::Compiler::Token::Category::Arg:
+				bw.putArg(flag, token.getData());
+				break;
 
 			// Name is not a primitive value but this simplifies some things
 			case seq::Compiler::Token::Category::Name:
@@ -3766,7 +3791,7 @@ std::vector<byte> seq::Compiler::assembleFlowc( std::vector<seq::Compiler::Token
 
 }
 
-std::vector<byte> seq::Compiler::assembleExpression( std::vector<seq::Compiler::Token>& tokens, int start, int end, bool anchor, bool top ) {
+std::vector<byte> seq::Compiler::assembleExpression( std::vector<seq::Compiler::Token>& tokens, int start, int end, bool anchor, bool top, bool* pure ) {
 
 	if( top && tokens[start].getCategory() == seq::Compiler::Token::Category::Stream ) {
 		if( start + 1 < end ) {
@@ -3779,6 +3804,10 @@ std::vector<byte> seq::Compiler::assembleExpression( std::vector<seq::Compiler::
 	if( end - start == 1 ) {
 
 		auto& token = tokens.at( start );
+
+		if( pure != nullptr && !token.isPure() ) {
+			*pure = false;
+		}
 
 		if( token.getAnchor() ) {
 			fail( seq::CompilerError( false, "anchor", "", "expression", token.getLine() ) );
@@ -3849,13 +3878,38 @@ std::vector<byte> seq::Compiler::assembleExpression( std::vector<seq::Compiler::
 
 	}
 
-	auto lt = assembleExpression( tokens, start + f, j, false, false );
-	auto rt = assembleExpression( tokens, j + 1, end - f, false, false );
+	bool isPure = true;
+	auto lt = assembleExpression( tokens, start + f, j, false, false, &isPure );
+	auto rt = assembleExpression( tokens, j + 1, end - f, false, false, &isPure );
 	seq::ExprOperator op = (seq::ExprOperator) (tokens.at(j).getData() >> 8);
 
 	std::vector<byte> arr;
 	seq::BufferWriter bw( arr, getTable() );
 	bw.putExpr(anchor, op, lt, rt);
+
+	if( isPure ) {
+		Generic computed;
+
+		{
+			ByteBuffer bb( arr.data(), arr.size() );
+			BufferReader br = bb.getReader();
+			TokenReader tr = br.next();
+			Generic expr = tr.getGeneric();
+
+			seq::Executor executor;
+			computed = executor.executeExpr( expr );
+		}
+
+		int size = arr.size();
+
+		arr.clear();
+		bw.putGeneric(computed);
+
+		std::cout << "Optimized pure expression, from: " << size << " bytes to: " << arr.size() << " bytes!" << std::endl;
+
+	}else if( pure != nullptr ) {
+		*pure = false;
+	}
 
 	return arr;
 }
