@@ -892,34 +892,30 @@ namespace seq {
 
 #ifndef SEQ_EXCLUDE_COMPILER
 
-	// Optimizations bitfield type
+	// optimizations bitfield type
 	typedef unsigned int oflag_t;
 
 	enum struct Optimizations: oflag_t {
 
-		// Disables all forms of compile-time optimization,
+		// disables all forms of compile-time optimization,
 		// this can result in slightly faster compilation
-		None = 0b0000,
+		None = 0b00000000,
 
-		// Enables all forms of compile-time optimization,
+		//enables all forms of compile-time optimization,
 		// this may not always be the desired option
-		All = 0b1111,
+		All = 0b11111111,
 
-		// Enables all non-intrusive optimizations,
-		// this is the default behavior
-		Default = 0b0111,
-
-		// Enables string table, requires NameTable to
+		// enables string table, requires NameTable to
 		// be supplied to the compiler, or it will be ignored
-		Name = 0b1000,
+		Name = 0b10000000,
 
-		// Optimizes expressions that only use static values
+		// optimizes expressions that only use pure values
 		// e.g. (2 / 3), (3.1415 * (3 - 1))
-		// TODO: StaticExpr = 0b0100,
+		PureExpr = 0b01000000,
 
-		// Optimizes common, static stream access patterns to a single instruction
+		// optimizes common, pure stream access patterns to a single instruction
 		// e.g. (var :: 0), from `EXP ACCESS BYTE/BYTE A: VAR "var" B: INT 0` to `SAC 0 "var"`
-		// TODO: StaticAccess = 0b0010,
+		// TODO: PureAccess = 0b00100000,
 
 	};
 
@@ -3058,7 +3054,7 @@ seq::Compiler::Compiler() {
 	fail = seq::Compiler::defaultErrorHandle;
 	loades = nullptr;
 	names = nullptr;
-	flags = (oflag_t) seq::Optimizations::Default;
+	flags = (oflag_t) Optimizations::All;
 }
 
 std::vector<byte> seq::Compiler::compile( std::string code ) {
@@ -3878,7 +3874,10 @@ std::vector<byte> seq::Compiler::assembleExpression( std::vector<seq::Compiler::
 
 	}
 
-	bool isPure = true;
+	// settings this to true in turn enables the optimization,
+	// otherwise nothing will be done.
+	bool isPure = flags & (oflag_t) Optimizations::PureExpr;
+
 	auto lt = assembleExpression( tokens, start + f, j, false, false, &isPure );
 	auto rt = assembleExpression( tokens, j + 1, end - f, false, false, &isPure );
 	seq::ExprOperator op = (seq::ExprOperator) (tokens.at(j).getData() >> 8);

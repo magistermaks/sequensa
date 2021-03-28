@@ -208,7 +208,7 @@ if args.test:
         os.mkdir( tmp_path + "/src" ) 
         os.mkdir( tmp_path + "/src/api" ) 
     except:
-        print( "\nFailed to prepare directory structure!" )
+        print( "\nError: Failed to prepare directory structure!" )
         print( " * Try checking installer permissions" )
         exit()
 
@@ -244,9 +244,6 @@ if not args.force:
         print( "\nInstalation aborted!" )
         exit()
 
-# print build status
-print( "\nBuilding Targets..." )
-
 # delete directries
 rem_dir( syscfg["path"] )
 rem_dir( tmp_path )
@@ -269,9 +266,12 @@ try:
     os.mkdir( tmp_path + "/src/std" )
     os.mkdir( tmp_path + "/src/api" ) 
 except:
-    print( "\nFailed to prepare directory structure!" )
+    print( "\nError: Failed to prepare directory structure!" )
     print( " * Try checking installer permissions" )
     exit()
+    
+# print build status
+print( "\nBuilding Targets..." )
 
 # compile all Sequensa files
 fPIC = comcfg["shared"]["compiler"]
@@ -330,8 +330,4 @@ if not args.Xalias:
 
 # print done and exit
 print( "\nSequensa installation complete!" )
-
-
-
-
 
