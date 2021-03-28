@@ -1,4 +1,6 @@
 
+#include <iostream>
+
 /*
  * MIT License
  *
@@ -697,7 +699,7 @@ namespace seq {
 	class TokenReader {
 
 		public:
-			TokenReader( BufferReader& reader );
+			TokenReader( BufferReader& reader, bool useStringTable );
 			DataType getDataType();
 			bool isAnchored();
 			seq::Generic& getGeneric();
@@ -705,10 +707,12 @@ namespace seq {
 		private:
 			BufferReader& reader;
 			byte header;
-			bool anchor;
+			bool anchor: 4;
+			bool strings: 4;
 			DataType type;
 			seq::Generic generic;
 
+			void readString( std::string* str );
 			DataType getDataType( byte header );
 			type::Bool* loadBool();
 			type::Number* loadNumber();
@@ -730,16 +734,19 @@ namespace seq {
 			ByteBuffer( byte* buffer, long length );
 			BufferReader getReader();
 			BufferReader getReader( long first, long last );
+			void setStringTable( StringTable* table );
+			StringTable* getStringTable();
 
 		private:
 			byte* pointer;
 			long length;
+			StringTable* table;
 	};
 
 	class BufferReader {
 
 		public:
-			BufferReader( byte* buffer, long first, long last );
+			BufferReader( byte* buffer, long first, long last, StringTable* table = nullptr );
 			const byte nextByte() noexcept;
 			const byte peekByte() noexcept;
 			const bool hasNext() noexcept;
@@ -749,18 +756,20 @@ namespace seq {
 			FileHeader getHeader();
 			Stream readAll();
 			ByteBuffer getSubBuffer();
+			StringTable* getTable();
 
 		private:
 			long first;
 			long last;
 			long position;
 			byte* pointer;
+			StringTable* table;
 	};
 
 	class BufferWriter {
 
 		public:
-			BufferWriter( std::vector<byte>& buffer );
+			BufferWriter( std::vector<byte>& buffer, StringTable* table = nullptr );
 			void putNull( bool anchor );
 			void putBool( bool anchor, bool value );
 			void putNumber( bool anchor, Fraction f );
@@ -771,18 +780,21 @@ namespace seq {
 			void putName( bool anchor, bool define, const char* name );
 			void putFunc( bool anchor, std::vector<byte>& buffer, bool end );
 			void putExpr( bool anchor, ExprOperator op, std::vector<byte>& left, std::vector<byte>& right );
+			void putStaticAccess( bool anchor, const char* str, byte index );
 			void putFlowc( bool anchor, std::vector<std::vector<byte>>& buffers );
 			void putStream( bool anchor, byte tags, std::vector<byte>& buf );
 			void putFileHeader( byte seq_major, byte seq_minor, byte seq_patch, const std::map<std::string, std::string>& data );
 
-		public: // Use only if you REALLY know what are you doing!
+		public: // Only use if you REALLY know what are you doing!
 			void putByte( byte b );
 			void putString( const char* str );
 			void putOpcode( bool anchor, seq::Opcode code );
 			void putInteger( byte length, long value );
 			void putHead( byte left, byte right );
 			void putBuffer( std::vector<byte>& buffer );
+
 			std::vector<byte>& buffer;
+			StringTable* table;
 	};
 
 	class StackLevel {
@@ -885,6 +897,32 @@ namespace seq {
 
 #ifndef SEQ_EXCLUDE_COMPILER
 
+	typedef unsigned int oflag_t;
+
+	enum struct Optimizations: oflag_t {
+
+		// Disables all forms of compile-time optimization,
+		// can result in slightly faster compilation
+		None = 0b000,
+
+		// Enables all forms of compile-time optimization,
+		// this may not always the desired option
+		All = 0b111,
+
+		// Enables string table, requires NameTable to
+		// be supplied to the compiler, or it will be ignored
+		Name = 0b100,
+
+		// Optimizes expressions that only use static values
+		// e.g. (2 / 3), (3.1415 * (3 - 1))
+		// TODO: StaticExpr = 0b010,
+
+		// Optimizes common, static stream access patterns to a single instruction
+		// e.g. (var :: 0), from `EXP ACCESS BYTE/BYTE A: VAR "var" B: INT 0` to `SAC 0 "var"`
+		// TODO: StaticAccess = 0b001
+
+	};
+
 	class Compiler {
 
 		public:
@@ -942,6 +980,7 @@ namespace seq {
 			StringTable* names;
 			StringTable* loades;
 			ErrorHandle fail;
+			oflag_t flags;
 
 		public:
 			Compiler();
@@ -949,6 +988,7 @@ namespace seq {
 			void setNameTable( StringTable* strings );
 			void setLoadTable( StringTable* strings );
 			void setErrorHandle( ErrorHandle handle );
+			void setOptimizationFlags( oflag_t flags );
 
 			std::vector<byte> compile( std::string code );
 			std::vector<Token> tokenize( std::string code );
@@ -973,6 +1013,7 @@ namespace seq {
 			std::vector<byte> assembleFunction( std::vector<Token>& tokens, int start, int end, bool anchor );
 
 			int extractHeaderData( std::vector<Token>& tokens, StringTable* arrayPtr );
+			StringTable* getTable();
 
 	};
 #endif // SEQ_EXCLUDE_COMPILER
@@ -1202,7 +1243,7 @@ int seq::util::insertUnique( seq::StringTable* table, std::string entry ) {
 	return index;
 }
 
-seq::BufferWriter::BufferWriter( std::vector<byte>& _buffer ): buffer( _buffer ) {}
+seq::BufferWriter::BufferWriter( std::vector<byte>& buffer, StringTable* table ): buffer( buffer ), table( table ) {}
 
 void seq::BufferWriter::putByte( byte b ) {
 	this->buffer.push_back( b );
@@ -1213,8 +1254,13 @@ void seq::BufferWriter::putOpcode( bool anchor, seq::Opcode code ) {
 }
 
 void seq::BufferWriter::putString( const char* str ) {
-	for ( long i = 0; str[i]; i ++ ) this->putByte( str[i] );
-	this->putByte( 0 );
+	if( table == nullptr ) {
+		for ( long i = 0; str[i]; i ++ ) this->putByte( str[i] );
+		this->putByte( 0 );
+	}else{
+		int index = seq::util::insertUnique(table, str);
+		this->putInteger(4, index);
+	}
 }
 
 void seq::BufferWriter::putInteger( byte length, long value ) {
@@ -1773,22 +1819,32 @@ const char* seq::CompilerError::what() const throw() {
 seq::ByteBuffer::ByteBuffer( byte* buffer, long length ) {
 	this->pointer = buffer;
 	this->length = length;
+	this->table = nullptr;
+}
+
+void seq::ByteBuffer::setStringTable( StringTable* table ) {
+	this->table = table;
+}
+
+seq::StringTable* seq::ByteBuffer::getStringTable() {
+	return table;
 }
 
 seq::BufferReader seq::ByteBuffer::getReader() {
-	return seq::BufferReader( this->pointer, 0, this->length - 1 );
+	return seq::BufferReader( this->pointer, 0, this->length - 1, table );
 }
 
 seq::BufferReader seq::ByteBuffer::getReader( long first, long last ) {
 	if( first < 0 || last > (this->length - 1) || first > last ) throw seq::InternalError( "Invalid BufferReader range!" );
-	return seq::BufferReader( this->pointer, first, last );
+	return seq::BufferReader( this->pointer, first, last, table );
 }
 
-seq::BufferReader::BufferReader( byte* buffer, long first, long last ) {
+seq::BufferReader::BufferReader( byte* buffer, long first, long last, StringTable* table ) {
 	this->pointer = buffer;
 	this->position = first - 1;
 	this->first = first;
 	this->last = last;
+	this->table = table;
 }
 
 const byte seq::BufferReader::peekByte() noexcept {
@@ -1806,7 +1862,7 @@ const bool seq::BufferReader::hasNext() noexcept {
 }
 
 seq::TokenReader seq::BufferReader::next() noexcept {
-	return seq::TokenReader( *this );
+	return seq::TokenReader( *this, table != nullptr );
 }
 
 seq::BufferReader* seq::BufferReader::nextBlock( long length ) {
@@ -1816,7 +1872,7 @@ seq::BufferReader* seq::BufferReader::nextBlock( long length ) {
 	long old_pos = this->position + 1;
 
 	this->position = std::min( new_pos, this->last );
-	return new seq::BufferReader( this->pointer, old_pos, this->position );
+	return new seq::BufferReader( this->pointer, old_pos, this->position, this->table );
 }
 
 long seq::BufferReader::nextInt() {
@@ -1892,7 +1948,11 @@ seq::ByteBuffer seq::BufferReader::getSubBuffer() {
 	return seq::ByteBuffer( this->pointer + this->position + 1, this->last - this->position );
 }
 
-seq::TokenReader::TokenReader( seq::BufferReader& reader ): reader( reader ) {
+seq::StringTable* seq::BufferReader::getTable() {
+	return table;
+}
+
+seq::TokenReader::TokenReader( seq::BufferReader& reader, bool table ): reader( reader ), strings( table ) {
 	byte header = reader.nextByte();
 
 	this->header = (byte) ( header & 0b01111111 );
@@ -1962,6 +2022,25 @@ bool seq::TokenReader::isAnchored() {
 	return this->anchor;
 }
 
+void seq::TokenReader::readString( std::string* str ) {
+	if( strings ) {
+		unsigned int n = 0;
+		for( byte i = 0; i < 4; i ++ ) {
+			n |= (( (long) this->reader.nextByte() ) << (i * 8));
+		}
+
+		// this is unsafe, but what else can we do?
+		// TODO: consider using .at() and try-catch
+		*str = (*reader.getTable())[n];
+	}else{
+		byte b;
+		while( true ) {
+			b = reader.nextByte();
+			if( b ) str->push_back( b ); else return;
+		}
+	}
+}
+
 seq::type::Bool* seq::TokenReader::loadBool() {
 	return new seq::type::Bool( this->anchor, this->header == (byte) seq::Opcode::BLT );
 }
@@ -2005,10 +2084,8 @@ seq::type::Arg* seq::TokenReader::loadArg() {
 
 seq::type::String* seq::TokenReader::loadString() {
 	std::string str;
-	while( true ) {
-		byte b = this->reader.nextByte();
-		if( b ) str.push_back( b ); else return new seq::type::String( this->isAnchored(), str.c_str() );
-	}
+	readString(&str);
+	return new seq::type::String( this->isAnchored(), str.c_str() );
 }
 
 seq::type::Type* seq::TokenReader::loadType() {
@@ -2025,11 +2102,7 @@ seq::type::VMCall* seq::TokenReader::loadCall() {
 
 seq::type::Name* seq::TokenReader::loadName() {
 	std::string str;
-	for( byte i = 0; true; i ++ ) {
-		byte b = this->reader.nextByte();
-		if( b ) str.push_back( b ); else break;
-	}
-
+	readString(&str);
 	return new seq::type::Name( this->anchor, this->header == (byte) seq::Opcode::DEF, str );
 }
 
@@ -2960,6 +3033,7 @@ seq::Compiler::Compiler() {
 	fail = seq::Compiler::defaultErrorHandle;
 	loades = nullptr;
 	names = nullptr;
+	flags = (oflag_t) seq::Optimizations::None;
 }
 
 std::vector<byte> seq::Compiler::compile( std::string code ) {
@@ -3429,7 +3503,7 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 	};
 
 	std::vector<byte> arr;
-	seq::BufferWriter bw( arr );
+	seq::BufferWriter bw( arr, getTable() );
 
 	State state = State::Start;
 
@@ -3542,7 +3616,7 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 	}
 
 	std::vector<byte> ret;
-	seq::BufferWriter bw2( ret );
+	seq::BufferWriter bw2( ret, getTable() );
 	bw2.putStream( false, tags, arr );
 
 	return ret;
@@ -3552,7 +3626,7 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 std::vector<byte> seq::Compiler::assemblePrimitive( seq::Compiler::Token token ) {
 
 	std::vector<byte> arr;
-	seq::BufferWriter bw( arr );
+	seq::BufferWriter bw( arr, getTable() );
 	const bool flag = token.getAnchor();
 
 	try{
@@ -3685,7 +3759,7 @@ std::vector<byte> seq::Compiler::assembleFlowc( std::vector<seq::Compiler::Token
 	}
 
 	std::vector<byte> ret;
-	seq::BufferWriter bw( ret );
+	seq::BufferWriter bw( ret, getTable() );
 	bw.putFlowc(anchor, arr);
 
 	return ret;
@@ -3711,7 +3785,6 @@ std::vector<byte> seq::Compiler::assembleExpression( std::vector<seq::Compiler::
 		}
 
 		return assemblePrimitive( token );
-
 	}
 
 	int h = -1;
@@ -3776,12 +3849,12 @@ std::vector<byte> seq::Compiler::assembleExpression( std::vector<seq::Compiler::
 
 	}
 
-	auto lt = assembleExpression( tokens, start + f + 0, j, false, false );
+	auto lt = assembleExpression( tokens, start + f, j, false, false );
 	auto rt = assembleExpression( tokens, j + 1, end - f, false, false );
 	seq::ExprOperator op = (seq::ExprOperator) (tokens.at(j).getData() >> 8);
 
 	std::vector<byte> arr;
-	seq::BufferWriter bw( arr );
+	seq::BufferWriter bw( arr, getTable() );
 	bw.putExpr(anchor, op, lt, rt);
 
 	return arr;
@@ -3790,7 +3863,7 @@ std::vector<byte> seq::Compiler::assembleExpression( std::vector<seq::Compiler::
 std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::Token>& tokens, int start, int end, bool anchor ) {
 
 	std::vector<byte> arr;
-	seq::BufferWriter bw( arr );
+	seq::BufferWriter bw( arr, getTable() );
 	bool hasEndTag = false;
 
 	// throw on empty functions
@@ -3832,7 +3905,7 @@ std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::To
 
 	// write function to output
 	std::vector<byte> ret;
-	seq::BufferWriter bw2( ret );
+	seq::BufferWriter bw2( ret, getTable() );
 	bw2.putFunc( anchor, arr, hasEndTag );
 
 	return ret;
@@ -3889,6 +3962,10 @@ int seq::Compiler::extractHeaderData( std::vector<Token>& tokens, StringTable* t
 
 }
 
+seq::StringTable* seq::Compiler::getTable() {
+	return ( flags & (seq::oflag_t) Optimizations::Name ) ? names : nullptr;
+}
+
 void seq::Compiler::defaultErrorHandle( seq::CompilerError err ) {
 	throw err;
 }
@@ -3905,6 +3982,9 @@ void seq::Compiler::setLoadTable( seq::StringTable* strings ) {
 	this->loades = strings;
 }
 
+void seq::Compiler::setOptimizationFlags( seq::oflag_t flags ) {
+	this->flags = flags;
+}
 
 #endif // SEQ_EXCLUDE_COMPILER
 

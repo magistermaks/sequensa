@@ -8,8 +8,20 @@
 using seq::byte;
 
 void print_buffer( seq::ByteBuffer& bb ) {
+	seq::StringTable* table = bb.getStringTable();
+
+	std::cout << "Strings: ";
+	if( table != nullptr ) {
+		for( std::string str : *table ) {
+			std::cout << str << " ";
+		}
+	}
+
+	std::cout << "\nBytes: ";
     seq::BufferReader br = bb.getReader();
     while( br.hasNext() ) std::cout << (int) br.nextByte() << " ";
+
+    std::cout << std::endl << std::flush;
 }
 
 seq::Stream native_join_strings( seq::Stream& input ) {
@@ -2451,6 +2463,40 @@ TEST( util_insert_unique, {
 	CHECK( b, 4 );
 	CHECK( c, 5 );
 	CHECK( d, 5 );
+
+} );
+
+TEST( co_names_table, {
+
+	seq::StringTable table;
+	seq::Compiler compiler;
+
+	compiler.setOptimizationFlags( (seq::oflag_t) seq::Optimizations::Name );
+	compiler.setNameTable( &table );
+
+	auto buf = compiler.compile( R"(
+		set some_name << {
+			#return << (@ * 3)
+		}
+
+		set some_long_function_name << {
+			#return << #some_name << #some_name << #some_name << @
+		}		
+
+		#exit << #some_long_function_name << #some_long_function_name << 1
+	)" );
+
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+	bb.setStringTable( &table );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	auto& res = exe.getResults();
+
+	CHECK( (int) res.size(), (int) 1 );
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
+	CHECK( res.at(0).Number().getLong(), (long) 3*3*3*3*3*3 );
 
 } );
 
