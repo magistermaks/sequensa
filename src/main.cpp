@@ -46,6 +46,7 @@ int main( int argc, char **argv ) {
 	options.print_none = argp.hasFlag("-n");
 	options.strict_math = argp.hasFlag("-s");
 	options.multi_error = argp.hasFlag("-m");
+	options.optimize = argp.hasFlag("-o");
 
 	if( options.print_all && options.print_none ) {
 

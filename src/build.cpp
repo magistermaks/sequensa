@@ -92,7 +92,7 @@ bool build( std::string input, std::vector<seq::byte>* buffer, std::vector<std::
 
 }
 
-bool build_tree( std::string input, std::string output, bool verbose, seq::Compiler& compiler ) {
+bool build_tree( std::string input, std::string output, bool verbose, seq::Compiler& compiler, seq::StringTable& nameTable ) {
 
 	struct CompiledUnit {
 		std::vector<std::string> dependencies;
@@ -204,6 +204,19 @@ bool build_tree( std::string input, std::string output, bool verbose, seq::Compi
 			header["time"] = std::to_string( std::time(0) ).c_str();
 			header["sys"] = SQ_TARGET;
 
+			if( nameTable.size() > 0 ) {
+				std::string table;
+
+				for( const auto& str : nameTable ) {
+					table.append(str);
+					table.push_back(0);
+				}
+
+				table.pop_back();
+
+				header["str"] = table;
+			}
+
 			std::vector<seq::byte> arr;
 			seq::BufferWriter bw(arr);
 			bw.putFileHeader(SEQ_API_VERSION_MAJOR, SEQ_API_VERSION_MINOR, SEQ_API_VERSION_PATCH, header);
@@ -231,22 +244,30 @@ void build( ArgParse& argp, Options opt ) {
 	failed = false;
 	auto vars = argp.getValues();
 	seq::Compiler compiler;
+	seq::StringTable table;
+
+	if( opt.optimize ) {
+		compiler.setOptimizationFlags( (seq::oflag_t) seq::Optimizations::All );
+		compiler.setNameTable( &table );
+	}
 
 	if( vars.size() == 2 ) {
 
 		if( opt.multi_error ) {
 			compiler.setErrorHandle( [] (seq::CompilerError err) {
-				if( err.isCritical() ) {
-					std::cout << "Fatal: ";
-					throw err;
-				}
+				if( err.isError() ) {
+					if( err.isCritical() ) {
+						std::cout << "Fatal: ";
+						throw err;
+					}
 
-				std::cout << err.what() << std::endl;
-				failed = true;
+					std::cout << err.what() << std::endl;
+					failed = true;
+				}
 			} );
 		}
 
-		if( !build_tree( vars.at(0), vars.at(1), opt.verbose, compiler ) ) {
+		if( !build_tree( vars.at(0), vars.at(1), opt.verbose, compiler, table ) ) {
 
 			std::cout << "Build failed!" << std::endl;
 

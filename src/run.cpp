@@ -157,6 +157,12 @@ void run( std::string input, Options opt ) {
 
 		}
 
+		// load string table if one is present
+		seq::StringTable table = header.getValueTable("str");
+		if( table.size() > 0 ) {
+			bb.setStringTable( &table );
+		}
+
 		try{
 
 			seq::Executor exe;

@@ -362,10 +362,18 @@ TEST( buffer_writer_file_header, {
     std::vector<byte> arr;
     seq::BufferWriter bw( arr );
 
+    std::string table = "a";
+    table.push_back(0);
+    table.push_back('b');
+    table.push_back(0);
+    table.push_back('c');
+    table.push_back(0);
+
     std::map<std::string, std::string> data;
-    data[ "test"] = "Hello World!";
-    data[ "Foo"] = "Bar";
-    data[ "number"] = "123.4";
+    data["test"] = "Hello World!";
+    data["Foo"] = "Bar";
+    data["number"] = "123.4";
+    data["table"] = table;
 
     bw.putFileHeader( 1, 2, 3, data );
     bw.putByte( (byte) 'A' );
@@ -390,6 +398,25 @@ TEST( buffer_writer_file_header, {
     CHECK_ELSE( header.getValue( "number" ), std::string( "123.4" ) ) {
         FAIL( "Invalid string! - " + std::string( (char*) header.getValue( "number" ).c_str() ) );
     }
+
+    seq::StringTable returned = header.getValueTable("table");
+
+    CHECK_ELSE( returned[0], std::string("a") ) {
+        FAIL( "Invalid string in string table!" );
+    }
+
+    CHECK_ELSE( returned[1], std::string("b") ) {
+    	FAIL( "Invalid string in string table!" );
+    }
+
+    CHECK_ELSE( returned[2], std::string("c") ) {
+    	FAIL( "Invalid string in string table!" );
+    }
+
+    // requests for missing tables must not fail
+    header.getValueTable("123");
+    header.getValueTable("456");
+    header.getValueTable("789");
 
     CHECK( header.getVersionMajor(), 1 );
     CHECK( header.getVersionMinor(), 2 );
@@ -427,6 +454,7 @@ TEST( buffer_writer_file_header, {
     CHECK( header4.getValueMap().empty(), true );
 
     CHECK( br.nextByte(), (byte) 'A' );
+
 } );
 
 
@@ -2497,6 +2525,39 @@ TEST( co_names_table, {
 	CHECK( (int) res.size(), (int) 1 );
 	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Number );
 	CHECK( res.at(0).Number().getLong(), (long) 3*3*3*3*3*3 );
+
+	if( table.size() < 2 ) {
+		FAIL( "Name table failed to generate!" );
+	}
+
+} );
+
+TEST( co_pure_expr, {
+
+		seq::Compiler compiler;
+
+		compiler.setOptimizationFlags( (seq::oflag_t) seq::Optimizations::PureExpr );
+
+		auto buf = compiler.compile( R"(
+			#exit << ((("hi" = "bye") || (3 = 4)) || ((true && false) || (3 != 3)))
+		)" );
+
+		seq::ByteBuffer bb( buf.data(), buf.size() );
+
+		seq::Executor exe;
+		exe.execute( bb );
+
+		auto& res = exe.getResults();
+
+		CHECK( (int) res.size(), (int) 1 );
+		CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Bool );
+		CHECK( res.at(0).Bool().getBool(), false );
+
+		for( byte b : buf ) {
+			if( (b & 0b01111111) == (byte) seq::Opcode::EXP ) {
+				FAIL( "EXP opcode was not optimised from pure expression!" );
+			}
+		}
 
 } );
 
