@@ -231,6 +231,10 @@
  * 				Optimizes expressions that only use pure values
  * 				e.g. (2 / 3), (3.1415 * (3 - 1))
  *
+ * 			Optimizations::StrPreGen
+ * 				Tries to pregenerate sorted name table, to possibly optimize index values,
+ * 				and utilize the tiny storage (first 16 names) to it's fullest extent.
+ *
  * 		`Name` optimization requires the name table to be supplied:
  *
  * 			compiler.setNameTable( &stringTable );
@@ -544,7 +548,7 @@ namespace seq {
 				Stream( bool anchor, byte tags, BufferReader* reader );
 				Stream( const Stream& stream );
 				~Stream();
-				const bool machesTags( byte tags );
+				const bool matchesTags( byte tags );
 				BufferReader& getReader();
 
 			private:
@@ -739,6 +743,8 @@ namespace seq {
 			seq::Generic generic;
 
 			void readString( std::string* str );
+			long readInteger();
+
 			DataType getDataType( byte header );
 			type::Bool* loadBool();
 			type::Number* loadNumber();
@@ -926,6 +932,7 @@ namespace seq {
 		All = 0b1111,
 		Name = 0b1000,
 		PureExpr = 0b0100,
+		StrPreGen = 0b0010
 	};
 
 	class Compiler {
@@ -968,6 +975,7 @@ namespace seq {
 					const std::string& getClean();
 					const bool isPrimitive();
 					const bool isPure();
+					const bool isNamed();
 					const long getData();
 					const bool getAnchor();
 					std::string toString();
@@ -1018,6 +1026,7 @@ namespace seq {
 			std::vector<byte> assembleExpression( std::vector<Token>& tokens, int start, int end, bool anchor, bool top, bool* pure = nullptr );
 			std::vector<byte> assembleFunction( std::vector<Token>& tokens, int start, int end, bool anchor );
 
+			void optimizeIfApplicable( std::vector<Token>& tokens );
 			int extractHeaderData( std::vector<Token>& tokens, StringTable* arrayPtr );
 			StringTable* getTable();
 
@@ -1265,7 +1274,14 @@ void seq::BufferWriter::putString( const char* str ) {
 		this->putByte( 0 );
 	}else{
 		int index = seq::util::insertUnique(table, str);
-		this->putInteger(4, index);
+
+		if( index < 0b1111 ) {
+			this->putHead( 0, index );
+		}else{
+			byte size = seq::type::Number::sizeOf(index);
+			this->putHead( size, 0 );
+			this->putInteger( size, index );
+		}
 	}
 }
 
@@ -1668,7 +1684,7 @@ seq::type::Stream::~Stream() {
 	delete this->reader;
 }
 
-const bool seq::type::Stream::machesTags( byte _tags ) {
+const bool seq::type::Stream::matchesTags( byte _tags ) {
 
 	// execute stream on end ONLY if it has that tag
 	if( _tags & SEQ_TAG_END ) return this->tags & SEQ_TAG_END;
@@ -2082,14 +2098,9 @@ bool seq::TokenReader::isAnchored() {
 
 void seq::TokenReader::readString( std::string* str ) {
 	if( strings ) {
-		unsigned int n = 0;
-		for( byte i = 0; i < 4; i ++ ) {
-			n |= (( (long) this->reader.nextByte() ) << (i * 8));
-		}
-
 		// this is unsafe, but what else can we do?
 		// TODO: consider using .at() and try-catch
-		*str = (*reader.getTable())[n];
+		*str = (*reader.getTable())[readInteger()];
 	}else{
 		byte b;
 		while( true ) {
@@ -2097,6 +2108,29 @@ void seq::TokenReader::readString( std::string* str ) {
 			if( b ) str->push_back( b ); else return;
 		}
 	}
+}
+
+long seq::TokenReader::readInteger() {
+	byte head = this->reader.nextByte();
+	unsigned long value = 0;
+
+	// integer length capped at 8 bytes
+	byte length = (head >> 4) % 9;
+
+	// load number byte by byte
+	for( byte i = 0; i < length; i ++ ) {
+		value |= (( (long) this->reader.nextByte() ) << (i * 8));
+	}
+
+	// add number offset
+	value += (head & 0b00001111);
+
+	// handle negative numbers, sign holds a sign bit mask,
+	// then if the mask matches with a value the number is inverted and mask is Xored off from the value,
+	// otherwise nothing is done. (there is no sign bit that needs to be moved)
+	unsigned long sign = (1ul << ((unsigned long) length * 8ul - 1ul));
+	return (value & sign) ? -(long)(sign ^ value) : value;
+
 }
 
 seq::type::Bool* seq::TokenReader::loadBool() {
@@ -2480,10 +2514,10 @@ seq::CommandResult seq::Executor::executeCommand( seq::TokenReader* tr, byte tag
 	// functions can only contain streams
 	if( tr->getDataType() == seq::DataType::Stream ) {
 
-		// execute stream if stream tags matches current state
+		// execute stream if stream tags matche current state
 		auto& stream = tr->getGeneric().Stream();
 
-		if( stream.machesTags( tags ) ) {
+		if( stream.matchesTags( tags ) ) {
 			seq::Stream s = stream.getReader().readAll();
 			return this->executeStream( s );
 		}else{
@@ -3049,24 +3083,20 @@ const bool seq::Compiler::Token::getAnchor() {
 }
 
 const bool seq::Compiler::Token::isPrimitive() {
-
-	if( this->category == seq::Compiler::Token::Category::Arg ) return true;
-	if( this->category == seq::Compiler::Token::Category::Null ) return true;
-	if( this->category == seq::Compiler::Token::Category::Bool ) return true;
-	if( this->category == seq::Compiler::Token::Category::Number ) return true;
-	if( this->category == seq::Compiler::Token::Category::Type ) return true;
-	if( this->category == seq::Compiler::Token::Category::String ) return true;
-	if( this->category == seq::Compiler::Token::Category::VMCall ) return true;
-
-	return false;
+	using Category = seq::Compiler::Token::Category;
+	return category == Category::Arg || category == Category::Null || category == Category::Bool || category == Category::Number ||
+			category == Category::Type || category == Category::String || category == Category::VMCall;
 }
 
 const bool seq::Compiler::Token::isPure() {
-
-	if( this->category == seq::Compiler::Token::Category::Arg ) return false;
-	if( this->category == seq::Compiler::Token::Category::VMCall ) return false;
+	using Category = seq::Compiler::Token::Category;
+	if( category == Category::Arg || category == Category::VMCall ) return false;
 	return this->isPrimitive();
+}
 
+const bool seq::Compiler::Token::isNamed() {
+	using Category = seq::Compiler::Token::Category;
+	return category == Category::String || category == Category::Name;
 }
 
 std::string seq::Compiler::Token::toString() {
@@ -3104,6 +3134,9 @@ seq::Compiler::Compiler() {
 std::vector<byte> seq::Compiler::compile( std::string code ) {
 
 	auto tokens = tokenize( code );
+
+	// perform some optimizations if they are enabled
+	optimizeIfApplicable( tokens );
 
 	// skip empty files
 	if( tokens.empty() ) return std::vector<byte>();
@@ -4003,6 +4036,49 @@ std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::To
 	bw2.putFunc( anchor, arr, hasEndTag );
 
 	return ret;
+}
+
+void seq::Compiler::optimizeIfApplicable( std::vector<Token>& tokens ) {
+
+	// if string pre-gen is enabled try searching for strings in tokens
+	// and pregenerating sorted string table
+	if( flags & (oflag_t) Optimizations::StrPreGen ) {
+		if( this->names != nullptr ) {
+
+			typedef std::pair<int, std::string> Pair;
+			std::vector<Pair> pairs;
+
+			for( int i = tokens.size() - 1; i >= 0; i -- ) {
+				auto& token = tokens[i];
+
+				if( token.isNamed() && (i == 0 || tokens[i - 1].getCategory() != Compiler::Token::Category::Load) ) {
+
+					const std::string& entry = token.getClean();
+
+					auto it = std::find_if( pairs.begin(), pairs.end(), [&entry] (const Pair& p) {
+						return p.second == entry;
+					} );
+
+					if( it == pairs.end() ) {
+						pairs.push_back( { 1, entry } );
+					}else{
+						pairs[ std::distance(pairs.begin(), it) ].first ++;
+					}
+
+				}
+			}
+
+			std::sort(pairs.begin(), pairs.end(), [](Pair& a, Pair& b) {
+				return a.first > b.first;
+			});
+
+			for( Pair& pair : pairs ) {
+				names->push_back( pair.second );
+			}
+
+		}
+	}
+
 }
 
 int seq::Compiler::extractHeaderData( std::vector<Token>& tokens, StringTable* table ) {

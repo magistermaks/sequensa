@@ -157,10 +157,12 @@ void run( std::string input, Options opt ) {
 
 		}
 
+		seq::ByteBuffer bytecode = br.getSubBuffer();
+
 		// load string table if one is present
 		seq::StringTable table = header.getValueTable("str");
 		if( table.size() > 0 ) {
-			bb.setStringTable( &table );
+			bytecode.setStringTable( &table );
 		}
 
 		try{
@@ -182,7 +184,7 @@ void run( std::string input, Options opt ) {
 
 			exe.setStrictMath( opt.strict_math );
 
-			exe.execute( br.getSubBuffer() );
+			exe.execute( bytecode );
 
 			if( !opt.print_none ) {
 
