@@ -2561,6 +2561,35 @@ TEST( co_pure_expr, {
 
 } );
 
+TEST( aligned_numbers, {
+
+	// TOOD: positive aligned numbers are ducktaped together to work,
+	// and negative numbers outright broken.
+	// The number system needs some serious rework.
+
+	std::vector<byte> arr;
+	seq::BufferWriter bw(arr);
+	bw.putInteger(  0b10000001 );
+	bw.putInteger( -0b10001101 );
+	bw.putInteger(  0b1000010101010001 );
+	bw.putInteger( -0b1001010100011111 );
+	bw.putByte('A');
+
+	seq::ByteBuffer bb(arr.data(), arr.size());
+	seq::BufferReader br = bb.getReader();
+
+	//print_buffer(bb);
+
+	CHECK( br.readInteger(),  0b10000001l );
+	CHECK( br.readInteger(), -0b10001101l );
+	CHECK( br.readInteger(),  0b1000010101010001l );
+	CHECK( br.readInteger(), -0b1001010100011111l );
+	CHECK( br.nextByte(), (byte) 'A' );
+
+} );
+
+
+
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
 REGISTER_EXCEPTION( seq_runtime_error, seq::RuntimeError );

@@ -193,8 +193,10 @@ bool build_tree( std::string input, std::string output, bool verbose, seq::Compi
 			{
 				std::string load;
 
-				for( auto& native : natives ) load += native + ';';
-				if( !load.empty() ) load.pop_back();
+				for( auto& native : natives ) {
+					load.append(native);
+					load.push_back(0);
+				}
 
 				header["load"] = load;
 			}
@@ -211,8 +213,6 @@ bool build_tree( std::string input, std::string output, bool verbose, seq::Compi
 					table.append(str);
 					table.push_back(0);
 				}
-
-				table.pop_back();
 
 				header["str"] = table;
 			}

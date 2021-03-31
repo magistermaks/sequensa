@@ -87,10 +87,9 @@ bool load_native_libs( seq::Executor& exe, seq::FileHeader& header, bool verbose
 	std::string path = get_exe_path();
 	path = get_directory( path );
 
-	std::stringstream path_array( header.getValue("load") );
+	seq::StringTable path_table = header.getValueTable("load");
 
-	std::string segment;
-	while( std::getline(path_array, segment, ';') ) {
+	for( const auto& segment : path_table ) {
 
 		std::vector<std::string> paths;
 

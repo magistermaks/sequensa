@@ -433,6 +433,7 @@ namespace seq {
 				const long getLong();
 				const bool isNatural();
 				const Fraction getFraction();
+				static byte sizeOfSigned( unsigned long value );
 				static byte sizeOf( unsigned long value );
 
 			private:
@@ -742,9 +743,6 @@ namespace seq {
 			DataType type;
 			seq::Generic generic;
 
-			void readString( std::string* str );
-			long readInteger();
-
 			DataType getDataType( byte header );
 			type::Bool* loadBool();
 			type::Number* loadNumber();
@@ -790,6 +788,9 @@ namespace seq {
 			ByteBuffer getSubBuffer();
 			StringTable* getTable();
 
+			void readString( std::string* str );
+			long readInteger();
+
 		private:
 			long first;
 			long last;
@@ -825,6 +826,7 @@ namespace seq {
 			void putString( const char* str );
 			void putOpcode( bool anchor, seq::Opcode code );
 			void putInteger( byte length, long value );
+			void putInteger( long value );
 			void putHead( byte left, byte right );
 			void putBuffer( std::vector<byte>& buffer );
 			void putArray( const byte* data, size_t size );
@@ -1273,15 +1275,17 @@ void seq::BufferWriter::putString( const char* str ) {
 		for ( long i = 0; str[i]; i ++ ) this->putByte( str[i] );
 		this->putByte( 0 );
 	}else{
-		int index = seq::util::insertUnique(table, str);
+		putInteger( util::insertUnique(table, str) );
+	}
+}
 
-		if( index < 0b1111 ) {
-			this->putHead( 0, index );
-		}else{
-			byte size = seq::type::Number::sizeOf(index);
-			this->putHead( size, 0 );
-			this->putInteger( size, index );
-		}
+void seq::BufferWriter::putInteger( long value ) {
+	if( value < 0b1111 ) {
+		this->putHead( 0, value );
+	}else{
+		byte size = seq::type::Number::sizeOfSigned(value);
+		this->putHead( size, 0 );
+		this->putInteger( size, value );
 	}
 }
 
@@ -1427,7 +1431,8 @@ void seq::BufferWriter::putFileHeader( byte seq_major, byte seq_minor, byte seq_
 		this->putArray( (const byte*) x.first.data(), size );
 
 		size = x.second.size();
-		this->putInteger( 4, size );
+
+		this->putInteger( size );
 		this->putArray( (const byte*) x.second.data(), size );
 	}
 
@@ -1604,11 +1609,30 @@ const seq::Fraction seq::type::Number::getFraction() {
 	return fraction;
 }
 
+byte seq::type::Number::sizeOfSigned( unsigned long value ) {
+	int s = sizeOf(value);
+
+	if( (s > 0) && ((value >> (8 * s - 8)) & 0b10000000) ) {
+		if( ++ s > 8 ) {
+			s = 8;
+		}
+	}
+
+	return s;
+}
+
 byte seq::type::Number::sizeOf( unsigned long value ) {
-	if( value > 0xFFFFFFFFul ) return 8;
-	if( value > 0xFFFFul ) return 4;
-	if( value > 0xFFul ) return 2;
-	return 1;
+	int s = 0;
+
+	for( int i = 1; i < 9; i ++ ) {
+		if( value & 0b11111111 ) {
+			s = i;
+		}
+
+		value = ( value >> 8 );
+	}
+
+	return s;
 }
 
 seq::type::String::String( bool _anchor, const char* _value ): seq::type::Generic( seq::DataType::String, _anchor ), value( _value ) {}
@@ -1993,8 +2017,7 @@ seq::FileHeader seq::BufferReader::getHeader() {
 			}
 
 			{ // load value
-				size_t m = 0;
-				for( byte i = 0; i < 4; i ++ ) m |= ( (long) this->nextByte() ) << (i * 8);
+				size_t m = this->readInteger();
 				for( ; m > 0; m -- ) val.push_back( this->nextByte() );
 			}
 
@@ -2024,6 +2047,42 @@ seq::ByteBuffer seq::BufferReader::getSubBuffer() {
 
 seq::StringTable* seq::BufferReader::getTable() {
 	return table;
+}
+
+void seq::BufferReader::readString( std::string* str ) {
+	if( table != nullptr ) {
+		// this is unsafe, but what else can we do?
+		// TODO: consider using .at() and try-catch
+		*str = (*table)[readInteger()];
+	}else{
+		byte b;
+		while( true ) {
+			b = this->nextByte();
+			if( b ) str->push_back( b ); else return;
+		}
+	}
+}
+
+long seq::BufferReader::readInteger() {
+	byte head = this->nextByte();
+	unsigned long value = 0;
+
+	// integer length capped at 8 bytes
+	byte length = (head >> 4) % 9;
+
+	// load number byte by byte
+	for( byte i = 0; i < length; i ++ ) {
+		value |= (( (long) this->nextByte() ) << (i * 8));
+	}
+
+	// add number offset
+	value += (head & 0b00001111);
+
+	// handle negative numbers, sign holds a sign bit mask,
+	// then if the mask matches with a value the number is inverted and mask is Xored off from the value,
+	// otherwise nothing is done. (there is no sign bit that needs to be moved)
+	unsigned long sign = (1ul << ((unsigned long) length * 8ul - 1ul));
+	return (value & sign) ? -(long)(sign ^ value) : value;
 }
 
 seq::TokenReader::TokenReader( seq::BufferReader& reader, bool table ): reader( reader ), strings( table ) {
@@ -2096,43 +2155,6 @@ bool seq::TokenReader::isAnchored() {
 	return this->anchor;
 }
 
-void seq::TokenReader::readString( std::string* str ) {
-	if( strings ) {
-		// this is unsafe, but what else can we do?
-		// TODO: consider using .at() and try-catch
-		*str = (*reader.getTable())[readInteger()];
-	}else{
-		byte b;
-		while( true ) {
-			b = reader.nextByte();
-			if( b ) str->push_back( b ); else return;
-		}
-	}
-}
-
-long seq::TokenReader::readInteger() {
-	byte head = this->reader.nextByte();
-	unsigned long value = 0;
-
-	// integer length capped at 8 bytes
-	byte length = (head >> 4) % 9;
-
-	// load number byte by byte
-	for( byte i = 0; i < length; i ++ ) {
-		value |= (( (long) this->reader.nextByte() ) << (i * 8));
-	}
-
-	// add number offset
-	value += (head & 0b00001111);
-
-	// handle negative numbers, sign holds a sign bit mask,
-	// then if the mask matches with a value the number is inverted and mask is Xored off from the value,
-	// otherwise nothing is done. (there is no sign bit that needs to be moved)
-	unsigned long sign = (1ul << ((unsigned long) length * 8ul - 1ul));
-	return (value & sign) ? -(long)(sign ^ value) : value;
-
-}
-
 seq::type::Bool* seq::TokenReader::loadBool() {
 	return new seq::type::Bool( this->anchor, this->header == (byte) seq::Opcode::BLT );
 }
@@ -2176,7 +2198,7 @@ seq::type::Arg* seq::TokenReader::loadArg() {
 
 seq::type::String* seq::TokenReader::loadString() {
 	std::string str;
-	readString(&str);
+	this->reader.readString(&str);
 	return new seq::type::String( this->isAnchored(), str.c_str() );
 }
 
@@ -2194,7 +2216,7 @@ seq::type::VMCall* seq::TokenReader::loadCall() {
 
 seq::type::Name* seq::TokenReader::loadName() {
 	std::string str;
-	readString(&str);
+	this->reader.readString(&str);
 	return new seq::type::Name( this->anchor, this->header == (byte) seq::Opcode::DEF, str );
 }
 
