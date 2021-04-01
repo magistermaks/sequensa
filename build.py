@@ -15,11 +15,11 @@ parser = argparse.ArgumentParser( description="Sequensa build system" )
 parser.add_argument( "--test", help="run Sequensa API unit tests", action="store_true" )
 parser.add_argument( "--Xalias", help="don't create 'sq' alias", action="store_true" )
 parser.add_argument( "--Xpath", help="don't attempt to add sequensa to PATH", action="store_true" )
-parser.add_argument( "--compiler", help="specify compiler to use [g++, clang]", type=str, default="g++" )
+parser.add_argument( "--compiler", help="specify compiler to use [g++, gcc, clang, msvc]", type=str, default="g++" )
 parser.add_argument( "--workspace", help="preserve workspace", action="store_true" )
 parser.add_argument( "--uninstall", help="uninstall Sequensa", action="store_true" )
-parser.add_argument( "--force", help="don't ask for confirmations", action="store_true" )
-parser.add_argument( "--ignoreStatus", help="ignore task exit codes", action="store_true" )
+parser.add_argument( "--silent", help="don't ask for confirmations", action="store_true" )
+parser.add_argument( "--force", help="ignore task exit codes", action="store_true" )
 args = parser.parse_args()
 
 # get temporary workspace
@@ -122,7 +122,7 @@ print( "Platform: " + platform.system() + ", Selected '" + args.compiler + "' co
 if args.uninstall:
     print( "\nSequensa will be uninstalled from: " + syscfg["path"] )
     
-    if not args.force:
+    if not args.silent:
         print( "That dir will be deleted with all Sequensa libraries, do you wish to continue? y/n" )
     
         # exit if user did not select 'yes'
@@ -142,8 +142,8 @@ if comcfg["binary"] != "g++":
     print("Warning: Expected g++, this may cause problems.")
     
 # warn about problems this flag may cause
-if args.ignoreStatus:
-    print("\nWarning: Using the `--ignoreStatus` flag!")
+if args.force:
+    print("\nWarning: Using the `--force` flag!")
     print("Warning: Future errors will be ignored.")
 
 # if no compiler avaible exit with error
@@ -161,9 +161,9 @@ if not test_for_command( comcfg["binary"] + syscfg["exe"] ):
 # define exit code checking function
 def check_exit_code( code ):
     if code != 0 and not comcfg["ignore_exit_code"]:
-        if not args.ignoreStatus:
+        if not args.force:
             print( "\nError: Task returned non-zero exit code!" )
-            print( " * Try running with `--ignoreStatus` to supress this error" )
+            print( " * Try running with `--force` to supress this error" )
             print( " * Try reporting this to project maintainers" )
             exit()
         else:
@@ -236,7 +236,7 @@ if args.test:
 # warn about target directory
 print( "\nSequensa will be installed in: " + syscfg["path"] )
 
-if not args.force:
+if not args.silent:
     print( "If that dir already exists it will be deleted, do you wish to continue? y/n" )
 
     # exit if user did not select 'yes'

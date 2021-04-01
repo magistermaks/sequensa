@@ -782,14 +782,13 @@ namespace seq {
 			const bool hasNext() noexcept;
 			TokenReader next() noexcept;
 			BufferReader* nextBlock( long length );
-			long nextInt();
 			FileHeader getHeader();
 			Stream readAll();
 			ByteBuffer getSubBuffer();
 			StringTable* getTable();
 
-			void readString( std::string* str );
-			long readInteger();
+			void nextString( std::string* str );
+			unsigned long nextUnsigned();
 
 		private:
 			long first;
@@ -825,8 +824,8 @@ namespace seq {
 			void putByte( byte b );
 			void putString( const char* str );
 			void putOpcode( bool anchor, seq::Opcode code );
-			void putInteger( byte length, long value );
-			void putInteger( long value );
+			void putUnsigned( byte length, unsigned long value );
+			void putUnsigned( unsigned long value );
 			void putHead( byte left, byte right );
 			void putBuffer( std::vector<byte>& buffer );
 			void putArray( const byte* data, size_t size );
@@ -1275,21 +1274,21 @@ void seq::BufferWriter::putString( const char* str ) {
 		for ( long i = 0; str[i]; i ++ ) this->putByte( str[i] );
 		this->putByte( 0 );
 	}else{
-		putInteger( util::insertUnique(table, str) );
+		putUnsigned( util::insertUnique(table, str) );
 	}
 }
 
-void seq::BufferWriter::putInteger( long value ) {
+void seq::BufferWriter::putUnsigned( unsigned long value ) {
 	if( value < 0b1111 ) {
 		this->putHead( 0, value );
 	}else{
-		byte size = seq::type::Number::sizeOfSigned(value);
+		byte size = seq::type::Number::sizeOf(value);
 		this->putHead( size, 0 );
-		this->putInteger( size, value );
+		this->putUnsigned( size, value );
 	}
 }
 
-void seq::BufferWriter::putInteger( byte length, long value ) {
+void seq::BufferWriter::putUnsigned( byte length, unsigned long value ) {
 	for( ; length != 0; length -- ) {
 		this->putByte( (byte) ( value & 0xFFl ) );
 		value = ( value >> 8 );
@@ -1328,8 +1327,8 @@ void seq::BufferWriter::putNumber( bool anchor, seq::Fraction f ) {
 		byte a = seq::type::Number::sizeOf( n << 1 );
 		byte b = seq::type::Number::sizeOf( f.denominator );
 		this->putHead( a, b );
-		this->putInteger( a, sign ? n | (1 << (a * 8 - 1)) : n );
-		this->putInteger( b, f.denominator );
+		this->putUnsigned( a, sign ? n | (1 << (a * 8 - 1)) : n );
+		this->putUnsigned( b, f.denominator );
 	}
 }
 
@@ -1360,10 +1359,7 @@ void seq::BufferWriter::putName( bool anchor, bool define, const char* name ) {
 
 void seq::BufferWriter::putFunc( bool anchor, std::vector<byte>& buf, bool end ) {
 	this->putOpcode( anchor, (end ? seq::Opcode::FNE : seq::Opcode::FUN) );
-	long buffer_size = buf.size();
-	byte h = seq::type::Number::sizeOf( buffer_size );
-	this->putHead( h, 0 );
-	this->putInteger( h, buffer_size );
+	this->putUnsigned( buf.size() );
 	this->putBuffer( buf );
 }
 
@@ -1375,8 +1371,8 @@ void seq::BufferWriter::putExpr( bool anchor, seq::ExprOperator op, std::vector<
 	byte a = seq::type::Number::sizeOf( left_size );
 	byte b = seq::type::Number::sizeOf( right_size );
 	this->putHead( a, b );
-	this->putInteger( a, left_size );
-	this->putInteger( b, right_size );
+	this->putUnsigned( a, left_size );
+	this->putUnsigned( b, right_size );
 	this->putBuffer( left );
 	this->putBuffer( right );
 }
@@ -1385,10 +1381,7 @@ void seq::BufferWriter::putFlowc( bool anchor, std::vector<std::vector<byte>>& b
 	this->putOpcode( anchor, seq::Opcode::FLC );
 	this->putByte( (byte) buffers.size() );
 	for( auto& buf : buffers ) {
-		long buffer_size = buf.size();
-		byte h = seq::type::Number::sizeOf( buffer_size );
-		this->putHead( h, 0 );
-		this->putInteger( h, buffer_size );
+		this->putUnsigned( buf.size() );
 		this->putBuffer( buf );
 	}
 }
@@ -1396,10 +1389,7 @@ void seq::BufferWriter::putFlowc( bool anchor, std::vector<std::vector<byte>>& b
 void seq::BufferWriter::putStream( bool anchor, byte tags, std::vector<byte>& buf ) {
 	this->putOpcode( anchor, seq::Opcode::SSL );
 	this->putByte( tags );
-	long buffer_size = buf.size();
-	byte h = seq::type::Number::sizeOf( buffer_size );
-	this->putHead( h, 0 );
-	this->putInteger( h, buffer_size );
+	this->putUnsigned( buf.size() );
 	this->putBuffer( buf );
 }
 
@@ -1432,7 +1422,7 @@ void seq::BufferWriter::putFileHeader( byte seq_major, byte seq_minor, byte seq_
 
 		size = x.second.size();
 
-		this->putInteger( size );
+		this->putUnsigned( size );
 		this->putArray( (const byte*) x.second.data(), size );
 	}
 
@@ -1607,18 +1597,6 @@ const seq::Fraction seq::type::Number::getFraction() {
 
 	seq::Fraction fraction{ (long)(sign * ((part / hcf) + (whole * multiplier))), (long)multiplier };
 	return fraction;
-}
-
-byte seq::type::Number::sizeOfSigned( unsigned long value ) {
-	int s = sizeOf(value);
-
-	if( (s > 0) && ((value >> (8 * s - 8)) & 0b10000000) ) {
-		if( ++ s > 8 ) {
-			s = 8;
-		}
-	}
-
-	return s;
 }
 
 byte seq::type::Number::sizeOf( unsigned long value ) {
@@ -1974,21 +1952,6 @@ seq::BufferReader* seq::BufferReader::nextBlock( long length ) {
 	return new seq::BufferReader( this->pointer, old_pos, this->position, this->table );
 }
 
-long seq::BufferReader::nextInt() {
-
-	byte head = this->nextByte();
-	byte a = (head >> 4);
-	long n = 0;
-
-	if( a & (a - 1) ) throw seq::InternalError( "Invalid int header!" );
-
-	if( a ) for( byte i = 0; i < a; i ++ ) {
-		n |= ( (long) this->nextByte() ) << (i * 8);
-	} else n = 0;
-
-	return n;
-}
-
 seq::FileHeader seq::BufferReader::getHeader() {
 
 	// validate file signature
@@ -2017,7 +1980,7 @@ seq::FileHeader seq::BufferReader::getHeader() {
 			}
 
 			{ // load value
-				size_t m = this->readInteger();
+				size_t m = this->nextUnsigned();
 				for( ; m > 0; m -- ) val.push_back( this->nextByte() );
 			}
 
@@ -2049,11 +2012,11 @@ seq::StringTable* seq::BufferReader::getTable() {
 	return table;
 }
 
-void seq::BufferReader::readString( std::string* str ) {
+void seq::BufferReader::nextString( std::string* str ) {
 	if( table != nullptr ) {
 		// this is unsafe, but what else can we do?
 		// TODO: consider using .at() and try-catch
-		*str = (*table)[readInteger()];
+		*str = (*table)[nextUnsigned()];
 	}else{
 		byte b;
 		while( true ) {
@@ -2063,7 +2026,7 @@ void seq::BufferReader::readString( std::string* str ) {
 	}
 }
 
-long seq::BufferReader::readInteger() {
+unsigned long seq::BufferReader::nextUnsigned() {
 	byte head = this->nextByte();
 	unsigned long value = 0;
 
@@ -2076,13 +2039,7 @@ long seq::BufferReader::readInteger() {
 	}
 
 	// add number offset
-	value += (head & 0b00001111);
-
-	// handle negative numbers, sign holds a sign bit mask,
-	// then if the mask matches with a value the number is inverted and mask is Xored off from the value,
-	// otherwise nothing is done. (there is no sign bit that needs to be moved)
-	unsigned long sign = (1ul << ((unsigned long) length * 8ul - 1ul));
-	return (value & sign) ? -(long)(sign ^ value) : value;
+	return value + (head & 0b00001111);
 }
 
 seq::TokenReader::TokenReader( seq::BufferReader& reader, bool table ): reader( reader ), strings( table ) {
@@ -2165,25 +2122,30 @@ seq::type::Number* seq::TokenReader::loadNumber() {
 
 	if( this->header == (byte) seq::Opcode::NUM ) {
 
-		byte a = (head >> 4);
-		byte b = (head & 0b00001111);
 		unsigned long n = 0, d = 0;
 
-		if( a & (a - 1) ) throw seq::InternalError( "Invalid numerator size! size: " + std::to_string( (int) a ) );
-		if( b & (b - 1) ) throw seq::InternalError( "Invalid denominator size! size: " + std::to_string( (int) b ) );
+		// load left and right header, capped at 8 bytes
+		byte a = (head >> 4) % 9;
+		byte b = (head & 0b00001111) % 9;
 
-		if( a ) for( byte i = 0; i < a; i ++ ) {
+		// load numerator
+		for( byte i = 0; i < a; i ++ ) {
 			n |= (( (long) this->reader.nextByte() ) << (i * 8));
-		} else n = 0;
+		}
 
+		// load denominator, defaults to 1
 		if( b ) for( byte i = 0; i < b; i ++ ) {
 			d |= (( (long) this->reader.nextByte() ) << (i * 8));
 		} else d = 1;
 
-		if( !d ) throw seq::InternalError( "Invalid denominator! size: " + std::to_string( (int) b ) + " value: " + std::to_string( (int) d ) );
+		if( !d ) throw seq::InternalError( "Invalid denominator!" );
 
-		unsigned long s = (1ul << ((unsigned long) a * 8ul - 1ul));
-		return new seq::type::Number( this->anchor, (n & s) ? -(long)(s ^ n) : n, d );
+		// Handles negative numbers, sign holds a sign bit mask,
+		// then if the mask matches with a value the number is inverted and mask is Xored off from the value,
+		// otherwise nothing is done. (there is no sign bit that needs to be moved)
+		// Warning: Denominator is considered unsigned
+		unsigned long sign = (1ul << ((unsigned long) a * 8ul - 1ul));
+		return new seq::type::Number( this->anchor, (n & sign) ? -(long)(sign ^ n) : n, d );
 
 	}else{
 
@@ -2198,7 +2160,7 @@ seq::type::Arg* seq::TokenReader::loadArg() {
 
 seq::type::String* seq::TokenReader::loadString() {
 	std::string str;
-	this->reader.readString(&str);
+	this->reader.nextString(&str);
 	return new seq::type::String( this->isAnchored(), str.c_str() );
 }
 
@@ -2216,12 +2178,12 @@ seq::type::VMCall* seq::TokenReader::loadCall() {
 
 seq::type::Name* seq::TokenReader::loadName() {
 	std::string str;
-	this->reader.readString(&str);
+	this->reader.nextString(&str);
 	return new seq::type::Name( this->anchor, this->header == (byte) seq::Opcode::DEF, str );
 }
 
 seq::type::Function* seq::TokenReader::loadFunc() {
-	long length = this->reader.nextInt();
+	long length = this->reader.nextUnsigned();
 	if( !length ) throw seq::InternalError( "Invalid function size!" );
 	return new seq::type::Function( this->anchor, this->reader.nextBlock( length ), this->header == (byte) seq::Opcode::FNE );
 }
@@ -2264,7 +2226,7 @@ seq::type::Flowc* seq::TokenReader::loadFlowc() {
 	byte block_count = this->reader.nextByte();
 	for( byte i = 0; i < block_count; i ++ ) {
 
-		long length = this->reader.nextInt();
+		long length = this->reader.nextUnsigned();
 		if( !length ) throw seq::InternalError( "Invalid flowc size!" );
 		seq::BufferReader* br = this->reader.nextBlock( length );
 		seq::TokenReader tr = br->next();
@@ -2288,7 +2250,7 @@ seq::type::Flowc* seq::TokenReader::loadFlowc() {
 
 seq::type::Stream* seq::TokenReader::loadStream() {
 	byte tags = this->reader.nextByte();
-	long length = this->reader.nextInt();
+	long length = this->reader.nextUnsigned();
 	if( !length ) throw seq::InternalError( "Invalid stream size!" );
 	return new seq::type::Stream( this->anchor, tags, this->reader.nextBlock( length ) );
 }

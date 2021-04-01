@@ -81,12 +81,19 @@ TEST( buffer_writer_complex, {
 
     bw.putByte( 'S' );
     bw.putBool( true, true );
+
 	seq::Fraction frac1{ 12, 1 };
 	seq::Fraction frac2{ 1, 2 };
 	seq::Fraction frac3{ 1422131241, 1 };
+	seq::Fraction frac4{ 0b1000010101010001l, 1 };
+	seq::Fraction frac5{ -0b1000010101010001l, 1 };
+
     bw.putNumber( false,  frac1 );
     bw.putNumber( true, frac2 );
     bw.putNumber( false, frac3 );
+    bw.putNumber( false, frac4 );
+    bw.putNumber( false, frac5 );
+
     bw.putString( true, "Hello World!" );
     bw.putType( false, seq::DataType::Number );
     bw.putCall( false, seq::type::VMCall::CallType::Return );
@@ -129,6 +136,20 @@ TEST( buffer_writer_complex, {
         CHECK( (byte) tr.getDataType(), (byte) seq::DataType::Number );
         CHECK( tr.isAnchored(), false );
         CHECK( tr.getGeneric().Number().getLong(), (long) 1422131241 );
+    }
+
+    { // 2 byte aligned number
+        seq::TokenReader tr = br.next();
+        CHECK( (byte) tr.getDataType(), (byte) seq::DataType::Number );
+        CHECK( tr.isAnchored(), false );
+        CHECK( tr.getGeneric().Number().getLong(), (long) 0b1000010101010001l );
+    }
+
+    { // 2 byte aligned negative number
+        seq::TokenReader tr = br.next();
+        CHECK( (byte) tr.getDataType(), (byte) seq::DataType::Number );
+        CHECK( tr.isAnchored(), false );
+        CHECK( tr.getGeneric().Number().getLong(), (long) -0b1000010101010001l );
     }
 
     { // string
@@ -2560,35 +2581,6 @@ TEST( co_pure_expr, {
 		}
 
 } );
-
-TEST( aligned_numbers, {
-
-	// TOOD: positive aligned numbers are ducktaped together to work,
-	// and negative numbers outright broken.
-	// The number system needs some serious rework.
-
-	std::vector<byte> arr;
-	seq::BufferWriter bw(arr);
-	bw.putInteger(  0b10000001 );
-	bw.putInteger( -0b10001101 );
-	bw.putInteger(  0b1000010101010001 );
-	bw.putInteger( -0b1001010100011111 );
-	bw.putByte('A');
-
-	seq::ByteBuffer bb(arr.data(), arr.size());
-	seq::BufferReader br = bb.getReader();
-
-	//print_buffer(bb);
-
-	CHECK( br.readInteger(),  0b10000001l );
-	CHECK( br.readInteger(), -0b10001101l );
-	CHECK( br.readInteger(),  0b1000010101010001l );
-	CHECK( br.readInteger(), -0b1001010100011111l );
-	CHECK( br.nextByte(), (byte) 'A' );
-
-} );
-
-
 
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
