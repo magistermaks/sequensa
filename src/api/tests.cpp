@@ -2613,30 +2613,30 @@ TEST( co_names_table, {
 
 TEST( co_pure_expr, {
 
-		seq::Compiler compiler;
+	seq::Compiler compiler;
 
-		compiler.setOptimizationFlags( (seq::oflag_t) seq::Optimizations::PureExpr );
+	compiler.setOptimizationFlags( (seq::oflag_t) seq::Optimizations::PureExpr );
 
-		auto buf = compiler.compile( R"(
-			#exit << ((("hi" = "bye") || (3 = 4)) || ((true && false) || (3 != 3)))
-		)" );
+	auto buf = compiler.compile( R"(
+		#exit << ((("hi" = "bye") || (3 = 4)) || ((true && false) || (3 != 3)))
+	)" );
 
-		seq::ByteBuffer bb( buf.data(), buf.size() );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
 
-		seq::Executor exe;
-		exe.execute( bb );
+	seq::Executor exe;
+	exe.execute( bb );
 
-		auto& res = exe.getResults();
+	auto& res = exe.getResults();
 
-		CHECK( (int) res.size(), (int) 1 );
-		CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Bool );
-		CHECK( res.at(0).Bool().getBool(), false );
+	CHECK( (int) res.size(), (int) 1 );
+	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Bool );
+	CHECK( res.at(0).Bool().getBool(), false );
 
-		for( byte b : buf ) {
-			if( (b & 0b01111111) == (byte) seq::Opcode::EXP ) {
-				FAIL( "EXP opcode was not optimized from pure expression!" );
-			}
+	for( byte b : buf ) {
+		if( (b & 0b01111111) == (byte) seq::Opcode::EXP ) {
+			FAIL( "EXP opcode was not optimized from pure expression!" );
 		}
+	}
 
 } );
 
@@ -2664,6 +2664,22 @@ TEST( co_strpregen, {
 
 	if( table[0] != "a" || table[1] != "b" || table[2] != "c" ) {
 		FAIL( "The pregenerated table is not sorted!" );
+	}
+
+} );
+
+TEST( co_tex, {
+
+	auto buf =  seq::Compiler::compileStatic( R"(
+		#exit << (1 + 2) << (var :: 0) << ("hi" + "bye")
+	)" );
+
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	for( byte b : buf ) {
+		if( (b & 0b01111111) == (byte) seq::Opcode::EXP ) {
+			FAIL( "EXP opcode was not optimized to TEX opcode!" );
+		}
 	}
 
 } );

@@ -283,7 +283,7 @@
 
 // enum ranges
 #define SEQ_MIN_OPCODE 1
-#define SEQ_MAX_OPCODE 16
+#define SEQ_MAX_OPCODE 17
 #define SEQ_MIN_DATA_TYPE 1
 #define SEQ_MAX_DATA_TYPE 13
 #define SEQ_MIN_CALL_TYPE 1
@@ -332,7 +332,8 @@ namespace seq {
 		DEF = 13, // DEF [ASCI...] ;
 		FLC = 14, // FLC [SIZE] [[SIZE] [BODY...]...] ;
 		SSL = 15, // SSL [TAGS] [HEAD] [TAIL...] [BODY...] ;
-		FNE = 16  // FNE [HEAD] [TAIL...] [BODY...] ;
+		FNE = 16, // FNE [HEAD] [TAIL...] [BODY...] ;
+		TEX = 17  // TEX [TYPE] [BYTE] [L...] [R...] ;
 	};
 
 	/// Sequensa data types
@@ -345,7 +346,7 @@ namespace seq {
 		VMCall = 6, // maps to: VMC
 		Arg    = 7, // maps to: ARG
 		Func   = 8, // maps to: FUN FNE
-		Expr   = 9, // maps to: EXP
+		Expr   = 9, // maps to: EXP TEX
 		Name  = 10, // maps to: VAR DEF
 		Flowc = 11, // maps to: FLC
 		Stream = 12,// maps to: SSL
@@ -1364,15 +1365,24 @@ void seq::BufferWriter::putFunc( bool anchor, std::vector<byte>& buf, bool end )
 }
 
 void seq::BufferWriter::putExpr( bool anchor, seq::ExprOperator op, std::vector<byte>& left, std::vector<byte>& right ) {
-	this->putOpcode( anchor, seq::Opcode::EXP );
+	size_t left_size = left.size();
+	size_t right_size = right.size();
+
+	bool tiny = ( left_size < 16 && right_size < 16 );
+
+	this->putOpcode( anchor, tiny ? seq::Opcode::TEX : seq::Opcode::EXP );
 	this->putByte( (byte) op );
-	long left_size = left.size();
-	long right_size = right.size();
-	byte a = seq::type::Number::sizeOf( left_size );
-	byte b = seq::type::Number::sizeOf( right_size );
-	this->putHead( a, b );
-	this->putUnsigned( a, left_size );
-	this->putUnsigned( b, right_size );
+
+	if( tiny ) {
+		this->putByte( (left_size << 4) | right_size );
+	}else{
+		byte a = seq::type::Number::sizeOf( left_size );
+		byte b = seq::type::Number::sizeOf( right_size );
+		this->putHead( a, b );
+		this->putUnsigned( a, left_size );
+		this->putUnsigned( b, right_size );
+	}
+
 	this->putBuffer( left );
 	this->putBuffer( right );
 }
@@ -2094,7 +2104,8 @@ seq::DataType seq::TokenReader::getDataType( byte header ) {
 		/* 13 DEF */ seq::DataType::Name,
 		/* 14 FLC */ seq::DataType::Flowc,
 		/* 15 SSL */ seq::DataType::Stream,
-		/* 16 FNE */ seq::DataType::Func
+		/* 16 FNE */ seq::DataType::Func,
+		/* 17 TEX */ seq::DataType::Expr
 	};
 
 	if( header >= SEQ_MIN_OPCODE && header <= SEQ_MAX_OPCODE ) {
@@ -2195,21 +2206,30 @@ seq::type::Expression* seq::TokenReader::loadExpr() {
 	}
 
 	seq::ExprOperator op = (seq::ExprOperator) this->reader.nextByte();
+	long l = 0, r = 0;
 
 	byte head = this->reader.nextByte();
 	byte a = (head >> 4);
 	byte b = (head & 0b00001111);
-	long l = 0, r = 0;
 
-	if( a & (a - 1) ) throw seq::InternalError( "Invalid expression (left) size!" );
-	if( b & (b - 1) ) throw seq::InternalError( "Invalid expression (right) size!" );
+	if( this->header == (byte) seq::Opcode::TEX ) {
 
-	if( a ) for( byte i = 0; i < a; i ++ ) {
-		l |= ( (long) this->reader.nextByte() ) << (i * 8);
-	}
+		l = a;
+		r = b;
 
-	if( b ) for( byte i = 0; i < a; i ++ ) {
-		r |= ( (long) this->reader.nextByte() ) << (i * 8);
+	}else{
+
+		a %= 9;
+		b %= 9;
+
+		for( byte i = 0; i < a; i ++ ) {
+			l |= ( (long) this->reader.nextByte() ) << (i * 8);
+		}
+
+		for( byte i = 0; i < a; i ++ ) {
+			r |= ( (long) this->reader.nextByte() ) << (i * 8);
+		}
+
 	}
 
 	if( !(l && r) ) throw seq::InternalError( "Invalid expression size!" );
