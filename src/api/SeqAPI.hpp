@@ -47,7 +47,8 @@
  * 			6. Exceptions and their meaning
  * 			7. Compiler error handle
  * 			8. Optimization
- * 			9. Preprocessor
+ * 			9. Decompiler
+ * 			10. Preprocessor
  *
  * 1. Compiling and executing
  *
@@ -217,7 +218,7 @@
  *
  * 			Optimizations::None (default value)
  * 				Disables all forms of compile-time optimization,
- * 				this can result in slightly faster compilation
+ * 				this can result in slightly shorter compilation time
  *
  * 			Optimizations::All
  * 				Enables all forms of compile-time optimization,
@@ -240,12 +241,32 @@
  * 			compiler.setNameTable( &stringTable );
  *
  * 		All strings will be then written to that table instead of the bytecode, this can reduce
- * 		it's size and loading speed. Warning: note that the name table MUST be than also supplied to the
+ * 		it's size and loading time. Warning: note that the name table MUST be then also supplied to the
  * 		executor, using `executor.setNameTable` method!
  *
  * 		The Name optimization is unavailable for Compiler::compileStatic
  *
- * 9. Preprocessor
+ * 9. Decompiler
+ *
+ * 		Sequensa API provides a simple to use decompiler class that allows to convert Sequensa Bytecode
+ * 		back to it's source code form. Note that this is not perfect as the source is extrapolated from the bytecode,
+ * 		but the produced source should compile to identical bytecode.
+ *
+ * 		Usage:
+ *
+ * 			// create new decompiler object
+ * 			seq::SourceDecompiler decomp;
+ *
+ * 			// Indent the generated code with two tabs (default value: single tab)
+ * 			decomp.setIndentation( "\t\t" );
+ *
+ * 			// decompile bytecode from buffer reader and print it
+ * 			std::cout << decomp.decompile( bufferReader );
+ *
+ * 		If you want to create your own Sequensa decompiler (or transcriber) extend the `seq::Decompiler` class,
+ * 		for reference look into the `seq::SourceDecompiler` class.
+ *
+ * 10. Preprocessor
  *
  * 		All metadata provided by the API can be found in the SEQ_API_* macros:
  *
@@ -260,6 +281,7 @@
  *
  *			#define SEQ_IMPLEMENT - To implement the Sequensa API
  * 			#define SEQ_EXCLUDE_COMPILER - To exclude compiler code from the API
+ * 			#define SEQ_EXCLUDE_DECOMPILER - To exclude decompiler code from the API
  */
 
 #pragma once
@@ -1045,7 +1067,7 @@ namespace seq {
 			Indentation();
 			void push();
 			void pop();
-			void set(std::string& str);
+			void set(std::string& str, int base);
 			std::string get();
 
 		private:
@@ -1060,7 +1082,7 @@ namespace seq {
 			Decompiler();
 			virtual ~Decompiler() {};
 
-			void setIndentation(std::string str);
+			void setIndentation(std::string str, int base = 0);
 			std::string decompile(BufferReader& reader);
 			std::string decompile(Generic& generic);
 			std::string decompile(seq::Stream& stream);
@@ -1082,24 +1104,6 @@ namespace seq {
 			virtual std::string writeType( Generic& tr ) = 0;
 
 			virtual std::string writeInvalid( Generic& tr );
-
-	};
-
-	class MnemonicDecompiler: public Decompiler {
-
-		private:
-			std::string writeBool( Generic& g ) override;
-			std::string writeNull( Generic& g ) override;
-			std::string writeNumber( Generic& g ) override;
-			std::string writeFunc( Generic& g ) override;
-			std::string writeFlowc( Generic& g ) override;
-			std::string writeExpr( Generic& g ) override;
-			std::string writeName( Generic& g ) override;
-			std::string writeString( Generic& g ) override;
-			std::string writeStream( Generic& g ) override;
-			std::string writeVMCall( Generic& g ) override;
-			std::string writeArg( Generic& g ) override;
-			std::string writeType( Generic& g ) override;
 
 	};
 
@@ -4275,8 +4279,9 @@ void seq::Indentation::pop() {
 	}
 }
 
-void seq::Indentation::set(std::string& str) {
+void seq::Indentation::set(std::string& str, int base) {
 	this->str = str;
+	this->index = base;
 }
 
 std::string seq::Indentation::get() {
@@ -4293,8 +4298,8 @@ std::string seq::Indentation::get() {
 seq::Decompiler::Decompiler() {
 }
 
-void seq::Decompiler::setIndentation(std::string str) {
-	this->indentation.set(str);
+void seq::Decompiler::setIndentation(std::string str, int base) {
+	this->indentation.set(str, base);
 }
 
 std::string seq::Decompiler::decompile(BufferReader& reader) {
@@ -4335,56 +4340,8 @@ std::string seq::Decompiler::decompile(Stream& stream) {
 }
 
 std::string seq::Decompiler::writeInvalid(Generic& g) {
-	return "// Decompilation error occured //\n";
+	throw seq::InternalError("Invalid!");
 }
-
-//std::string seq::MnemonicDecompiler::writeBool( TokenReader* tr ) {
-//
-//}
-//
-//std::string seq::MnemonicDecompiler::writeNull( TokenReader* tr ) {
-//
-//}
-//
-//std::string seq::MnemonicDecompiler::writeNumber( TokenReader* tr ) {
-//
-//}
-//
-//std::string seq::MnemonicDecompiler::writeFunc( TokenReader* tr ) {
-//
-//}
-//
-//std::string seq::MnemonicDecompiler::writeFlowc( TokenReader* tr ) {
-//
-//}
-//
-//std::string seq::MnemonicDecompiler::writeExpr( TokenReader* tr ) {
-//
-//}
-//
-//std::string seq::MnemonicDecompiler::writeName( TokenReader* tr ) {
-//
-//}
-//
-//std::string seq::MnemonicDecompiler::writeString( TokenReader* tr ) {
-//
-//}
-//
-//std::string seq::MnemonicDecompiler::writeStream( TokenReader* tr ) {
-//
-//}
-//
-//std::string seq::MnemonicDecompiler::writeVMCall( TokenReader* tr ) {
-//
-//}
-//
-//std::string seq::MnemonicDecompiler::writeArg( TokenReader* tr ) {
-//
-//}
-//
-//std::string seq::MnemonicDecompiler::writeType( TokenReader* tr ) {
-//
-//}
 
 std::string seq::SourceDecompiler::writeBool( Generic& g ) {
 	return anchor(g) + (g.Bool().getBool() ? "true " : "false ");
@@ -4446,7 +4403,19 @@ std::string seq::SourceDecompiler::writeStream( Generic& g ) {
 	if( tags & SEQ_TAG_LAST ) str += "last; ";
 
 	for( int i = 0; i < size; i ++ ) {
-		str += decompile( stream[i] );
+		Generic& g = stream[i];
+		std::string sub = decompile( stream[i] );
+
+		if( g.getDataType() == DataType::Stream ) {
+
+			// remove trailing newline
+			sub.pop_back();
+
+			str += "( << " + sub + ") ";
+		}else{
+			str += sub;
+		}
+
 		if( i + 1 != size ) str += "<< ";
 	}
 

@@ -2684,12 +2684,12 @@ TEST( co_tex, {
 
 } );
 
-TEST( decomp_source_1, {
+TEST( decomp_source, {
 
 	auto buf = seq::Compiler::compileStatic( R"(
 		#exit << #number << {
-			first; #final << #[1, 2, 3] << #[1:3] << @@@@
-		} << 1 << 2 << "hello"
+			first; #final << #[1, 2, 3] << #[1:3] << @@@@ << #@ << null
+		} << 1 << #2 << "hello" << (<< 1 << 2 << 3) << #null << true << #false
 	)" );
 
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -2708,7 +2708,7 @@ TEST( decomp_source_1, {
 
 	for( int i = 0; i < s; i ++ ) {
 		if( buf[i] != buf2[i] ) {
-			FAIL( "Recompiled bytecode mismatch!" );
+			FAIL( "Recompiled bytecode mismatches!" );
 		}
 	}
 

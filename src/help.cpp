@@ -38,6 +38,7 @@ void help( ArgParse& argp, Options opt ) {
 	std::cout << "  Use -n      to not print exit value." << std::endl;
 	std::cout << "  Use -s      to enable strict math - throw on invalid operands." << std::endl;
 	std::cout << "  Use -m      to enable multi-error mode." << std::endl;
+	std::cout << "  Use -o      to enable compiler optimizations." << std::endl;
 
 	std::cout << std::endl;
 	std::cout << "Example:" << std::endl;
