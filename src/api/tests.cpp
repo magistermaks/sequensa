@@ -2684,6 +2684,36 @@ TEST( co_tex, {
 
 } );
 
+TEST( decomp_source_1, {
+
+	auto buf = seq::Compiler::compileStatic( R"(
+		#exit << #number << {
+			first; #final << #[1, 2, 3] << #[1:3] << @@@@
+		} << 1 << 2 << "hello"
+	)" );
+
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::BufferReader dcbr = bb.getReader();
+	seq::SourceDecompiler decomp;
+
+	std::string decompiled = decomp.decompile( dcbr );
+
+	// recompile the program from the generated source
+	auto buf2 = seq::Compiler::compileStatic( decompiled );
+	seq::ByteBuffer bb2( buf2.data(), buf2.size() );
+
+	int s = buf.size();
+	CHECK( buf.size(), buf2.size() );
+
+	for( int i = 0; i < s; i ++ ) {
+		if( buf[i] != buf2[i] ) {
+			FAIL( "Recompiled bytecode mismatch!" );
+		}
+	}
+
+} );
+
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
 REGISTER_EXCEPTION( seq_runtime_error, seq::RuntimeError );

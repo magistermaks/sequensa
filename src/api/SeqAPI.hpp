@@ -551,6 +551,7 @@ namespace seq {
 				Stream( const Stream& stream );
 				~Stream();
 				const bool matchesTags( byte tags );
+				const byte getTags();
 				BufferReader& getReader();
 
 			private:
@@ -1033,7 +1034,98 @@ namespace seq {
 			StringTable* getTable();
 
 	};
+
 #endif // SEQ_EXCLUDE_COMPILER
+
+#ifndef SEQ_EXCLUDE_DECOMPILER
+
+	class Indentation {
+
+		public:
+			Indentation();
+			void push();
+			void pop();
+			void set(std::string& str);
+			std::string get();
+
+		private:
+			std::string str;
+			int index;
+
+	};
+
+	class Decompiler {
+
+		public:
+			Decompiler();
+			virtual ~Decompiler() {};
+
+			void setIndentation(std::string str);
+			std::string decompile(BufferReader& reader);
+			std::string decompile(Generic& generic);
+			std::string decompile(seq::Stream& stream);
+
+		protected:
+			Indentation indentation;
+
+			virtual std::string writeBool( Generic& tr ) = 0;
+			virtual std::string writeNull( Generic& tr ) = 0;
+			virtual std::string writeNumber( Generic& tr ) = 0;
+			virtual std::string writeFunc( Generic& tr ) = 0;
+			virtual std::string writeFlowc( Generic& tr ) = 0;
+			virtual std::string writeExpr( Generic& tr ) = 0;
+			virtual std::string writeName( Generic& tr ) = 0;
+			virtual std::string writeString( Generic& tr ) = 0;
+			virtual std::string writeStream( Generic& tr ) = 0;
+			virtual std::string writeVMCall( Generic& tr ) = 0;
+			virtual std::string writeArg( Generic& tr ) = 0;
+			virtual std::string writeType( Generic& tr ) = 0;
+
+			virtual std::string writeInvalid( Generic& tr );
+
+	};
+
+	class MnemonicDecompiler: public Decompiler {
+
+		private:
+			std::string writeBool( Generic& g ) override;
+			std::string writeNull( Generic& g ) override;
+			std::string writeNumber( Generic& g ) override;
+			std::string writeFunc( Generic& g ) override;
+			std::string writeFlowc( Generic& g ) override;
+			std::string writeExpr( Generic& g ) override;
+			std::string writeName( Generic& g ) override;
+			std::string writeString( Generic& g ) override;
+			std::string writeStream( Generic& g ) override;
+			std::string writeVMCall( Generic& g ) override;
+			std::string writeArg( Generic& g ) override;
+			std::string writeType( Generic& g ) override;
+
+	};
+
+	class SourceDecompiler: public Decompiler {
+
+		private:
+			std::string writeBool( Generic& g ) override;
+			std::string writeNull( Generic& g ) override;
+			std::string writeNumber( Generic& g ) override;
+			std::string writeFunc( Generic& g ) override;
+			std::string writeFlowc( Generic& g ) override;
+			std::string writeExpr( Generic& g ) override;
+			std::string writeName( Generic& g ) override;
+			std::string writeString( Generic& g ) override;
+			std::string writeStream( Generic& g ) override;
+			std::string writeVMCall( Generic& g ) override;
+			std::string writeArg( Generic& g ) override;
+			std::string writeType( Generic& g ) override;
+
+			std::string anchor( Generic& g );
+			std::string condition( FlowCondition* c );
+			std::string exprop( ExprOperator op );
+
+	};
+
+#endif // SEQ_EXCLUDE_DECOMPILER
 
 }
 
@@ -1712,6 +1804,10 @@ const bool seq::type::Stream::matchesTags( byte _tags ) {
 	if( this->tags & SEQ_TAG_END ) return false;
 
 	throw seq::InternalError( "Invalid Tag!" );
+}
+
+const byte seq::type::Stream::getTags() {
+	return this->tags;
 }
 
 seq::BufferReader& seq::type::Stream::getReader() {
@@ -4161,6 +4257,281 @@ void seq::Compiler::setOptimizationFlags( seq::oflag_t flags ) {
 }
 
 #endif // SEQ_EXCLUDE_COMPILER
+
+#ifndef SEQ_EXCLUDE_DECOMPILER
+
+seq::Indentation::Indentation() {
+	this->str = "\t";
+	this->index = 0;
+}
+
+void seq::Indentation::push() {
+	this->index ++;
+}
+
+void seq::Indentation::pop() {
+	if( -- this->index < 0 ) {
+		throw seq::InternalError( "Invalid indentation index!" );
+	}
+}
+
+void seq::Indentation::set(std::string& str) {
+	this->str = str;
+}
+
+std::string seq::Indentation::get() {
+	if( this->index == 0 ) return "";
+	std::string indentation;
+
+	for( int i = 0; i < this->index; i ++ ) {
+		indentation += this->str;
+	}
+
+	return std::move(indentation);
+}
+
+seq::Decompiler::Decompiler() {
+}
+
+void seq::Decompiler::setIndentation(std::string str) {
+	this->indentation.set(str);
+}
+
+std::string seq::Decompiler::decompile(BufferReader& reader) {
+	seq::Stream stream = reader.readAll();
+	return decompile( stream );
+}
+
+std::string seq::Decompiler::decompile(Generic& generic) {
+	typedef std::string (*Writer)(Decompiler*, Generic&);
+
+	static Writer WriterArr[ SEQ_MAX_DATA_TYPE ] = {
+		/* 1  Bool   */ [] (Decompiler* dc, Generic& g) { return dc->writeBool(g); },
+		/* 2  Null   */ [] (Decompiler* dc, Generic& g) { return dc->writeNull(g); },
+		/* 3  Number */ [] (Decompiler* dc, Generic& g) { return dc->writeNumber(g); },
+		/* 4  String */ [] (Decompiler* dc, Generic& g) { return dc->writeString(g); },
+		/* 5  Type   */ [] (Decompiler* dc, Generic& g) { return dc->writeType(g); },
+		/* 6  VMCall */ [] (Decompiler* dc, Generic& g) { return dc->writeVMCall(g); },
+		/* 7  Arg    */ [] (Decompiler* dc, Generic& g) { return dc->writeArg(g); },
+		/* 8  Func   */ [] (Decompiler* dc, Generic& g) { return dc->writeFunc(g); },
+		/* 9  Expr   */ [] (Decompiler* dc, Generic& g) { return dc->writeExpr(g); },
+		/* 10 Name   */ [] (Decompiler* dc, Generic& g) { return dc->writeName(g); },
+		/* 11 Flowc  */ [] (Decompiler* dc, Generic& g) { return dc->writeFlowc(g); },
+		/* 12 Stream */ [] (Decompiler* dc, Generic& g) { return dc->writeStream(g); },
+		/* 13 Blob   */ [] (Decompiler* dc, Generic& g) { return dc->writeInvalid(g); }
+	};
+
+	return WriterArr[((seq::byte) generic.getDataType()) - 1]( this, generic );
+}
+
+std::string seq::Decompiler::decompile(Stream& stream) {
+	std::string str;
+
+	for( Generic& generic : stream ) {
+		str += decompile( generic );
+	}
+
+	return std::move(str);
+}
+
+std::string seq::Decompiler::writeInvalid(Generic& g) {
+	return "// Decompilation error occured //\n";
+}
+
+//std::string seq::MnemonicDecompiler::writeBool( TokenReader* tr ) {
+//
+//}
+//
+//std::string seq::MnemonicDecompiler::writeNull( TokenReader* tr ) {
+//
+//}
+//
+//std::string seq::MnemonicDecompiler::writeNumber( TokenReader* tr ) {
+//
+//}
+//
+//std::string seq::MnemonicDecompiler::writeFunc( TokenReader* tr ) {
+//
+//}
+//
+//std::string seq::MnemonicDecompiler::writeFlowc( TokenReader* tr ) {
+//
+//}
+//
+//std::string seq::MnemonicDecompiler::writeExpr( TokenReader* tr ) {
+//
+//}
+//
+//std::string seq::MnemonicDecompiler::writeName( TokenReader* tr ) {
+//
+//}
+//
+//std::string seq::MnemonicDecompiler::writeString( TokenReader* tr ) {
+//
+//}
+//
+//std::string seq::MnemonicDecompiler::writeStream( TokenReader* tr ) {
+//
+//}
+//
+//std::string seq::MnemonicDecompiler::writeVMCall( TokenReader* tr ) {
+//
+//}
+//
+//std::string seq::MnemonicDecompiler::writeArg( TokenReader* tr ) {
+//
+//}
+//
+//std::string seq::MnemonicDecompiler::writeType( TokenReader* tr ) {
+//
+//}
+
+std::string seq::SourceDecompiler::writeBool( Generic& g ) {
+	return anchor(g) + (g.Bool().getBool() ? "true " : "false ");
+}
+
+std::string seq::SourceDecompiler::writeNull( Generic& g ) {
+	return anchor(g) + "null ";
+}
+
+std::string seq::SourceDecompiler::writeNumber( Generic& g ) {
+	type::Number& n = g.Number();
+	return anchor(g) + (n.isNatural() ? std::to_string(n.getLong()) : std::to_string(n.getDouble())) + " ";
+}
+
+std::string seq::SourceDecompiler::writeFunc( Generic& g ) {
+	indentation.push();
+	std::string str = anchor(g) + "{\n" + decompile( g.Function().getReader() );
+	indentation.pop();
+	return str + indentation.get() + "} ";
+}
+
+std::string seq::SourceDecompiler::writeFlowc( Generic& g ) {
+	std::string str = anchor(g) + "[";
+
+	for( FlowCondition* c : g.Flowc().getConditions() ) {
+		str += condition( c );
+		str += ", ";
+	}
+
+	str.pop_back();
+	str.pop_back();
+
+	return str + "] ";
+}
+
+std::string seq::SourceDecompiler::writeExpr( Generic& g ) {
+	type::Expression& e = g.Expression();
+	return "( " + decompile( e.getLeftReader() ) + exprop(e.getOperator()) + " " + decompile(e.getRightReader()) + ") ";
+}
+
+std::string seq::SourceDecompiler::writeName( Generic& g ) {
+	type::Name& n = g.Name();
+	return std::string(n.getDefine() ? "set " : "") + anchor(g) + n.getName() + " ";
+}
+
+std::string seq::SourceDecompiler::writeString( Generic& g ) {
+	return anchor(g) + "\"" + g.String().getString() + "\" ";
+}
+
+std::string seq::SourceDecompiler::writeStream( Generic& g ) {
+	seq::Stream stream = g.Stream().getReader().readAll();
+	int size = stream.size();
+	byte tags = g.Stream().getTags();
+
+	std::string str = indentation.get();
+
+	if( tags & SEQ_TAG_END ) str += "end; ";
+	if( tags & SEQ_TAG_FIRST ) str += "first; ";
+	if( tags & SEQ_TAG_LAST ) str += "last; ";
+
+	for( int i = 0; i < size; i ++ ) {
+		str += decompile( stream[i] );
+		if( i + 1 != size ) str += "<< ";
+	}
+
+	return str + "\n";
+}
+
+std::string seq::SourceDecompiler::writeVMCall( Generic& g ) {
+	using CallType = type::VMCall::CallType;
+	switch( g.VMCall().getCall() ) {
+		case CallType::Again: return anchor(g) + "again ";
+		case CallType::Break: return anchor(g) + "break ";
+		case CallType::Exit: return anchor(g) + "exit ";
+		case CallType::Final: return anchor(g) + "final ";
+		case CallType::Return: return anchor(g) + "return ";
+	}
+
+	throw seq::InternalError("Invalid VMCall ID!");
+}
+
+std::string seq::SourceDecompiler::writeArg( Generic& g ) {
+	return anchor(g) + std::string( (size_t) g.Arg().getLevel() + 1, '@' ) + " ";
+}
+
+std::string seq::SourceDecompiler::writeType( Generic& g ) {
+	DataType type = g.Type().getType();
+
+	if( type == seq::DataType::Number ) return anchor(g) + "number ";
+	if( type == seq::DataType::Bool ) return anchor(g) + "bool ";
+	if( type == seq::DataType::String ) return anchor(g) + "string ";
+	if( type == seq::DataType::Type ) return anchor(g) + "type ";
+
+	throw seq::InternalError("Invalid Type ID!");
+}
+
+std::string seq::SourceDecompiler::anchor( Generic& g ) {
+	return std::string(g.getAnchor() ? "#" : "");
+}
+
+std::string seq::SourceDecompiler::condition( FlowCondition* c ) {
+	std::string str = decompile( c->a );
+
+	// remove trailing space
+	str.pop_back();
+
+	if( c->type != FlowCondition::Type::Range ) {
+		return str;
+	}else{
+		std::string str2 = decompile( c->b );
+
+		// remove trailing space
+		str2.pop_back();
+
+		return str + ":" + str2;
+	}
+}
+
+std::string seq::SourceDecompiler::exprop( ExprOperator op ) {
+	switch( op ) {
+		case ExprOperator::Less: return "<";
+		case ExprOperator::Greater: return ">";
+		case ExprOperator::Equal: return "=";
+		case ExprOperator::NotEqual: return "!=";
+		case ExprOperator::NotGreater: return "<=";
+		case ExprOperator::NotLess: return ">=";
+		case ExprOperator::And: return "&&";
+		case ExprOperator::Or: return "||";
+		case ExprOperator::Xor: return "^^";
+		case ExprOperator::Not: return "!";
+		case ExprOperator::Multiplication: return "*";
+		case ExprOperator::Division: return "/";
+		case ExprOperator::Addition: return "+";
+		case ExprOperator::Subtraction: return "-";
+		case ExprOperator::Modulo: return "%";
+		case ExprOperator::Power: return "**";
+		case ExprOperator::BinaryAnd: return "&";
+		case ExprOperator::BinaryOr: return "|";
+		case ExprOperator::BinaryXor: return "^";
+		case ExprOperator::BinaryNot: return "~";
+		case ExprOperator::Accessor: return "::";
+	}
+
+	throw seq::InternalError("Invalid state!");
+}
+
+#endif // SEQ_EXCLUDE_DECOMPILER
 
 #undef SEQ_IMPLEMENT
 #endif // SEQ_IMPLEMENT
