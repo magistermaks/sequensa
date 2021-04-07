@@ -23,8 +23,8 @@
  * SOFTWARE.
  */
 
-#include "modes.hpp"
 #include "api/SeqAPI.hpp"
+#include "modules.hpp"
 
 #define LIBLOAD_IMPLEMENT
 #include "lib/libload.hpp"
@@ -236,7 +236,7 @@ void run( std::string input, Options opt ) {
 
 void run( ArgParse& argp, Options opt ) {
 
-	auto vars = argp.getValues();
+	auto vars = argp.getArgs("--run", "-r");
 
 	if( vars.size() == 1 ) {
 

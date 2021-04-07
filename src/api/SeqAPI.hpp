@@ -668,6 +668,7 @@ namespace seq {
 		seq::Generic newNull( bool anchor = false ) noexcept;
 
 		int insertUnique( StringTable* table, std::string entry );
+		std::string tableToString( StringTable& table, std::string separator = " " );
 
 	}
 
@@ -790,6 +791,7 @@ namespace seq {
 			BufferReader getReader( long first, long last );
 			void setStringTable( StringTable* table );
 			StringTable* getStringTable();
+			long size();
 
 		private:
 			byte* pointer;
@@ -1354,6 +1356,19 @@ int seq::util::insertUnique( seq::StringTable* table, std::string entry ) {
 	}
 
 	return index;
+}
+
+std::string seq::util::tableToString( StringTable& table, std::string separator ) {
+	std::string str;
+
+	for( std::string& entry : table ) {
+		str += entry;
+		str += separator;
+	}
+
+	str.erase( str.size() - separator.size() );
+
+	return str;
 }
 
 seq::BufferWriter::BufferWriter( std::vector<byte>& buffer, StringTable* table ): buffer( buffer ), table( table ) {}
@@ -2015,6 +2030,10 @@ void seq::ByteBuffer::setStringTable( StringTable* table ) {
 
 seq::StringTable* seq::ByteBuffer::getStringTable() {
 	return table;
+}
+
+long seq::ByteBuffer::size() {
+	return length;
 }
 
 seq::BufferReader seq::ByteBuffer::getReader() {
@@ -4388,7 +4407,20 @@ std::string seq::SourceDecompiler::writeName( Generic& g ) {
 }
 
 std::string seq::SourceDecompiler::writeString( Generic& g ) {
-	return anchor(g) + "\"" + g.String().getString() + "\" ";
+	std::string str = anchor(g) + "\"";
+
+	for( char chr : g.String().getString() ) {
+		switch( chr ) {
+			case '\n': str += "\\n"; break;
+			case '\t': str += "\\t"; break;
+			case '\"': str += "\\\""; break;
+			case '\\': str += "\\\\"; break;
+			case '\r': str += "\\r"; break;
+			default: str += chr;
+		}
+	}
+
+	return str + "\" ";
 }
 
 std::string seq::SourceDecompiler::writeStream( Generic& g ) {

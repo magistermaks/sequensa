@@ -28,16 +28,22 @@
 #define ARGPARSE_IMPLEMENT
 #include "lib/argparse.hpp"
 
-#include "modes.hpp"
+#include "modules.hpp"
 
 int main( int argc, char **argv ) {
 
 	ArgParse argp( argc, argv );
 	short mode = 0;
 
-	mode |= argp.hasFlag("--help") || argp.hasFlag("-h") ? 1 : 0;
-	mode |= argp.hasFlag("--build") || argp.hasFlag("-b") ? 2 : 0;
-	mode |= argp.hasFlag("--run") || argp.hasFlag("-r") ? 4 : 0;
+	if( argp.hasFlag("--help", "-h") ) {
+		help();
+		return 0;
+	}
+
+	mode |= argp.hasFlag("--build") || argp.hasFlag("-b") ? 1 : 0;
+	mode |= argp.hasFlag("--run") || argp.hasFlag("-r") ? 2 : 0;
+	mode |= argp.hasFlag("--decompile") || argp.hasFlag("-d") ? 4 : 0;
+	mode |= argp.hasFlag("--info") || argp.hasFlag("-i") ? 8 : 0;
 
 	Options options = {0};
 	options.verbose = argp.hasFlag("-v");
@@ -60,15 +66,19 @@ int main( int argc, char **argv ) {
 		switch( mode ) {
 
 			case 1:
-				help( argp, options );
-				break;
-
-			case 2:
 				build( argp, options );
 				break;
 
-			case 4:
+			case 2:
 				run( argp, options );
+				break;
+
+			case 4:
+				decompile( argp, options );
+				break;
+
+			case 8:
+				info( argp, options );
 				break;
 
 			default:

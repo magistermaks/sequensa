@@ -23,8 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef MODES_HPP_
-#define MODES_HPP_
+#ifndef MODULES_HPP_
+#define MODULES_HPP_
 
 #define SQ_VER "1.0"
 
@@ -53,9 +53,11 @@ struct Options {
 	bool optimize: 1;
 };
 
-void help( ArgParse& argp, Options opt );
+void help();
 void build( ArgParse& argp, Options opt );
 void run( ArgParse& argp, Options opt );
+void info( ArgParse& argp, Options opt );
+void decompile( ArgParse& argp, Options opt );
 
 // utils - implemented in utils.cpp
 bool file_exist( const char *path );
@@ -66,4 +68,4 @@ size_t get_path_hash( std::string path );
 std::string get_absolute_path( std::string relative, std::string base );
 std::string get_directory( std::string& path );
 
-#endif /* MODES_HPP_ */
+#endif /* MODULES_HPP_ */

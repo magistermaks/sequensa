@@ -23,8 +23,8 @@
  * SOFTWARE.
  */
 
-#include "modes.hpp"
 #include "api/SeqAPI.hpp"
+#include "modules.hpp"
 
 bool failed = false;
 
@@ -242,7 +242,7 @@ bool build_tree( std::string input, std::string output, bool verbose, seq::Compi
 void build( ArgParse& argp, Options opt ) {
 
 	failed = false;
-	auto vars = argp.getValues();
+	auto vars = argp.getArgs("--build", "-b");
 	seq::Compiler compiler;
 	seq::StringTable table;
 

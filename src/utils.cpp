@@ -23,7 +23,7 @@
  * SOFTWARE.
  */
 
-#include "modes.hpp"
+#include "modules.hpp"
 
 bool file_exist( const char *path ) {
     std::ifstream infile(path);
