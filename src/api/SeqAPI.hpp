@@ -2523,7 +2523,11 @@ std::string seq::Executor::getResultString() {
 }
 
 seq::Generic seq::Executor::getResult() {
-	return this->result.at(0);
+	if( this->result.size() > 0 ) {
+		return this->result.at(0);
+	}else{
+		return seq::util::newNull();
+	}
 }
 
 seq::Stream& seq::Executor::getResults() {

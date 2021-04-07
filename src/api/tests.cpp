@@ -2682,7 +2682,7 @@ TEST( decomp_source, {
 	auto buf = seq::Compiler::compileStatic( R"(
 		#exit << #number << {
 			first; #final << #[1, 2, 3] << #[1:3] << @@@@ << #@ << null
-		} << 1 << #2 << "hello" << (<< 1 << 2 << 3) << #null << true << #false
+		} << 1 << #2 << "hello" << (<< 1 << 2 << 3) << #null << true << #false << "\n\t\r\"\\"
 	)" );
 
 	seq::ByteBuffer bb( buf.data(), buf.size() );
@@ -2704,6 +2704,21 @@ TEST( decomp_source, {
 			FAIL( "Recompiled bytecode mismatches!" );
 		}
 	}
+
+} );
+
+TEST( ce_empty_result, {
+
+	std::string code = "456 << 123 << true";
+
+	auto buf = seq::Compiler::compileStatic( code );
+	seq::ByteBuffer bb( buf.data(), buf.size() );
+
+	seq::Executor exe;
+	exe.execute( bb );
+
+	CHECK( (int) exe.getResults().size(), (int) 0 );
+	CHECK( (int) exe.getResult().getDataType(), (int) seq::DataType::Null );
 
 } );
 

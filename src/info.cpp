@@ -12,30 +12,26 @@ void info( std::string input, Options opt ) {
 		seq::BufferReader br = bb.getReader();
 		seq::FileHeader header;
 
-		try {
-			header = br.getHeader();
-		} catch( seq::InternalError& err ) {
-			std::cout << "Error! Failed to parse file header, invalid signature!" << std::endl;
-			return;
+		if( !load_header( &header, br ) ) return;
+
+		try{
+
+			seq::StringTable natives = header.getValueTable("load");
+			seq::StringTable strings = header.getValueTable("str");
+			const time_t rawtime = std::stol( header.getValue("time") );
+			const seq::byte major = SEQ_API_VERSION_MAJOR;
+			const seq::byte minor = SEQ_API_VERSION_MINOR;
+
+			std::cout << "Compiled for: " << header.getVersionString() << " " << header.getValue("std") << (header.checkVersion(major, minor) ? "" : " (unaligned)") << std::endl;
+			std::cout << "Natives: " << seq::util::tableToString(natives, ", ") << std::endl;
+			std::cout << "Size: " << buffer.size() << " bytes (without header: " << br.getSubBuffer().size() << " bytes)" << std::endl;
+			std::cout << "Build on: " << header.getValue("sys") << ", at: " << posix_time_to_date(rawtime) << std::endl;
+			std::cout << "Uses string table: " << (strings.size() != 0 ? "yes" : "no") << std::endl;
+
+		}catch(...){
+			std::cout << "Failed to create summary, error occurred!" << std::endl;
+			std::cout << "This file may be corrupted!" << std::endl;
 		}
-
-		seq::StringTable natives = header.getValueTable("load");
-		seq::StringTable strings = header.getValueTable("str");
-		const byte major = SEQ_API_VERSION_MAJOR;
-		const byte minor = SEQ_API_VERSION_MINOR;
-
-		time_t rawtime = std::stol( header.getValue("time") );
-		struct tm ts;
-		char buf[255];
-
-		ts = *gmtime(&rawtime);
-		strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S %Z", &ts);
-
- 		std::cout << "Compiled for: " << header.getVersionString() << " " << header.getValue("std") << (header.checkVersion(major, minor) ? "" : " (unaligned)") << std::endl;
-		std::cout << "Natives: " << seq::util::tableToString(natives, ", ") << std::endl;
-		std::cout << "Size: " << buffer.size() << " bytes (without header: " << br.getSubBuffer().size() << " bytes)" << std::endl;
-		std::cout << "Build on: " << header.getValue("sys") << ", at: " << buf << std::endl;
-		std::cout << "Uses string table: " << (strings.size() != 0 ? "yes" : "no") << std::endl;
 
 	}
 

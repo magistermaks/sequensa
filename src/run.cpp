@@ -95,9 +95,8 @@ bool load_native_libs( seq::Executor& exe, seq::FileHeader& header, bool verbose
 
 		TRY_LOADING( path + "/lib/" + segment + "/" + SEQ_LIB_NAME );
 		TRY_LOADING( path + "./lib/" + segment + "/" + SEQ_LIB_NAME );
-#		undef TRY_LOADING
 
-		std::cout << "Unable to find native library or module: '" << segment << "'!" << std::endl;
+		std::cout << "Unable to find native library: '" << segment << "'!" << std::endl;
 
 		if( verbose ) {
 
@@ -125,36 +124,8 @@ void run( std::string input, Options opt ) {
 		seq::BufferReader br = bb.getReader();
 		seq::FileHeader header;
 
-		try {
-			header = br.getHeader();
-		} catch( seq::InternalError& err ) {
-			std::cout << "Error! Failed to parse file header, invalid signature!" << std::endl;
-			return;
-		}
-
-		// validate versions
-		if( !header.checkVersion(SEQ_API_VERSION_MAJOR, SEQ_API_VERSION_MINOR) ) {
-
-			std::cout << "Error! Invalid Sequensa Virtual Machine version!" << std::endl;
-			std::cout << "Program expected: " << header.getVersionString() << std::endl;
-
-			// force program execution regardless of version mismatch
-			if( opt.force_execution ) {
-				std::cout << "Execution forced, this may cause errors!" << std::endl;
-			}else{
-				return;
-			}
-
-		}else{
-
-			if( opt.verbose && !header.checkPatch(SEQ_API_VERSION_PATCH) ) {
-
-				std::cout << "Warning! Invalid Sequensa Virtual Machine version!" << std::endl;
-				std::cout << "Program expected: " << header.getVersionString() << std::endl;
-
-			}
-
-		}
+		if( !load_header( &header, br ) ) return;
+		if( !validate_version( header, opt.force_execution, opt.verbose ) ) return;
 
 		seq::ByteBuffer bytecode = br.getSubBuffer();
 
@@ -250,3 +221,6 @@ void run( ArgParse& argp, Options opt ) {
 	}
 
 }
+
+#undef TRY_LOADING
+

@@ -50,9 +50,6 @@ bool build( std::string input, std::vector<seq::byte>* buffer, std::vector<std::
 
 		}
 
-		// not really needed, but just to be sure (tm)
-		compiler.setLoadTable( &headerData );
-
 		// set by error handle
 		if( failed ) {
 

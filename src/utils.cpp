@@ -23,7 +23,55 @@
  * SOFTWARE.
  */
 
+#include "api/SeqAPI.hpp"
 #include "modules.hpp"
+
+bool load_header( seq::FileHeader* header, seq::BufferReader& br ) {
+	try {
+		*header = br.getHeader();
+		return true;
+	} catch( seq::InternalError& err ) {
+		std::cout << "Error! Failed to parse file header, invalid signature!" << std::endl;
+		return false;
+	}
+}
+
+std::string posix_time_to_date( time_t rawtime ) {
+	struct tm ts;
+	char buf[255];
+
+	ts = *gmtime(&rawtime);
+	strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S %Z", &ts);
+
+	return std::string(buf);
+}
+
+bool validate_version( seq::FileHeader& header, bool force, bool verbose ) {
+
+	if( !header.checkVersion(SEQ_API_VERSION_MAJOR, SEQ_API_VERSION_MINOR) ) {
+
+		std::cout << "Error! Invalid Sequensa version!" << std::endl;
+		std::cout << "Program expected: " << header.getVersionString() << std::endl;
+		std::cout << "To force Sequensa to continue run again with '-f'." << std::endl;
+
+		// continue regardless of version mismatch
+		if( force ) {
+			std::cout << "Sequensa forced to continue, issues may occur!" << std::endl;
+		}else{
+			return false;
+		}
+
+	}else{
+
+		if( verbose && !header.checkPatch(SEQ_API_VERSION_PATCH) ) {
+			std::cout << "Warning! Invalid Sequensa version!" << std::endl;
+			std::cout << "Program expected: " << header.getVersionString() << std::endl;
+		}
+
+	}
+
+	return true;
+}
 
 bool file_exist( const char *path ) {
     std::ifstream infile(path);
