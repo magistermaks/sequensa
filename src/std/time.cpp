@@ -48,9 +48,6 @@ void ms_sleep( long miliseconds ) {
 
 }
 
-#define MILLIS std::chrono::milliseconds
-#define THREAD std::this_thread
-
 seq::Stream seq_std_time( seq::Stream& input ) {
 	seq::Stream output;
 

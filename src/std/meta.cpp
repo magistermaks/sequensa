@@ -127,7 +127,7 @@ INIT( seq::Executor* exe, seq::FileHeader* head ) {
 	exe->inject( "std:meta:major", seq_std_meta_major );
 	exe->inject( "std:meta:minor", seq_std_meta_minor );
 	exe->inject( "std:meta:patch", seq_std_meta_patch );
-	exe->inject( "std:meta:value", seq_std_meta_patch );
+	exe->inject( "std:meta:value", seq_std_meta_value );
 	exe->inject( "std:meta:build_time", seq_std_meta_build_time );
 
 	return INIT_SUCCESS;

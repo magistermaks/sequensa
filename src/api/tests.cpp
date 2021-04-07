@@ -2251,10 +2251,7 @@ TEST( ce_no_return, {
 	seq::Executor exe;
 	exe.execute( bb );
 
-	auto& res = exe.getResults();
-
-	CHECK( (int) res.size(), (int) 1 )
-	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Null );
+	CHECK( (int) exe.getResults().size(), (int) 0 );
 
 } );
 
@@ -2438,11 +2435,7 @@ TEST( ce_function_break, {
 
 	seq::Executor exe;
 	exe.execute( bb );
-
-	auto& res = exe.getResults();
-
-	CHECK( (int) res.size(), (int) 1 )
-	CHECK( (byte) res.at(0).getDataType(), (byte) seq::DataType::Null );
+	CHECK( (int) exe.getResults().size(), (int) 0 )
 
 } );
 

@@ -141,7 +141,8 @@
  * 		directly as C++ string.
  *
  * 		Note: `exe.getResult()` returns first element of the result stream (according to
- * 		Sequensa Language Specification this is the program's exit code)
+ * 		Sequensa Language Specification this is the program's exit code) if the exit stream is
+ * 		empty this method will return a stream with a single null value.
  *
  * 5. Using Sequensa streams and data types
  *
@@ -2143,9 +2144,11 @@ seq::StringTable* seq::BufferReader::getTable() {
 
 void seq::BufferReader::nextString( std::string* str ) {
 	if( table != nullptr ) {
-		// this is unsafe, but what else can we do?
-		// TODO: consider using .at() and try-catch
-		*str = (*table)[nextUnsigned()];
+		try{
+			*str = table->at( nextUnsigned() );
+		}catch(std::out_of_range& err) {
+			throw seq::InternalError("Invalid string index!");
+		}
 	}else{
 		byte b;
 		while( true ) {
@@ -2534,12 +2537,6 @@ void seq::Executor::setStrictMath( bool flag ) {
 void seq::Executor::execute( seq::ByteBuffer bb, seq::Stream args ) {
 	try{
 		seq::Stream exitStream = this->executeFunction( bb.getReader(), args, true );
-
-		// TODO remove to adhere to the standard
-		if( exitStream.empty() ) {
-			exitStream.push_back( seq::Generic( new seq::type::Null( false ) ) );
-		}
-
 		this->exit( exitStream, 0 );
 	}catch( seq::ExecutorInterrupt& ex ) {
 		// this->result set by the this->exit method
@@ -2547,10 +2544,6 @@ void seq::Executor::execute( seq::ByteBuffer bb, seq::Stream args ) {
 }
 
 void seq::Executor::exit( seq::Stream& stream, byte code ) {
-	if( stream.size() == 0 ) {
-		throw seq::InternalError( "Unable to exit without arguments!" );
-	}
-
 	// stop program execution
 	this->result = stream;
 	throw seq::ExecutorInterrupt( code );
