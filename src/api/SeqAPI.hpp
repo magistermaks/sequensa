@@ -4,7 +4,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2020 magistermaks
+ * Copyright (c) 2020, 2021 magistermaks
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -299,10 +299,10 @@
 
 // public metadata
 #define SEQ_API_NAME "SeqAPI"
-#define SEQ_API_STANDARD "2020-12-28"
-#define SEQ_API_VERSION_MAJOR 1
-#define SEQ_API_VERSION_MINOR 7
-#define SEQ_API_VERSION_PATCH 11
+#define SEQ_API_STANDARD "2020-01-08"
+#define SEQ_API_VERSION_MAJOR 2
+#define SEQ_API_VERSION_MINOR 0
+#define SEQ_API_VERSION_PATCH 0
 
 // enum ranges
 #define SEQ_MIN_OPCODE 1

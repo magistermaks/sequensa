@@ -3,6 +3,12 @@
 //   by Gregory Pakosz (@gpakosz)
 // https://github.com/gpakosz/whereami
 
+// This library is somewhat broken so I tried to patch it around
+// with help from: https://github.com/Proxmark/proxmark3/issues/217
+// and here: https://eigen.tuxfamily.org/bz/show_bug.cgi?id=125
+// (I fixed it by removing problematic parts)
+// - magistermaks
+
 #ifndef WHEREAMI_H
 #define WHEREAMI_H
 
