@@ -1,5 +1,5 @@
 
->Sequensa Standard - 2020-12-28 - (c) Copyright darktree.net
+>Sequensa Standard - 2021-04-08 - (c) Copyright darktree.net
 
 :STANDARD LIBRARIES
 	<p>
@@ -84,7 +84,8 @@
 		<li><code>std:to_code</code> Return ASCII code for first char of given string</li>
 		<li><code>std:from_code</code> Return char for ASCII code given</li>
 		<li><code>std:substr</code> Reads two numbers from stream (start and end) and cuts given strings at those points</li>
-		<li><code>std:findstr</code> Reads one string from string and searches for that string in every subsequent strings</li>
+		<li><code>std:findstr</code> Reads one string from stream and searches for that string in every subsequent strings</li>
+		<li><code>std:join</code> Reads one string from stream and concatenates all subsequent strings with it</li>
 	</ul>
 :
 
@@ -108,6 +109,8 @@
 		<li><code>std:meta:patch</code> Returns patch version component</li>
 		<li><code>std:meta:value</code> Returnes file header data for given key, or null if that key does not exist</li>
 		<li><code>std:meta:build_time</code> Returns unix timestamp of when the program was compiled</li>
+		<li><code>std:meta:libs</code> Returns a stream of all loaded libraries</li>
+		<li><code>std:meta:natives</code> Returns a stream of all loaded native functions</li>
 	</ul>
 :
 

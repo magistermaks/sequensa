@@ -299,7 +299,7 @@
 
 // public metadata
 #define SEQ_API_NAME "SeqAPI"
-#define SEQ_API_STANDARD "2020-01-08"
+#define SEQ_API_STANDARD "2021-04-08"
 #define SEQ_API_VERSION_MAJOR 2
 #define SEQ_API_VERSION_MINOR 0
 #define SEQ_API_VERSION_PATCH 0
