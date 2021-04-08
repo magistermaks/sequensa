@@ -15,6 +15,12 @@ This repository contains:
  * __Sequensa STL__  - shared libraries injected into Sequensa at runtime
  * __Sequensa CLI__  - application used to compile and run Sequensa programs
 
+#### Features
+- Interactive shell and extensive CLI
+- Compiler and decompiler
+- Easy to embed (single file API)
+- Simple to use dynamic library interface
+
 #### Sequensa API
 
 The API is located in `/src/api/SeqAPI.hpp` and contains all the basic documentation to get you started
