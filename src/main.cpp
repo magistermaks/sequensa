@@ -44,6 +44,7 @@ int main( int argc, char **argv ) {
 	mode |= argp.hasFlag("--run") || argp.hasFlag("-r") ? 2 : 0;
 	mode |= argp.hasFlag("--decompile") || argp.hasFlag("-d") ? 4 : 0;
 	mode |= argp.hasFlag("--info") || argp.hasFlag("-i") ? 8 : 0;
+	mode |= argp.hasFlag("--shell") ? 16 : 0;
 
 	Options options = {0};
 	options.verbose = argp.hasFlag("-v");
@@ -79,6 +80,10 @@ int main( int argc, char **argv ) {
 
 			case 8:
 				info( argp, options );
+				break;
+
+			case 16:
+				shell( argp, options );
 				break;
 
 			default:

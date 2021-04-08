@@ -925,11 +925,11 @@ namespace seq {
 			seq::Generic getResult();
 			seq::Stream& getResults();
 			void setStrictMath( bool flag );
-			void execute( ByteBuffer bb, seq::Stream args = { seq::Generic( new type::Null( false ) ) } );
+			void execute( ByteBuffer bb, seq::Stream args = { seq::Generic( new type::Null( false ) ) }, bool stack = true );
 
 		public: // use these methods only if you know what you are doing
 			void exit( seq::Stream& stream, byte code );
-			Stream executeFunction( BufferReader br, Stream& stream, bool end );
+			Stream executeFunction( BufferReader br, Stream& stream, bool end, bool stack = true );
 			CommandResult executeCommand( TokenReader* br, byte tags );
 			CommandResult executeStream( Stream& stream );
 			CommandResult executeAnchor( Generic entity, Stream& input_stream );
@@ -1052,7 +1052,7 @@ namespace seq {
 			std::vector<byte> assemblePrimitive( Token );
 			std::vector<byte> assembleFlowc( std::vector<Token>& tokens, int start, int end, bool anchor );
 			std::vector<byte> assembleExpression( std::vector<Token>& tokens, int start, int end, bool anchor, bool top, bool* pure = nullptr );
-			std::vector<byte> assembleFunction( std::vector<Token>& tokens, int start, int end, bool anchor );
+			std::vector<byte> assembleFunction( std::vector<Token>& tokens, int start, int end, bool anchor, bool raw = false );
 
 			void optimizeIfApplicable( std::vector<Token>& tokens );
 			int extractHeaderData( std::vector<Token>& tokens, StringTable* arrayPtr );
@@ -2538,9 +2538,9 @@ void seq::Executor::setStrictMath( bool flag ) {
 	strictMath = flag;
 }
 
-void seq::Executor::execute( seq::ByteBuffer bb, seq::Stream args ) {
+void seq::Executor::execute( seq::ByteBuffer bb, seq::Stream args, bool stack ) {
 	try{
-		seq::Stream exitStream = this->executeFunction( bb.getReader(), args, true );
+		seq::Stream exitStream = this->executeFunction( bb.getReader(), args, true, stack );
 		this->exit( exitStream, 0 );
 	}catch( seq::ExecutorInterrupt& ex ) {
 		// this->result set by the this->exit method
@@ -2553,10 +2553,10 @@ void seq::Executor::exit( seq::Stream& stream, byte code ) {
 	throw seq::ExecutorInterrupt( code );
 }
 
-seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream& input_stream, bool end ) {
+seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream& input_stream, bool end, bool stack ) {
 
 	// push new stack into stack array
-	this->stack.push_back( seq::StackLevel() );
+	if( stack ) this->stack.push_back( seq::StackLevel() );
 
 	// accumulator of all returned entities
 	seq::Stream acc;
@@ -2607,7 +2607,7 @@ seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream& 
 
 				case seq::CommandResult::ResultType::Again:
 					// add returned arguments to CURRENT input stream
-					if( i == size ) throw RuntimeError( "Native function 'again' can not be called from 'end' taged stream!" );
+					if( i == size ) throw RuntimeError( "Native function 'again' can not be called from 'end' tagged stream!" );
 					input_stream.erase( input_stream.begin(), input_stream.begin() + i + 1 );
 					input_stream.insert( input_stream.begin(), cr.acc.begin(), cr.acc.end() );
 					i = -1;
@@ -2623,7 +2623,7 @@ seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream& 
 	exit:
 
 	// pop scope from stack
-	this->stack.pop_back();
+	if( stack ) this->stack.pop_back();
 
 	// return all accumulated entities
 	return acc;
@@ -2634,7 +2634,7 @@ seq::CommandResult seq::Executor::executeCommand( seq::TokenReader* tr, byte tag
 	// functions can only contain streams
 	if( tr->getDataType() == seq::DataType::Stream ) {
 
-		// execute stream if stream tags matche current state
+		// execute stream if stream tags match current state
 		auto& stream = tr->getGeneric().Stream();
 
 		if( stream.matchesTags( tags ) ) {
@@ -3248,11 +3248,12 @@ seq::Compiler::Compiler() {
 	fail = seq::Compiler::defaultErrorHandle;
 	loades = nullptr;
 	names = nullptr;
-	flags = (oflag_t) Optimizations::All;
+	flags = (oflag_t) Optimizations::None;
 }
 
 std::vector<byte> seq::Compiler::compile( std::string code ) {
 
+	// tokenize the program
 	auto tokens = tokenize( code );
 
 	// perform some optimizations if they are enabled
@@ -3261,19 +3262,12 @@ std::vector<byte> seq::Compiler::compile( std::string code ) {
 	// skip empty files
 	if( tokens.empty() ) return std::vector<byte>();
 
+	// compute load section size and store loads
 	int offset = extractHeaderData( tokens, loades );
-	auto buffer = assembleFunction( tokens, offset, tokens.size(), true );
 
-	// get rid of the first function opcode
-	int functionOffset = (buffer.at(1) >> 4) + 2;
+	// assemble bytecode
+	return assembleFunction( tokens, offset, tokens.size(), true, true );
 
-	// if that is NOT the case something weird has happened
-	// but we will pretend that everything is OK and just skip this step
-	if( functionOffset < (long) buffer.size() ) {
-		buffer.erase( buffer.begin(), buffer.begin() + functionOffset );
-	}
-
-	return buffer;
 }
 
 std::vector<byte> seq::Compiler::compileStatic( std::string code, StringTable* headerData, oflag_t flags ) {
@@ -4107,7 +4101,7 @@ std::vector<byte> seq::Compiler::assembleExpression( std::vector<seq::Compiler::
 	return arr;
 }
 
-std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::Token>& tokens, int start, int end, bool anchor ) {
+std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::Token>& tokens, int start, int end, bool anchor, bool raw ) {
 
 	std::vector<byte> arr;
 	seq::BufferWriter bw( arr, getTable() );
@@ -4153,7 +4147,12 @@ std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::To
 	// write function to output
 	std::vector<byte> ret;
 	seq::BufferWriter bw2( ret, getTable() );
-	bw2.putFunc( anchor, arr, hasEndTag );
+
+	if(raw) {
+		bw2.putBuffer(arr);
+	}else{
+		bw2.putFunc( anchor, arr, hasEndTag );
+	}
 
 	return ret;
 }

@@ -2722,6 +2722,7 @@ TEST( ce_empty_result, {
 
 } );
 
+
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
 REGISTER_EXCEPTION( seq_runtime_error, seq::RuntimeError );

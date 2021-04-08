@@ -89,7 +89,7 @@ bool build( std::string input, std::vector<seq::byte>* buffer, std::vector<std::
 
 }
 
-bool build_tree( std::string input, std::string output, bool verbose, seq::Compiler& compiler, seq::StringTable& nameTable ) {
+bool build_tree( std::string input, std::string output, bool verbose, seq::Compiler& compiler, seq::StringTable& strings ) {
 
 	struct CompiledUnit {
 		std::vector<std::string> dependencies;
@@ -185,35 +185,7 @@ bool build_tree( std::string input, std::string output, bool verbose, seq::Compi
 
 		// write Sequensa header to file
 		{
-			std::map<std::string, std::string> header;
-
-			{
-				std::string load;
-
-				for( auto& native : natives ) {
-					load.append(native);
-					load.push_back(0);
-				}
-
-				header["load"] = load;
-			}
-
-			header["api"] = SEQ_API_NAME;
-			header["std"] = SEQ_API_STANDARD;
-			header["time"] = std::to_string( std::time(0) ).c_str();
-			header["sys"] = SQ_TARGET;
-
-			if( nameTable.size() > 0 ) {
-				std::string table;
-
-				for( const auto& str : nameTable ) {
-					table.append(str);
-					table.push_back(0);
-				}
-
-				header["str"] = table;
-			}
-
+			auto header = build_header_map( natives, strings );
 			std::vector<seq::byte> arr;
 			seq::BufferWriter bw(arr);
 			bw.putFileHeader(SEQ_API_VERSION_MAJOR, SEQ_API_VERSION_MINOR, SEQ_API_VERSION_PATCH, header);
