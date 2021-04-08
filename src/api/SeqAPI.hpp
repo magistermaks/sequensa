@@ -940,6 +940,7 @@ namespace seq {
 			Stream executeFlowc( std::vector<FlowCondition*> fcs, Stream& input_stream );
 			Generic executeCast( Generic cast, Generic arg );
 			type::Native resolveNative( std::string& name );
+			std::unordered_map<std::string, type::Native>& getNativesMap();
 
 		private:
 			std::unordered_map<std::string, type::Native> natives;
@@ -3106,6 +3107,12 @@ seq::type::Native seq::Executor::resolveNative( std::string& name ) {
 		throw err;
 
 	}
+
+}
+
+std::unordered_map<std::string, seq::type::Native>& seq::Executor::getNativesMap() {
+
+	return this->natives;
 
 }
 

@@ -68,6 +68,23 @@ seq::Stream seq_std_concat( seq::Stream& input ) {
 	return { seq::util::newString( str.c_str() ) };
 }
 
+seq::Stream seq_std_join( seq::Stream& input ) {
+
+	std::string str;
+	std::string separator = seq::util::stringCast( input[0] ).String().getString();
+
+	for( long i = 1; i < (long) input.size(); i ++ ) {
+
+		str += seq::util::stringCast( input[i] ).String().getString();
+		str += separator;
+
+	}
+
+	str.erase( str.size() - separator.size() );
+
+	return { seq::util::newString( str.c_str() ) };
+}
+
 seq::Stream seq_std_split( seq::Stream& input ) {
 
 	seq::Stream output;
@@ -195,6 +212,7 @@ INIT( seq::Executor* exe, seq::FileHeader* head ) {
 	exe->inject( "std:uppercase", seq_std_uppercase );
 	exe->inject( "std:lowercase", seq_std_lowercase );
 	exe->inject( "std:concat", seq_std_concat );
+	exe->inject( "std:join", seq_std_join );
 	exe->inject( "std:split", seq_std_split );
 	exe->inject( "std:explode", seq_std_explode );
 	exe->inject( "std:from_code", seq_std_from_code );
