@@ -40,27 +40,19 @@ int main( int argc, char **argv ) {
 		return 0;
 	}
 
-	mode |= argp.hasFlag("--build") || argp.hasFlag("-b") ? 1 : 0;
-	mode |= argp.hasFlag("--run") || argp.hasFlag("-r") ? 2 : 0;
-	mode |= argp.hasFlag("--decompile") || argp.hasFlag("-d") ? 4 : 0;
-	mode |= argp.hasFlag("--info") || argp.hasFlag("-i") ? 8 : 0;
-	mode |= argp.hasFlag("--shell") ? 16 : 0;
+	mode |= argp.hasFlag("--build", "-b") ? 1 : 0;
+	mode |= argp.hasFlag("--run", "-r") ? 2 : 0;
+	mode |= argp.hasFlag("--decompile", "-d") ? 4 : 0;
+	mode |= argp.hasFlag("--info", "-i") ? 8 : 0;
+	mode |= argp.hasFlag("--shell", "-s") ? 16 : 0;
 
 	Options options = {0};
-	options.verbose = argp.hasFlag("-v");
-	options.force_execution = argp.hasFlag("-f");
-	options.print_all = argp.hasFlag("-a");
-	options.print_none = argp.hasFlag("-n");
-	options.strict_math = argp.hasFlag("-s");
-	options.multi_error = argp.hasFlag("-m");
+	options.verbose = argp.hasFlag("-v", "--verbose");
+	options.force_execution = argp.hasFlag("-f", "--force");
+	options.print_exit = argp.hasFlag("-e");
+	options.strict_math = argp.hasFlag("-S");
+	options.no_multi_error = argp.hasFlag("-xm");
 	options.optimize = argp.hasFlag("-o");
-
-	if( options.print_all && options.print_none ) {
-
-		std::cout << "Unable to combine '-a' and '-n'!" << std::endl;
-		return 0;
-
-	}
 
 	try{
 

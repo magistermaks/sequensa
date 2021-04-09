@@ -3752,6 +3752,8 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 						fail( seq::CompilerError( 1, "Build in native function '" + std::string( (char*) token.getClean().c_str() ) + "'", "", "embedded stream", token.getLine() ) );
 					}
 
+					// TODO: emit unreachable code warning after any VMCall
+
 					auto buf = assemblePrimitive( token );
 					bw.putBuffer( buf );
 					state = State::Stream;

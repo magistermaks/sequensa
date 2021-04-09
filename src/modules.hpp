@@ -46,10 +46,9 @@ typedef int (*DynLibInit) (seq::Executor*,seq::FileHeader*);
 struct Options {
 	bool verbose: 1;
 	bool force_execution: 1;
-	bool print_all: 1;
-	bool print_none: 1;
+	bool print_exit: 1;
 	bool strict_math: 1;
-	bool multi_error: 1;
+	bool no_multi_error: 1;
 	bool optimize: 1;
 };
 

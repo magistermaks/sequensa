@@ -41,7 +41,7 @@ void shell( ArgParse& argp, Options opt ) {
 
 	// create header for loading libs
 	seq::StringTable strings = {};
-	seq::StringTable loads = argp.getArgs("--shell");
+	seq::StringTable loads = argp.getArgs("-s", "--shell");
 	seq::FileHeader header( SEQ_API_VERSION_MAJOR, SEQ_API_VERSION_MINOR, SEQ_API_VERSION_PATCH, build_header_map( loads, strings ) );
 
 	seq::Stream args = { seq::util::newNull() };
@@ -73,7 +73,9 @@ void shell( ArgParse& argp, Options opt ) {
 			exe.execute(bb, args, false);
 
 			if( exe.getResults().size() != 0 ) {
-				std::cout << exe.getResultString();
+				for( auto& res : exe.getResults() ) {
+					std::cout << seq::util::stringCast( res ).String().getString() << " ";
+				}
 				exe.getResults().clear();
 			}
 

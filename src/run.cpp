@@ -59,26 +59,16 @@ void run( std::string input, Options opt ) {
 			exe.setStrictMath( opt.strict_math );
 			exe.execute( bytecode );
 
-			if( !opt.print_none ) {
-
-				std::cout << "Exit value: ";
-
-				if( opt.print_all ) {
-
-					for( auto& res : exe.getResults() ) {
-
-						std::cout << seq::util::stringCast( res ).String().getString() << " ";
-
-					}
-
-					std::cout << std::endl;
-
-				}else{
-
-					std::cout << exe.getResultString() << std::endl;
-
+			if( opt.print_exit ) {
+				for( auto& res : exe.getResults() ) {
+					std::cout << seq::util::stringCast( res ).String().getString() << " ";
 				}
 
+				std::cout << std::endl;
+			}else{
+				if( exe.getResults().size() > 0 ) {
+					std::cout << exe.getResultString() << std::endl;
+				}
 			}
 
 

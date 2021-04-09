@@ -45,7 +45,7 @@ bool build( std::string input, std::vector<seq::byte>* buffer, std::vector<std::
 
 		}catch( seq::CompilerError& err ){
 
-			std::cout << err.what() << std::endl;
+			std::cout << "Error: " << err.what() << std::endl;
 			failed = true;
 
 		}
@@ -222,7 +222,7 @@ void build( ArgParse& argp, Options opt ) {
 
 	if( vars.size() == 2 ) {
 
-		if( opt.multi_error ) {
+		if( !opt.no_multi_error ) {
 			compiler.setErrorHandle( [] (seq::CompilerError err) {
 				if( err.isError() ) {
 					if( err.isCritical() ) {
@@ -230,7 +230,7 @@ void build( ArgParse& argp, Options opt ) {
 						throw err;
 					}
 
-					std::cout << err.what() << std::endl;
+					std::cout << "Error: " << err.what() << std::endl;
 					failed = true;
 				}
 			} );
