@@ -163,6 +163,12 @@ if comcfg["binary"] != "g++":
     print("\nWarning: Selected compiler is non-default!")
     print("Warning: Expected g++, this may cause problems.")
     
+# warn about Microsoft being Microsoft
+if comcfg["binary"] == "cl":
+    print("\nWarning: Selected compiler requires special configuration!")
+    print("Warning: MSVC requires a special script to be executed prior to compilation.")
+    print("Warning: Learn more here: docs.microsoft.com/en-us/cpp/build/building-on-the-command-line.")
+    
 # warn about problems this flag may cause
 if args.force:
     print("\nWarning: Using the `--force` flag!")
