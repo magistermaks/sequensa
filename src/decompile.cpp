@@ -107,10 +107,7 @@ void decompile( ArgParse& argp, Options opt ) {
 			}
 
 		}else{
-
-			std::cout << "Expected one or two filenames!" << std::endl;
-			std::cout << "Use '--help' for usage help." << std::endl;
-
+			USAGE_HELP("Expected one or two filenames!", "decompile");
 		}
 
 	}catch(...) {

@@ -70,10 +70,7 @@ void info( ArgParse& argp, Options opt ) {
 		info( file[0], opt );
 
 	}else{
-
-		std::cout << "Expected one filename!" << std::endl;
-		std::cout << "Use '--help' for usage help." << std::endl;
-
+		USAGE_HELP("Expected one filename!", "info");
 	}
 
 }

@@ -36,7 +36,7 @@ int main( int argc, char **argv ) {
 	short mode = 0;
 
 	if( argp.hasFlag("--help", "-h") ) {
-		help();
+		help(argp);
 		return 0;
 	}
 

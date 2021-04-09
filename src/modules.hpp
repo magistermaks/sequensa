@@ -26,8 +26,6 @@
 #ifndef MODULES_HPP_
 #define MODULES_HPP_
 
-#define SQ_VER "1.0"
-
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -40,6 +38,7 @@
 #include "lib/whereami.h"
 #include "lib/system.hpp"
 
+// dynamic library entry point
 typedef int (*DynLibInit) (seq::Executor*,seq::FileHeader*);
 
 // command line flags
@@ -52,7 +51,9 @@ struct Options {
 	bool optimize: 1;
 };
 
-void help();
+#define USAGE_HELP( error, mode ) std::cout << error << "\nUse '--help " << mode << "' for usage help." << std::endl;
+
+void help( ArgParse& argp );
 void build( ArgParse& argp, Options opt );
 void run( ArgParse& argp, Options opt );
 void info( ArgParse& argp, Options opt );

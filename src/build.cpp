@@ -243,10 +243,7 @@ void build( ArgParse& argp, Options opt ) {
 		}
 
 	}else{
-
-		std::cout << "Expected two filenames!" << std::endl;
-		std::cout << "Use '--help' for usage help." << std::endl;
-
+		USAGE_HELP("Expected two filenames!", "build");
 	}
 
 }

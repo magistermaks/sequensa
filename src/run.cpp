@@ -103,14 +103,9 @@ void run( ArgParse& argp, Options opt ) {
 	auto vars = argp.getArgs("--run", "-r");
 
 	if( vars.size() == 1 ) {
-
 		run( vars.at(0), opt );
-
 	}else{
-
-		std::cout << "Expected one filename!" << std::endl;
-		std::cout << "Use '--help' for usage help." << std::endl;
-
+		USAGE_HELP("Expected one filename!", "run");
 	}
 
 }
