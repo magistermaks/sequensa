@@ -2,7 +2,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2020 magistermaks
+ * Copyright (c) 2020, 2021 magistermaks
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,10 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef MODES_HPP_
-#define MODES_HPP_
-
-#define SQ_VER "1.0"
+#ifndef MODULES_HPP_
+#define MODULES_HPP_
 
 #include <iostream>
 #include <fstream>
@@ -40,23 +38,35 @@
 #include "lib/whereami.h"
 #include "lib/system.hpp"
 
+// dynamic library entry point
 typedef int (*DynLibInit) (seq::Executor*,seq::FileHeader*);
 
 // command line flags
 struct Options {
 	bool verbose: 1;
 	bool force_execution: 1;
-	bool print_all: 1;
-	bool print_none: 1;
+	bool print_exit: 1;
 	bool strict_math: 1;
-	bool multi_error: 1;
+	bool no_multi_error: 1;
+	bool optimize: 1;
 };
 
-void help( ArgParse& argp, Options opt );
+#define USAGE_HELP( error, mode ) std::cout << error << "\nUse '--help " << mode << "' for usage help." << std::endl;
+
+void help( ArgParse& argp );
 void build( ArgParse& argp, Options opt );
 void run( ArgParse& argp, Options opt );
+void info( ArgParse& argp, Options opt );
+void decompile( ArgParse& argp, Options opt );
+void shell( ArgParse& argp, Options opt );
 
 // utils - implemented in utils.cpp
+std::map<std::string, std::string> build_header_map( std::vector<std::string>& natives, std::vector<std::string>& strings );
+void unload_native_libs();
+bool load_native_libs( seq::Executor& exe, seq::FileHeader& header, bool verbose );
+bool load_header( seq::FileHeader* header, seq::BufferReader& br );
+std::string posix_time_to_date( time_t rawtime );
+bool validate_version( seq::FileHeader& header, bool force, bool verbose );
 bool file_exist( const char *path );
 std::string get_exe_path();
 std::string get_cwd_path();
@@ -65,4 +75,4 @@ size_t get_path_hash( std::string path );
 std::string get_absolute_path( std::string relative, std::string base );
 std::string get_directory( std::string& path );
 
-#endif /* MODES_HPP_ */
+#endif /* MODULES_HPP_ */

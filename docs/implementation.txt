@@ -1,26 +1,30 @@
 
->Sequensa Standard - 2020-12-28 - (c) Copyright darktree.net
+>Sequensa Standard - 2021-04-08 - (c) Copyright darktree.net
 
 :COMPILED SEQUENSA HEADER
 	<p>
 		First 4 bytes of Sequensa header are always <code>0x73 0x71 0x63 0x00</code>, ASCII for "sqc\0". <br> 
 		Next 3 bytes are respectively <code>MAJOR</code>, <code>MINOR</code>, and <code>PATCH</code> version components
-		of the API used to compile the source file. <br> Following is the standard sequensa 4 byte integer 
-		that determines the size of the meta section, which consists of key-value string pairs separated using NULL <br>
-		bytes in the following way:
+		of the API used to compile the source file. <br> 
+		Following is a single byte that determines the number of key-value pairs in the meta section of the header. <br>
+		Each pair starts with a single byte designating the size of the key string, after which a standard unsigned integer is found, <br>
+		it designates the length of the value string.
 	</p> 
-	<pre>key \0 value \0 key \0 value \0</pre>
+	<pre>0x01 0x03 0x41 0x42 0x43 0x03 0x44 0x45 0x46</pre>
 	<p>
-		Keys:
+		This sample meta section contains a single pair (<code>0x01</code>) with a key of length 3 (<code>0x03</code>) that consists of <br>
+		a string "ABC" (<code>0x41 0x42 0x43</code>) and a value of length 3 (<code>0x03</code> => head a=0x0 b=0x3 => nothing to load => 0 + 3 => 3) <br>
+		that consists of a string "DEF" (<code>0x44 0x45 0x46</code>) <br>
+		Those keys are guaranteed to be present in the header: (the implementation may choose to include more)
 	</p>
 	<ul>
 		<li><b>sys</b> - name of the system - linux, darwin or windows</li>
 		<li><b>time</b> - build time as unix timestamp</li>
 		<li><b>std</b> - name of the implemented Sequensa standard</li>
-		<li><b>load</b> - comma separated list of native libraries</li>
+		<li><b>load</b> - null-byte separated list of native libraries</li>
 	</ul>
 	<p>
-		are guaranteed to exist, but others may also be provided by the compiler.
+		Additionaly <b>str</b> may be provided, if present contains null-byte separated list of strings.
 	</p>
 :
 
@@ -31,35 +35,7 @@
 	</p>
 	<pre>Header: xyyyyyyy | anchor (bool) = x0000000, opcode (byte) = 0yyyyyyy </pre>  
 	<p>  
-		Opcodes table:
-	</p>
-	<ul>
-		<li><code>0x01 BLT ;</code></li>
-		<li><code>0x02 BLF ;</code></li>
-		<li><code>0x03 NIL ;</code></li>
-		<li><code>0x04 NUM [HEAD] [TAIL...] ;</code></li>
-		<li><code>0x05 INT [BYTE] ;</code></li>
-		<li><code>0x06 STR [UTF8...] [NULL] ;</code></li>
-		<li><code>0x07 TYP [TYPE] ;</code></li>
-		<li><code>0x08 VMC [TYPE] ;</code></li>
-		<li><code>0x09 ARG [SIZE] ;</code></li>
-		<li><code>0x0A FUN [HEAD] [TAIL...] [BODY...] ;</code></li>
-		<li><code>0x0B EXP [TYPE] [HEAD] [TAIL...] [L...] [R...] ;</code></li>
-		<li><code>0x0C VAR [ASCI...] [NULL] ;</code></li>
-		<li><code>0x0D DEF [ASCI...] [NULL] ;</code></li>
-		<li><code>0x0E FLC [SIZE] [[SIZE] [BODY...]...] ;</code></li>
-		<li><code>0x0F SSL [TAGS] [HEAD] [TAIL...] [BODY...] ;</code></li>
-		<li><code>0x10 FNE [HEAD] [TAIL...] [BODY...] ;</code></li>
-	</ul>
-	<p>  
-		<code>BLT</code>, <code>BLF</code>, and <code>NIL</code> (<code>0x01</code>, <code>0x02</code>, <code>0x03</code>) opcodes are representing<br>
-		simple values: <code>true</code>, <code>false</code>, and <code>null</code>, and are the only SSBC opcodes that have no arguments.
-	</p>
-	<p>  
-		<code>NUM</code> TODO
-	</p>
-	<p>  
-		<code>INT</code> opcode represents a small integer value <code>-127</code> to <code>127</code> (one signed 8-bit byte)
+		This section is highly incomplete, refer to SeqAPI internal documentation for mor information
 	</p>
 :
         

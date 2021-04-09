@@ -2,7 +2,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2020 magistermaks
+ * Copyright (c) 2020, 2021 magistermaks
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -47,9 +47,6 @@ void ms_sleep( long miliseconds ) {
 #endif
 
 }
-
-#define MILLIS std::chrono::milliseconds
-#define THREAD std::this_thread
 
 seq::Stream seq_std_time( seq::Stream& input ) {
 	seq::Stream output;

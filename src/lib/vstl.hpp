@@ -2,7 +2,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2020 magistermaks
+ * Copyright (c) 2020, 2021 magistermaks
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -47,8 +47,8 @@
 #define ASSERT( condition, message ) if( !(condition) ) FAIL( message )
 #define TEST( name, ... ) long __vstl_test__##name = vstl::Test( #name, __LINE__, [] () -> void __VA_ARGS__ ).add();
 #define FAIL( what ) throw vstl::TestFail( what );
-#define CHECK_ELSE( value, expected ) for( auto a = value, b = expected; a != b; )
-#define CHECK( value, expected ) CHECK_ELSE( value, expected ) FAIL( "Expected: " + std::to_string( b ) + " got: " + std::to_string( a ) )
+#define CHECK_ELSE( value, expected ) for( auto __vstl_a__ = value, __vstl_b__ = expected; __vstl_a__ != __vstl_b__; )
+#define CHECK( value, expected ) CHECK_ELSE( value, expected ) FAIL( "Expected: " + std::to_string( __vstl_b__ ) + " got: " + std::to_string( __vstl_a__ ) )
 #define REGISTER_EXCEPTION( id, name ) long __vstl_exception__##id = vstl::register_exception( [] (std::exception_ptr p) -> void { try{ if( p ) std::rethrow_exception(p); } catch( name& e ) { throw vstl::TestFail( e.what() ); } catch ( ... ) {} } )
 #define BEGIN( mode ) int main() { return vstl::run( mode ); }
 #define EXPECT_ERR( ... ) try{ __VA_ARGS__; FAIL( "Expected exception!" ); } catch (...) {}

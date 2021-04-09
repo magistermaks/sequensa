@@ -2,7 +2,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2020 magistermaks
+ * Copyright (c) 2020, 2021 magistermaks
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,6 +30,7 @@
 
 #ifndef NO_EXCLUDE_COMPILER
 #	define SEQ_EXCLUDE_COMPILER
+#	define SEQ_EXCLUDE_DECOMPILER
 #endif
 
 #include "../api/SeqAPI.hpp"

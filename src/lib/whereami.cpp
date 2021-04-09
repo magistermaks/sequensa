@@ -7,6 +7,7 @@
 // with help from: https://github.com/Proxmark/proxmark3/issues/217
 // and here: https://eigen.tuxfamily.org/bz/show_bug.cgi?id=125
 // (I fixed it by removing problematic parts)
+// - magistermaks
 
 // in case you want to #include "whereami.c" in a larger compilation unit
 #if !defined(WHEREAMI_H)

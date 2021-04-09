@@ -2,7 +2,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2020 magistermaks
+ * Copyright (c) 2020, 2021 magistermaks
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,27 +23,29 @@
  * SOFTWARE.
  */
 
-#include "modes.hpp"
 #include "api/SeqAPI.hpp"
+#include "modules.hpp"
 
 bool failed = false;
 
-bool build( std::string input, std::vector<seq::byte>* buffer, std::vector<std::string>* dependencies, std::vector<std::string>* natives, bool verbose ) {
+bool build( std::string input, std::vector<seq::byte>* buffer, std::vector<std::string>* dependencies, std::vector<std::string>* natives, bool verbose, seq::Compiler& compiler ) {
 
 	std::ifstream infile( input );
 	if( infile.good() ) {
 
 		std::vector<std::string> headerData;
 		std::string base = get_directory( input );
+		compiler.setLoadTable( &headerData );
 
 		try{
 
-			std::string content( (std::istreambuf_iterator<char>(infile) ), (std::istreambuf_iterator<char>() ));
-			*buffer = seq::Compiler::compile(content, &headerData);
+			// The extra brackets are needed or things break, because C++
+			std::string content( (std::istreambuf_iterator<char>(infile)), (std::istreambuf_iterator<char>()) );
+			*buffer = compiler.compile(content);
 
 		}catch( seq::CompilerError& err ){
 
-			std::cout << err.what() << std::endl;
+			std::cout << "Error: " << err.what() << std::endl;
 			failed = true;
 
 		}
@@ -87,7 +89,7 @@ bool build( std::string input, std::vector<seq::byte>* buffer, std::vector<std::
 
 }
 
-bool build_tree( std::string input, std::string output, bool verbose ) {
+bool build_tree( std::string input, std::string output, bool verbose, seq::Compiler& compiler, seq::StringTable& strings ) {
 
 	struct CompiledUnit {
 		std::vector<std::string> dependencies;
@@ -108,7 +110,7 @@ bool build_tree( std::string input, std::string output, bool verbose ) {
 
 			CompiledUnit unit;
 
-			if( !build( target, &unit.buffer, &unit.dependencies, natives, verbose ) ){
+			if( !build( target, &unit.buffer, &unit.dependencies, natives, verbose, compiler ) ){
 				return false;
 			}
 
@@ -183,22 +185,7 @@ bool build_tree( std::string input, std::string output, bool verbose ) {
 
 		// write Sequensa header to file
 		{
-			std::map<std::string, std::string> header;
-
-			{
-				std::string load;
-
-				for( auto& native : natives ) load += native + ';';
-				if( !load.empty() ) load.pop_back();
-
-				header["load"] = load;
-			}
-
-			header["api"] = SEQ_API_NAME;
-			header["std"] = SEQ_API_STANDARD;
-			header["time"] = std::to_string( std::time(0) ).c_str();
-			header["sys"] = SQ_TARGET;
-
+			auto header = build_header_map( natives, strings );
 			std::vector<seq::byte> arr;
 			seq::BufferWriter bw(arr);
 			bw.putFileHeader(SEQ_API_VERSION_MAJOR, SEQ_API_VERSION_MINOR, SEQ_API_VERSION_PATCH, header);
@@ -224,33 +211,39 @@ bool build_tree( std::string input, std::string output, bool verbose ) {
 void build( ArgParse& argp, Options opt ) {
 
 	failed = false;
-	auto vars = argp.getValues();
+	auto vars = argp.getArgs("--build", "-b");
+	seq::Compiler compiler;
+	seq::StringTable table;
+
+	if( opt.optimize ) {
+		compiler.setOptimizationFlags( (seq::oflag_t) seq::Optimizations::All );
+		compiler.setNameTable( &table );
+	}
 
 	if( vars.size() == 2 ) {
 
-		if( opt.multi_error ) {
-			seq::Compiler::setErrorHandle( [] (seq::CompilerError err) {
-				if( err.isCritical() ) {
-					std::cout << "Fatal: ";
-					throw err;
-				}
+		if( !opt.no_multi_error ) {
+			compiler.setErrorHandle( [] (seq::CompilerError err) {
+				if( err.isError() ) {
+					if( err.isCritical() ) {
+						std::cout << "Fatal: ";
+						throw err;
+					}
 
-				std::cout << err.what() << std::endl;
-				failed = true;
+					std::cout << "Error: " << err.what() << std::endl;
+					failed = true;
+				}
 			} );
 		}
 
-		if( !build_tree( vars.at(0), vars.at(1), opt.verbose ) ) {
+		if( !build_tree( vars.at(0), vars.at(1), opt.verbose, compiler, table ) ) {
 
 			std::cout << "Build failed!" << std::endl;
 
 		}
 
 	}else{
-
-		std::cout << "Expected two filenames!" << std::endl;
-		std::cout << "Use '--help' for usage help." << std::endl;
-
+		USAGE_HELP("Expected two filenames!", "build");
 	}
 
 }

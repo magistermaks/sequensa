@@ -2,7 +2,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2020 magistermaks
+ * Copyright (c) 2020, 2021 magistermaks
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@
 
 #include "common.hpp"
 
+seq::Executor* executor;
 std::map<std::string, std::string> values;
 seq::byte major;
 seq::byte minor;
@@ -113,6 +114,43 @@ seq::Stream seq_std_meta_build_time( seq::Stream& input ) {
 	return output;
 }
 
+seq::Stream seq_std_meta_natives( seq::Stream& input ) {
+	seq::Stream output;
+
+	for( int i = input.size(); i > 0; i -- ) {
+
+		for( auto& native : executor->getNativesMap() ) {
+			output.push_back( seq::util::newString( native.first.c_str() ) );
+		}
+
+	}
+
+	return output;
+}
+
+seq::Stream seq_std_meta_libs( seq::Stream& input ) {
+	seq::Stream output;
+
+	for( int i = input.size(); i > 0; i -- ) {
+
+		try{
+			std::string entry = values.at("load"), str = "";
+
+			for( seq::byte b : entry ) {
+				if(b) str.push_back(b); else {
+					output.push_back( seq::util::newString(str.c_str()) );
+					str.clear();
+				}
+			}
+		}catch(std::out_of_range& err) {
+			return EMPTY;
+		}
+
+	}
+
+	return output;
+}
+
 INIT( seq::Executor* exe, seq::FileHeader* head ) {
 
 	if( head == nullptr ) {
@@ -123,12 +161,15 @@ INIT( seq::Executor* exe, seq::FileHeader* head ) {
 	minor = head->getVersionMinor();
 	patch = head->getVersionPatch();
 	values = head->getValueMap();
+	executor = exe;
 
 	exe->inject( "std:meta:major", seq_std_meta_major );
 	exe->inject( "std:meta:minor", seq_std_meta_minor );
 	exe->inject( "std:meta:patch", seq_std_meta_patch );
-	exe->inject( "std:meta:value", seq_std_meta_patch );
+	exe->inject( "std:meta:value", seq_std_meta_value );
 	exe->inject( "std:meta:build_time", seq_std_meta_build_time );
+	exe->inject( "std:meta:libs", seq_std_meta_libs );
+	exe->inject( "std:meta:natives", seq_std_meta_natives );
 
 	return INIT_SUCCESS;
 }

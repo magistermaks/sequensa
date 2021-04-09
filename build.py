@@ -1,4 +1,26 @@
 
+# MIT License
+# 
+# Copyright (c) 2020, 2021 magistermaks
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+# 
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 # load stuff
 import platform
 import os
@@ -15,10 +37,11 @@ parser = argparse.ArgumentParser( description="Sequensa build system" )
 parser.add_argument( "--test", help="run Sequensa API unit tests", action="store_true" )
 parser.add_argument( "--Xalias", help="don't create 'sq' alias", action="store_true" )
 parser.add_argument( "--Xpath", help="don't attempt to add sequensa to PATH", action="store_true" )
-parser.add_argument( "--compiler", help="specify compiler to use [g++, clang]", type=str, default="g++" )
+parser.add_argument( "--compiler", help="specify compiler to use [g++, gcc, clang, msvc]", type=str, default="g++" )
 parser.add_argument( "--workspace", help="preserve workspace", action="store_true" )
 parser.add_argument( "--uninstall", help="uninstall Sequensa", action="store_true" )
-parser.add_argument( "--force", help="don't ask for confirmations", action="store_true" )
+parser.add_argument( "--silent", help="don't ask for confirmations", action="store_true" )
+parser.add_argument( "--force", help="ignore task exit codes", action="store_true" )
 args = parser.parse_args()
 
 # get temporary workspace
@@ -30,6 +53,7 @@ compilers_config = {
         "alias": "",
         "compile": "g++ -O3 -g0 -Wall -std=c++11 -c $args -o \"$output\" $input",
         "link": "g++ -std=c++11 $args -o \"$output\" $input $libs",
+        "ignore_exit_code": False,
         "binary": "g++",
         "shared": {
             "compiler": "-fPIC", 
@@ -47,6 +71,7 @@ compilers_config = {
         "alias": "",
         "compile": "clang -O3 -g0 -Wall -std=c++11 -c $args -o \"$output\" $input",
         "link": "clang -std=c++11 $args -o \"$output\" $input $libs",
+        "ignore_exit_code": False,
         "binary": "clang",
         "shared": {
             "compiler": "-fPIC", 
@@ -61,6 +86,7 @@ compilers_config = {
         "alias": "",
         "compile": "cl /O2 /c $args $input /Fo\"$output\" /EHsc",
         "link": "link $args $input /OUT:\"$output\" $libs",
+        "ignore_exit_code": False,
         "binary": "cl",
         "shared": {
             "compiler": "", 
@@ -118,7 +144,7 @@ print( "Platform: " + platform.system() + ", Selected '" + args.compiler + "' co
 if args.uninstall:
     print( "\nSequensa will be uninstalled from: " + syscfg["path"] )
     
-    if not args.force:
+    if not args.silent:
         print( "That dir will be deleted with all Sequensa libraries, do you wish to continue? y/n" )
     
         # exit if user did not select 'yes'
@@ -136,6 +162,11 @@ if args.uninstall:
 if comcfg["binary"] != "g++":
     print("\nWarning: Selected compiler is non-default!")
     print("Warning: Expected g++, this may cause problems.")
+    
+# warn about problems this flag may cause
+if args.force:
+    print("\nWarning: Using the `--force` flag!")
+    print("Warning: Future errors will be ignored.")
 
 # if no compiler avaible exit with error
 if not test_for_command( comcfg["binary"] + syscfg["exe"] ):
@@ -149,6 +180,18 @@ if not test_for_command( comcfg["binary"] + syscfg["exe"] ):
     print(" * Try selecting different compiler using the '--compiler' flag")
     exit()
     
+# define exit code checking function
+def check_exit_code( code ):
+    if code != 0 and not comcfg["ignore_exit_code"]:
+        if not args.force:
+            print( "\nError: Task returned non-zero exit code!" )
+            print( " * Try running with `--force` to supress this error" )
+            print( " * Try reporting this to project maintainers" )
+            exit()
+        else:
+            print( "\nWarning: Task returned non-zero exit code!" )
+            print( " * Try reporting this to project maintainers" )
+    
 # define function used to invoke compiler
 def compile( path, cargs = "" ):
     path = localize_path( path )
@@ -159,7 +202,7 @@ def compile( path, cargs = "" ):
     command = command.replace( "$args", cargs )
     
     print( "Compiling '." + syscfg["sep"] + path + "' => '" + tmp_path + syscfg["sep"] + target + "'" )
-    os.system( command ) 
+    check_exit_code( run_command( command ) )
 
 # define function used to invoke linker
 def link( target, paths, largs = "" ):
@@ -175,7 +218,7 @@ def link( target, paths, largs = "" ):
     command = command.replace( "$args", largs )
     
     print( "Linking '" + target + "'" )
-    os.system( command ) 
+    check_exit_code( run_command( command ) )
 
 # build API unit tests
 if args.test:
@@ -187,7 +230,7 @@ if args.test:
         os.mkdir( tmp_path + "/src" ) 
         os.mkdir( tmp_path + "/src/api" ) 
     except:
-        print( "\nFailed to prepare directory structure!" )
+        print( "\nError: Failed to prepare directory structure!" )
         print( " * Try checking installer permissions" )
         exit()
 
@@ -215,16 +258,13 @@ if args.test:
 # warn about target directory
 print( "\nSequensa will be installed in: " + syscfg["path"] )
 
-if not args.force:
+if not args.silent:
     print( "If that dir already exists it will be deleted, do you wish to continue? y/n" )
 
     # exit if user did not select 'yes'
     if input() != "y":
         print( "\nInstalation aborted!" )
         exit()
-
-# print build status
-print( "\nBuilding Targets..." )
 
 # delete directries
 rem_dir( syscfg["path"] )
@@ -248,9 +288,12 @@ try:
     os.mkdir( tmp_path + "/src/std" )
     os.mkdir( tmp_path + "/src/api" ) 
 except:
-    print( "\nFailed to prepare directory structure!" )
+    print( "\nError: Failed to prepare directory structure!" )
     print( " * Try checking installer permissions" )
     exit()
+    
+# print build status
+print( "\nBuilding Targets..." )
 
 # compile all Sequensa files
 fPIC = comcfg["shared"]["compiler"]
@@ -260,6 +303,9 @@ compile( "src/help.cpp" )
 compile( "src/build.cpp" )
 compile( "src/run.cpp" )
 compile( "src/utils.cpp" )
+compile( "src/info.cpp" )
+compile( "src/decompile.cpp" )
+compile( "src/shell.cpp" )
 compile( "src/lib/whereami.cpp" )
 compile( "src/std/stdio.cpp", fPIC )
 compile( "src/std/math.cpp", fPIC )
@@ -275,7 +321,7 @@ print( "\nLinking Targets..." )
 
 # link targets
 shared = comcfg["shared"]["linker"]
-link( syscfg["path"] + "/sequensa" + syscfg["exe"], ["/src/api/seqapi.o", "/src/lib/whereami.o", "/src/main.o", "/src/help.o", "/src/build.o", "/src/run.o", "/src/utils.o"] )
+link( syscfg["path"] + "/sequensa" + syscfg["exe"], ["/src/api/seqapi.o", "/src/lib/whereami.o", "/src/main.o", "/src/help.o", "/src/build.o", "/src/run.o", "/src/utils.o", "/src/info.o", "/src/decompile.o", "/src/shell.o"] )
 link( syscfg["path"] + "/lib/stdio/native" + syscfg["lib"], ["/src/api/seqapi.o", "/src/std/stdio.o"], shared )
 link( syscfg["path"] + "/lib/math/native" + syscfg["lib"], ["/src/api/seqapi.o", "/src/std/math.o"], shared )
 link( syscfg["path"] + "/lib/meta/native" + syscfg["lib"], ["/src/api/seqapi.o", "/src/std/meta.o"], shared )
@@ -309,8 +355,4 @@ if not args.Xalias:
 
 # print done and exit
 print( "\nSequensa installation complete!" )
-
-
-
-
 

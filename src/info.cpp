@@ -26,7 +26,7 @@
 #include "api/SeqAPI.hpp"
 #include "modules.hpp"
 
-void run( std::string input, Options opt ) {
+void info( std::string input, Options opt ) {
 
 	std::ifstream infile( input, std::ios::binary );
 	if( infile.good() ) {
@@ -37,78 +37,41 @@ void run( std::string input, Options opt ) {
 		seq::FileHeader header;
 
 		if( !load_header( &header, br ) ) return;
-		if( !validate_version( header, opt.force_execution, opt.verbose ) ) return;
-
-		seq::ByteBuffer bytecode = br.getSubBuffer();
-
-		// load string table if one is present
-		seq::StringTable table = header.getValueTable("str");
-		if( table.size() > 0 ) {
-			bytecode.setStringTable( &table );
-		}
 
 		try{
 
-			seq::Executor exe;
+			seq::StringTable natives = header.getValueTable("load");
+			seq::StringTable strings = header.getValueTable("str");
+			const time_t rawtime = std::stol( header.getValue("time") );
+			const seq::byte major = SEQ_API_VERSION_MAJOR;
+			const seq::byte minor = SEQ_API_VERSION_MINOR;
 
-			if( !load_native_libs( exe, header, opt.verbose ) ) {
-				std::cout << "Failed to create virtual environment, start aborted!" << std::endl;
-				return;
-			}
+			std::cout << "Compiled for: " << header.getVersionString() << " " << header.getValue("std") << (header.checkVersion(major, minor) ? "" : " (unaligned)") << std::endl;
+			std::cout << "Natives: " << seq::util::tableToString(natives, ", ") << std::endl;
+			std::cout << "Size: " << buffer.size() << " bytes (without header: " << br.getSubBuffer().size() << " bytes)" << std::endl;
+			std::cout << "Build on: " << header.getValue("sys") << ", at: " << posix_time_to_date(rawtime) << std::endl;
+			std::cout << "Uses string table: " << (strings.size() != 0 ? "yes" : "no") << std::endl;
 
-			exe.setStrictMath( opt.strict_math );
-			exe.execute( bytecode );
-
-			if( opt.print_exit ) {
-				for( auto& res : exe.getResults() ) {
-					std::cout << seq::util::stringCast( res ).String().getString() << " ";
-				}
-
-				std::cout << std::endl;
-			}else{
-				if( exe.getResults().size() > 0 ) {
-					std::cout << exe.getResultString() << std::endl;
-				}
-			}
-
-
-		}catch( seq::RuntimeError& err ) {
-
-			std::cout << "Runtime error!" << std::endl;
-			std::cout << err.what() << (opt.verbose ? " (" + input + ")" : "") << std::endl;
-			return;
-
-		}catch( seq::InternalError& err ) {
-
-			std::cout << "Internal error!" << std::endl;
-			std::cout << err.what() << (opt.verbose ? " (" + input + ")" : "") << std::endl;
-			return;
-
+		}catch(...){
+			std::cout << "Failed to create summary, error occurred!" << std::endl;
+			std::cout << "This file may be corrupted!" << std::endl;
 		}
 
-	}else{
-
-		std::cout << "No such file '" << input << "' found!" << std::endl;
-		return;
-
-	}
-
-	unload_native_libs();
-	infile.close();
-
-}
-
-void run( ArgParse& argp, Options opt ) {
-
-	auto vars = argp.getArgs("--run", "-r");
-
-	if( vars.size() == 1 ) {
-		run( vars.at(0), opt );
-	}else{
-		USAGE_HELP("Expected one filename!", "run");
 	}
 
 }
 
-#undef TRY_LOADING
+void info( ArgParse& argp, Options opt ) {
+
+	auto file = argp.getArgs("--info", "-i");
+
+	if( file.size() == 1 ) {
+
+		info( file[0], opt );
+
+	}else{
+		USAGE_HELP("Expected one filename!", "info");
+	}
+
+}
 

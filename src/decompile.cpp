@@ -26,7 +26,19 @@
 #include "api/SeqAPI.hpp"
 #include "modules.hpp"
 
-void run( std::string input, Options opt ) {
+std::string get_loads( seq::FileHeader& header ) {
+	std::string str;
+
+	for( std::string& load : header.getValueTable("load") ) {
+		str += "load \"";
+		str += load;
+		str += "\"\n";
+	}
+
+	return str + "\n";
+}
+
+std::string decompile( std::string input, Options opt ) {
 
 	std::ifstream infile( input, std::ios::binary );
 	if( infile.good() ) {
@@ -36,8 +48,8 @@ void run( std::string input, Options opt ) {
 		seq::BufferReader br = bb.getReader();
 		seq::FileHeader header;
 
-		if( !load_header( &header, br ) ) return;
-		if( !validate_version( header, opt.force_execution, opt.verbose ) ) return;
+		if( !load_header( &header, br ) ) throw 0;
+		if( !validate_version( header, opt.force_execution, opt.verbose ) ) throw 0;
 
 		seq::ByteBuffer bytecode = br.getSubBuffer();
 
@@ -47,68 +59,59 @@ void run( std::string input, Options opt ) {
 			bytecode.setStringTable( &table );
 		}
 
-		try{
+		seq::SourceDecompiler decompiler;
+		seq::BufferReader bytecodeReader = bytecode.getReader();
 
-			seq::Executor exe;
+		time_t rawtime;
+		time (&rawtime);
 
-			if( !load_native_libs( exe, header, opt.verbose ) ) {
-				std::cout << "Failed to create virtual environment, start aborted!" << std::endl;
-				return;
-			}
+		std::string str;
+		str.append( "// Decompiled using Sequensa Source Decompiler \n" );
+		str.append( "// " );
+		str.append( posix_time_to_date(rawtime) );
+		str.append( "\n\n" );
+		str.append( get_loads( header ) );
+		str.append( decompiler.decompile( bytecodeReader ) );
 
-			exe.setStrictMath( opt.strict_math );
-			exe.execute( bytecode );
+		infile.close();
+		return std::move(str);
 
-			if( opt.print_exit ) {
-				for( auto& res : exe.getResults() ) {
-					std::cout << seq::util::stringCast( res ).String().getString() << " ";
-				}
+	}else{
+		std::cout << "Failed to open input file!" << std::endl;
+	}
 
-				std::cout << std::endl;
+	infile.close();
+	throw 0;
+
+}
+
+void decompile( ArgParse& argp, Options opt ) {
+
+	auto file = argp.getArgs("--decompile", "-d");
+
+	try{
+
+		if( file.size() == 1 ) {
+
+			std::cout << decompile( file[0], opt );
+
+		}else if( file.size() == 2 ){
+
+			std::ofstream outfile( file[1], std::ios::out );
+			if( outfile.good() ) {
+
+				outfile << decompile( file[0], opt );
+
 			}else{
-				if( exe.getResults().size() > 0 ) {
-					std::cout << exe.getResultString() << std::endl;
-				}
+				std::cout << "Failed to open output file!" << std::endl;
 			}
 
-
-		}catch( seq::RuntimeError& err ) {
-
-			std::cout << "Runtime error!" << std::endl;
-			std::cout << err.what() << (opt.verbose ? " (" + input + ")" : "") << std::endl;
-			return;
-
-		}catch( seq::InternalError& err ) {
-
-			std::cout << "Internal error!" << std::endl;
-			std::cout << err.what() << (opt.verbose ? " (" + input + ")" : "") << std::endl;
-			return;
-
+		}else{
+			USAGE_HELP("Expected one or two filenames!", "decompile");
 		}
 
-	}else{
-
-		std::cout << "No such file '" << input << "' found!" << std::endl;
-		return;
-
-	}
-
-	unload_native_libs();
-	infile.close();
-
-}
-
-void run( ArgParse& argp, Options opt ) {
-
-	auto vars = argp.getArgs("--run", "-r");
-
-	if( vars.size() == 1 ) {
-		run( vars.at(0), opt );
-	}else{
-		USAGE_HELP("Expected one filename!", "run");
+	}catch(...) {
+		// ignore
 	}
 
 }
-
-#undef TRY_LOADING
-

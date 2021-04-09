@@ -2,7 +2,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2020 magistermaks
+ * Copyright (c) 2020, 2021 magistermaks
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,7 +36,7 @@ seq::Stream seq_std_eval( seq::Stream& input ) {
 		try{
 
 			std::string code = seq::util::stringCast(arg).String().getString();
-			auto buf = seq::Compiler::compile( code );
+			auto buf = seq::Compiler::compileStatic( code );
 			seq::ByteBuffer bb( buf.data(), buf.size() );
 
 			seq::Executor exe;
@@ -61,7 +61,7 @@ seq::Stream seq_std_mixin( seq::Stream& input ) {
 		try{
 
 			std::string code = seq::util::stringCast(arg).String().getString();
-			auto buf = seq::Compiler::compile( code );
+			auto buf = seq::Compiler::compileStatic( code );
 			seq::ByteBuffer bb( buf.data(), buf.size() );
 
 			seq::Executor exe(executor);

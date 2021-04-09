@@ -1,8 +1,10 @@
 
+#include <iostream>
+
 /*
  * MIT License
  *
- * Copyright (c) 2020 magistermaks
+ * Copyright (c) 2020, 2021 magistermaks
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,30 +38,63 @@
  * 		For more informations about Sequensa Language itself see:
  * 		http://darktree.net/projects/sequensa/
  *
+ * 		Sections:
+ * 			1. Compiling and executing
+ * 			2. Execution arguments
+ * 			3. Injecting (and removing) functions (and variables) to/from Sequensa
+ * 			4. Obtaining results
+ * 			5. Using Sequensa streams and data types
+ * 			6. Exceptions and their meaning
+ * 			7. Compiler error handle
+ * 			8. Optimization
+ * 			9. Decompiler
+ * 			10. Preprocessor
+ *
  * 1. Compiling and executing
  *
- *		seq::Compiler::compile( std::string code, std::vector<std::string>* headerData = nullptr )
- *		The seq::Compiler::compile function can be used to generate executable Sequesa binary buffer.
- *		If provided with the `headerData` pointer it will store an array of found dependence names in it.
- * 		The returned buffer is of type `std::vector<seq::byte> `
+ *		seq::Compiler::compileStatic( std::string code, seq::StringTable* headerData = nullptr, oflag_t oflag = 0 )
+ *		The seq::Compiler::compileStatic method can be used to generate executable Sequesa binary buffer.
+ *		If provided with the `headerData` pointer it will store an array of found dependences names in it.
+ * 		The returned buffer is of type `std::vector<seq::byte>`
  *
  * 		To execute returned buffer it first must be encased in ByteBuffer object, the first expected constructor
  * 		argument is the pointer to the buffer, and the second one is the buffer size:
  * 		seq::ByteBuffer bb( buf.data(), buf.size() )
- * 		where `buf` is the std::vector returned by seq::Copiler::compile.
+ * 		where `buf` is the std::vector returned by seq::Compiler::compileStatic.
  *
- * 		Then the ByteBuffer can be passed to the seq::Executor's execute method:
+ * 		Then the ByteBuffer can be passed to the seq::Executor's execute method.
  * 		Full example:
  *
  * 			// Compile the code and save bytecode in the ByteBuffer
- * 			auto buf = seq::Compiler::compile( code_to_excecute );
+ * 			auto buf = seq::Compiler::compileStatic( code_to_excecute );
  * 			seq::ByteBuffer bb( buf.data(), buf.size() );
  *
  * 			// Execute the bytecode
  * 			seq::Executor exe;
  * 			exe.execute( bb );
  *
- * 2. Execution argument(s)
+ * 		To gain access to more advanced compiler settings a `Compiler` object must be created first,
+ * 		then specific options can be set using the provided methods. The bytecode can be obtained
+ * 		from this compiler using the `compile( std::string code )` method.
+ *
+ * 			// Create the Compiler object
+ * 			seq::Compiler compiler;
+ *
+ * 			// Extended compiler API
+ * 			compiler.setLoadTable( ... ); // Optional: an replacement for the second argument of `compileStatic()`.
+ * 			compiler.setNameTable( ... ); // Optional: sets the name table, more on that in section 8.
+ * 			compiler.setErrorHandle( ... ); // Optional: sets error handle, more on that in section 7.
+ * 			compiler.setOptimizationFlags( ... ); // Optional: sets optimizations flags, more on that in section 8.
+ *
+ * 			// Compile the program using the created compiler
+ * 			auto buf = compiler.compile( code_to_excecute );
+ * 			seq::ByteBuffer bb( buf.data(), buf.size() );
+ *
+ * 			// Execute the bytecode
+ * 			seq::Executor exe;
+ * 			exe.execute( bb );
+ *
+ * 2. Execution arguments
  *
  *		The seq::Excecutor's execute method can also accept additional argument 'args'
  *		which contains the stream of top-level arguments (using more than one argument is
@@ -106,7 +141,8 @@
  * 		directly as C++ string.
  *
  * 		Note: `exe.getResult()` returns first element of the result stream (according to
- * 		Sequensa Language Specification this is the program's exit code)
+ * 		Sequensa Language Specification this is the program's exit code) if the exit stream is
+ * 		empty this method will return a stream with a single null value.
  *
  * 5. Using Sequensa streams and data types
  *
@@ -118,7 +154,7 @@
  * 			// use this to get the Generic's type
  * 			seq::DataType type = val.getDataType();
  *
- * 			// If you know the type of the value you can access it
+ * 			// If you know the type of the value you can access it,
  * 			// Never directly access generics without checking the type - that would cause an
  * 			// undefined behavior and most probably crash your program.
  * 			if( type == seq::DataType::Number ) {
@@ -150,10 +186,13 @@
  *
  * 7. Compiler error handle
  *
- *		its a function executed when compiler encounters a error, it can be registered as follows:
- *		Warning: This is a global state!
+ *		Error handle its a function invoked when compiler encounters a error, to change the default one
+ *		(which simply throws the given error) you need to create the `Compiler` object and set it using the
+ *		`setErrorHandle` method.
  *
- *			seq::Compiler::setErrorHandle( [] (seq::CompilerError err) {
+ *			seq::Compiler compiler;
+ *
+ *			compiler.setErrorHandle( [] (seq::CompilerError err) {
  *
  *				// your code to handle the exception, e.g. print it to console
  *
@@ -168,26 +207,82 @@
  *		and should be discarded.
  *
  *		The default error handler can be restored using:
- *			seq::Compiler::setErrorHandle( seq::Compiler::defaultErrorHandle );
+ *			compiler.setErrorHandle( seq::Compiler::defaultErrorHandle );
  *
- * 8. Sequensa API meta-data
+ * 8. Optimization
  *
- * 		All metadata can be found in the SEQ_API_* macros
+ * 		The Sequensa compiler will not try to optimize the bytecode by default, it needs to be
+ * 		explicitly told do do so using the compiler optimization flags. they can be supplied as a 3th
+ * 		argument to the `compileStatic` function or set using `setOptimizationFlags` on the compiler object.
  *
- *		SEQ_API_NAME - string - name of the API
- * 		SEQ_API_STANDARD - string - version of the Sequensa Standard implemented by the API
- * 		SEQ_API_VERSION_MAJOR - byte - Major component of the version number
- * 		SEQ_API_VERSION_MINOR - byte - Minor component of the version number
- * 		SEQ_API_VERSION_PATCH - byte - Patch component of the version number
+ * 		The following flags are available; they can be combined using the || operator.
  *
- * 9. Preprocessor
+ * 			Optimizations::None (default value)
+ * 				Disables all forms of compile-time optimization,
+ * 				this can result in slightly shorter compilation time
  *
- * 		All those preprocessor defines should be placed before `#include` of the API
+ * 			Optimizations::All
+ * 				Enables all forms of compile-time optimization,
+ * 				this may not always be the desired option
  *
- * 		#define SEQ_IMPLEMENT - to implement the Sequensa API
- * 		#define SEQ_EXCLUDE_COMPILER - to exclude compiler code from the API
- * 		#define SEQ_PUBLIC_EXECUTOR - make some seq::Executor methods public
+ * 			Optimizations::Name
+ * 				Enables string table, requires NameTable to
+ * 				be supplied to the compiler, or it will be ignored
  *
+ * 			Optimizations::PureExpr
+ * 				Optimizes expressions that only use pure values
+ * 				e.g. (2 / 3), (3.1415 * (3 - 1))
+ *
+ * 			Optimizations::StrPreGen
+ * 				Tries to pregenerate sorted name table, to possibly optimize index values,
+ * 				and utilize the tiny storage (first 16 names) to it's fullest extent.
+ *
+ * 		`Name` optimization requires the name table to be supplied:
+ *
+ * 			compiler.setNameTable( &stringTable );
+ *
+ * 		All strings will be then written to that table instead of the bytecode, this can reduce
+ * 		it's size and loading time. Warning: note that the name table MUST be then also supplied to the
+ * 		executor, using `executor.setNameTable` method!
+ *
+ * 		The Name optimization is unavailable for Compiler::compileStatic
+ *
+ * 9. Decompiler
+ *
+ * 		Sequensa API provides a simple to use decompiler class that allows to convert Sequensa Bytecode
+ * 		back to it's source code form. Note that this is not perfect as the source is extrapolated from the bytecode,
+ * 		but the produced source should compile to identical bytecode.
+ *
+ * 		Usage:
+ *
+ * 			// create new decompiler object
+ * 			seq::SourceDecompiler decomp;
+ *
+ * 			// Indent the generated code with two tabs (default value: single tab)
+ * 			decomp.setIndentation( "\t\t" );
+ *
+ * 			// decompile bytecode from buffer reader and print it
+ * 			std::cout << decomp.decompile( bufferReader );
+ *
+ * 		If you want to create your own Sequensa decompiler (or transcriber) extend the `seq::Decompiler` class,
+ * 		for reference look into the `seq::SourceDecompiler` class.
+ *
+ * 10. Preprocessor
+ *
+ * 		All metadata provided by the API can be found in the SEQ_API_* macros:
+ *
+ *			SEQ_API_NAME - string - name of the API
+ * 			SEQ_API_STANDARD - string - version of the Sequensa Standard implemented by the API
+ * 			SEQ_API_VERSION_MAJOR - byte - Major component of the version number
+ * 			SEQ_API_VERSION_MINOR - byte - Minor component of the version number
+ * 			SEQ_API_VERSION_PATCH - byte - Patch component of the version number
+ *
+ *		Following preprocessor statements can be used to changed some aspects of the API at compile time.
+ *		Warning: They must be placed BEFORE the inclusion of the API.
+ *
+ *			#define SEQ_IMPLEMENT - To implement the Sequensa API
+ * 			#define SEQ_EXCLUDE_COMPILER - To exclude compiler code from the API
+ * 			#define SEQ_EXCLUDE_DECOMPILER - To exclude decompiler code from the API
  */
 
 #pragma once
@@ -204,14 +299,14 @@
 
 // public metadata
 #define SEQ_API_NAME "SeqAPI"
-#define SEQ_API_STANDARD "2020-12-28"
-#define SEQ_API_VERSION_MAJOR 1
-#define SEQ_API_VERSION_MINOR 7
-#define SEQ_API_VERSION_PATCH 11
+#define SEQ_API_STANDARD "2021-04-08"
+#define SEQ_API_VERSION_MAJOR 2
+#define SEQ_API_VERSION_MINOR 0
+#define SEQ_API_VERSION_PATCH 0
 
 // enum ranges
 #define SEQ_MIN_OPCODE 1
-#define SEQ_MAX_OPCODE 16
+#define SEQ_MAX_OPCODE 17
 #define SEQ_MIN_DATA_TYPE 1
 #define SEQ_MAX_DATA_TYPE 13
 #define SEQ_MIN_CALL_TYPE 1
@@ -224,20 +319,13 @@
 #define SEQ_TAG_LAST 2
 #define SEQ_TAG_END 4
 
-#ifdef SEQ_PUBLIC_EXECUTOR
-#	define EXECUTOR_ACCESS public
-#else
-#	define EXECUTOR_ACCESS private
-#endif
-
 namespace seq {
 
 	/// define "byte" (unsigned char)
 	typedef unsigned char byte;
 
-}
-
-namespace seq {
+	// define StringTable, used for passing string arrays
+	typedef std::vector<std::string> StringTable;
 
 	/// forward definition of all sequensa API classes
 	class FileHeader;
@@ -257,17 +345,18 @@ namespace seq {
 		NIL = 3,  // NIL ;
 		NUM = 4,  // NUM [HEAD] [TAIL...] ;
 		INT = 5,  // INT [BYTE] ;
-		STR = 6,  // STR [UTF8...] [NULL] ;
+		STR = 6,  // STR [UTF8...] ;
 		TYP = 7,  // TYP [TYPE] ;
 		VMC = 8,  // VMC [TYPE] ;
 		ARG = 9,  // ARG [SIZE] ;
 		FUN = 10, // FUN [HEAD] [TAIL...] [BODY...] ;
 		EXP = 11, // EXP [TYPE] [HEAD] [TAIL...] [L...] [R...] ;
-		VAR = 12, // VAR [ASCI...] [NULL] ;
-		DEF = 13, // DEF [ASCI...] [NULL] ;
+		VAR = 12, // VAR [ASCI...] ;
+		DEF = 13, // DEF [ASCI...] ;
 		FLC = 14, // FLC [SIZE] [[SIZE] [BODY...]...] ;
 		SSL = 15, // SSL [TAGS] [HEAD] [TAIL...] [BODY...] ;
-		FNE = 16  // FNE [HEAD] [TAIL...] [BODY...] ;
+		FNE = 16, // FNE [HEAD] [TAIL...] [BODY...] ;
+		TEX = 17  // TEX [TYPE] [BYTE] [L...] [R...] ;
 	};
 
 	/// Sequensa data types
@@ -280,7 +369,7 @@ namespace seq {
 		VMCall = 6, // maps to: VMC
 		Arg    = 7, // maps to: ARG
 		Func   = 8, // maps to: FUN FNE
-		Expr   = 9, // maps to: EXP
+		Expr   = 9, // maps to: EXP TEX
 		Name  = 10, // maps to: VAR DEF
 		Flowc = 11, // maps to: FLC
 		Stream = 12,// maps to: SSL
@@ -368,6 +457,7 @@ namespace seq {
 				const long getLong();
 				const bool isNatural();
 				const Fraction getFraction();
+				static byte sizeOfSigned( unsigned long value );
 				static byte sizeOf( unsigned long value );
 
 			private:
@@ -483,7 +573,8 @@ namespace seq {
 				Stream( bool anchor, byte tags, BufferReader* reader );
 				Stream( const Stream& stream );
 				~Stream();
-				const bool machesTags( byte tags );
+				const bool matchesTags( byte tags );
+				const byte getTags();
 				BufferReader& getReader();
 
 			private:
@@ -577,6 +668,9 @@ namespace seq {
 		seq::Generic newStream( byte tags, BufferReader* reader, bool anchor = false ) noexcept;
 		seq::Generic newNull( bool anchor = false ) noexcept;
 
+		int insertUnique( StringTable* table, std::string entry );
+		std::string tableToString( StringTable& table, std::string separator = " " );
+
 	}
 
 	/// define shorthand for stream
@@ -621,12 +715,14 @@ namespace seq {
 
 		private:
 			std::string error;
-			bool critical;
+			byte level;
 
 		public:
-			explicit CompilerError ( const bool critical, const std::string& unexpected, const std::string& expected, const std::string& structure, int line );
+			explicit CompilerError ( const byte level, const std::string& unexpected, const std::string& expected, const std::string& structure, int line );
 			virtual const char* what() const throw();
 			bool isCritical();
+			bool isError();
+			bool isWarning();
 	};
 
 	class FileHeader {
@@ -644,6 +740,7 @@ namespace seq {
 			int getVersionPatch();
 			std::string getVersionString();
 			std::map<std::string, std::string> getValueMap();
+			StringTable getValueTable( const char* key );
 
 			FileHeader& operator= ( const FileHeader& header );
 			FileHeader& operator= ( FileHeader&& header ) noexcept;
@@ -659,7 +756,7 @@ namespace seq {
 	class TokenReader {
 
 		public:
-			TokenReader( BufferReader& reader );
+			TokenReader( BufferReader& reader, bool useStringTable );
 			DataType getDataType();
 			bool isAnchored();
 			seq::Generic& getGeneric();
@@ -667,7 +764,8 @@ namespace seq {
 		private:
 			BufferReader& reader;
 			byte header;
-			bool anchor;
+			bool anchor: 4;
+			bool strings: 4;
 			DataType type;
 			seq::Generic generic;
 
@@ -692,37 +790,45 @@ namespace seq {
 			ByteBuffer( byte* buffer, long length );
 			BufferReader getReader();
 			BufferReader getReader( long first, long last );
+			void setStringTable( StringTable* table );
+			StringTable* getStringTable();
+			long size();
 
 		private:
 			byte* pointer;
 			long length;
+			StringTable* table;
 	};
 
 	class BufferReader {
 
 		public:
-			BufferReader( byte* buffer, long first, long last );
+			BufferReader( byte* buffer, long first, long last, StringTable* table = nullptr );
 			const byte nextByte() noexcept;
 			const byte peekByte() noexcept;
 			const bool hasNext() noexcept;
 			TokenReader next() noexcept;
 			BufferReader* nextBlock( long length );
-			long nextInt();
 			FileHeader getHeader();
 			Stream readAll();
 			ByteBuffer getSubBuffer();
+			StringTable* getTable();
+
+			void nextString( std::string* str );
+			unsigned long nextUnsigned();
 
 		private:
 			long first;
 			long last;
 			long position;
 			byte* pointer;
+			StringTable* table;
 	};
 
 	class BufferWriter {
 
 		public:
-			BufferWriter( std::vector<byte>& buffer );
+			BufferWriter( std::vector<byte>& buffer, StringTable* table = nullptr );
 			void putNull( bool anchor );
 			void putBool( bool anchor, bool value );
 			void putNumber( bool anchor, Fraction f );
@@ -733,18 +839,26 @@ namespace seq {
 			void putName( bool anchor, bool define, const char* name );
 			void putFunc( bool anchor, std::vector<byte>& buffer, bool end );
 			void putExpr( bool anchor, ExprOperator op, std::vector<byte>& left, std::vector<byte>& right );
+			void putStaticAccess( bool anchor, const char* str, byte index );
 			void putFlowc( bool anchor, std::vector<std::vector<byte>>& buffers );
 			void putStream( bool anchor, byte tags, std::vector<byte>& buf );
 			void putFileHeader( byte seq_major, byte seq_minor, byte seq_patch, const std::map<std::string, std::string>& data );
 
-		public: // Use only if you REALLY know what are you doing!
+			// Currently it only supports pure types
+			void putGeneric( Generic& gereric );
+
+		public: // Only use if you know what are you doing!
 			void putByte( byte b );
 			void putString( const char* str );
 			void putOpcode( bool anchor, seq::Opcode code );
-			void putInteger( byte length, long value );
+			void putUnsigned( byte length, unsigned long value );
+			void putUnsigned( unsigned long value );
 			void putHead( byte left, byte right );
 			void putBuffer( std::vector<byte>& buffer );
+			void putArray( const byte* data, size_t size );
+
 			std::vector<byte>& buffer;
+			StringTable* table;
 	};
 
 	class StackLevel {
@@ -811,11 +925,11 @@ namespace seq {
 			seq::Generic getResult();
 			seq::Stream& getResults();
 			void setStrictMath( bool flag );
-			void execute( ByteBuffer bb, seq::Stream args = { seq::Generic( new type::Null( false ) ) } );
+			void execute( ByteBuffer bb, seq::Stream args = { seq::Generic( new type::Null( false ) ) }, bool stack = true );
 
-		EXECUTOR_ACCESS: // use these methods only if you know what you are doing //
+		public: // use these methods only if you know what you are doing
 			void exit( seq::Stream& stream, byte code );
-			Stream executeFunction( BufferReader br, Stream& stream, bool end );
+			Stream executeFunction( BufferReader br, Stream& stream, bool end, bool stack = true );
 			CommandResult executeCommand( TokenReader* br, byte tags );
 			CommandResult executeStream( Stream& stream );
 			CommandResult executeAnchor( Generic entity, Stream& input_stream );
@@ -826,6 +940,7 @@ namespace seq {
 			Stream executeFlowc( std::vector<FlowCondition*> fcs, Stream& input_stream );
 			Generic executeCast( Generic cast, Generic arg );
 			type::Native resolveNative( std::string& name );
+			std::unordered_map<std::string, type::Native>& getNativesMap();
 
 		private:
 			std::unordered_map<std::string, type::Native> natives;
@@ -836,85 +951,189 @@ namespace seq {
 	};
 
 #ifndef SEQ_EXCLUDE_COMPILER
-	namespace Compiler {
 
-		// define error handle signature
-		typedef void(*ErrorHandle)(seq::CompilerError);
+	// optimizations bitfield type
+	typedef unsigned int oflag_t;
 
-		class Token {
+	// read more about this enum in documentation at section 8.
+	enum struct Optimizations: oflag_t {
+		None = 0b0000,
+		All = 0b1111,
+		Name = 0b1000,
+		PureExpr = 0b0100,
+		StrPreGen = 0b0010
+	};
 
-			public:
-				enum class Category: byte {
-					Tag = 0,
-					Set = 1,
-					Load = 2,
-					Bool = 3,
-					Null = 4,
-					Type = 5,
-					Name = 6,
-					Number = 7,
-					Stream = 8,
-					Operator = 9,
-					String = 10,
-					FuncBracket = 11,
-					FlowBracket = 12,
-					MathBracket = 13,
-					Comma = 14,
-					Colon = 15,
-					Arg = 16,
-					VMCall = 17
-				};
+	class Compiler {
 
-				Token( unsigned int line, long data, bool anchor, Category category, std::string& raw, std::string& clean );
-				Token( const Token& token );
-				Token( Token&& token );
-				const unsigned int getLine();
-				const Category getCategory();
-				const std::string& getRaw();
-				const std::string& getClean();
-				const bool isPrimitive();
-				const long getData();
-				const bool getAnchor();
-				std::string toString();
+		public:
 
-			private:
-				const unsigned int line;
-				const long data;
-				const bool anchor;
-				const Category category;
-				const std::string raw;
-				const std::string clean;
+			// define error handle signature
+			typedef void(*ErrorHandle)(seq::CompilerError);
 
-		};
+			class Token {
 
-		std::vector<byte> compile( std::string code, std::vector<std::string>* headerData = nullptr );
+				public:
+					enum class Category: byte {
+						Tag = 0,
+						Set = 1,
+						Load = 2,
+						Bool = 3,
+						Null = 4,
+						Type = 5,
+						Name = 6,
+						Number = 7,
+						Stream = 8,
+						Operator = 9,
+						String = 10,
+						FuncBracket = 11,
+						FlowBracket = 12,
+						MathBracket = 13,
+						Comma = 14,
+						Colon = 15,
+						Arg = 16,
+						VMCall = 17
+					};
 
-		std::vector<Token> tokenize( std::string code );
-		Token construct( std::string raw, unsigned int line );
-		int findStreamEnd( std::vector<Token>& tokens, int start, int end );
-		int findOpening( std::vector<Token>& tokens, int index, Token::Category type );
-		int findClosing( std::vector<Token>& tokens, int index, Token::Category type );
+					Token( unsigned int line, long data, bool anchor, Category category, std::string& raw, std::string& clean );
+					Token( const Token& token );
+					Token( Token&& token );
+					const unsigned int getLine();
+					const Category getCategory();
+					const std::string& getRaw();
+					const std::string& getClean();
+					const bool isPrimitive();
+					const bool isPure();
+					const bool isNamed();
+					const long getData();
+					const bool getAnchor();
+					std::string toString();
 
-		std::vector<byte> assembleStream( std::vector<Token>& tokens, int start, int end, byte tags, bool embedded );
-		std::vector<byte> assemblePrimitive( Token );
-		std::vector<byte> assembleFlowc( std::vector<Token>& tokens, int start, int end, bool anchor );
-		std::vector<byte> assembleExpression( std::vector<Token>& tokens, int start, int end, bool anchor, bool top );
-		std::vector<byte> assembleFunction( std::vector<Token>& tokens, int start, int end, bool anchor );
-		int extractHeaderData( std::vector<Token>& tokens, std::vector<std::string>* arrayPtr );
+				private:
+					const unsigned int line;
+					const long data;
+					const bool anchor;
+					const Category category;
+					const std::string raw;
+					const std::string clean;
 
-		void defaultErrorHandle( CompilerError err );
-		void setErrorHandle( ErrorHandle handle );
+			};
 
-		namespace {
-#ifndef SEQ_IMPLEMENT
-			extern ErrorHandle fail;
-#else
-			ErrorHandle fail = defaultErrorHandle;
-#endif
-		}
+		private:
+			StringTable* names;
+			StringTable* loades;
+			ErrorHandle fail;
+			oflag_t flags;
+
+		public:
+			Compiler();
+
+			void setNameTable( StringTable* strings );
+			void setLoadTable( StringTable* strings );
+			void setErrorHandle( ErrorHandle handle );
+			void setOptimizationFlags( oflag_t flags );
+
+			std::vector<byte> compile( std::string code );
+			std::vector<Token> tokenize( std::string code );
+
+			static void defaultErrorHandle( CompilerError err );
+
+			// Legacy API
+			static std::vector<byte> compileStatic( std::string codec, StringTable* headerData = nullptr, oflag_t flags = (oflag_t) Optimizations::None );
+			static std::vector<Token> tokenizeStatic( std::string code );
+
+		private:
+			Token construct( std::string raw, unsigned int line );
+
+			int findStreamEnd( std::vector<Token>& tokens, int start, int end );
+			int findOpening( std::vector<Token>& tokens, int index, Token::Category type );
+			int findClosing( std::vector<Token>& tokens, int index, Token::Category type );
+
+			std::vector<byte> assembleStream( std::vector<Token>& tokens, int start, int end, byte tags, bool embedded );
+			std::vector<byte> assemblePrimitive( Token );
+			std::vector<byte> assembleFlowc( std::vector<Token>& tokens, int start, int end, bool anchor );
+			std::vector<byte> assembleExpression( std::vector<Token>& tokens, int start, int end, bool anchor, bool top, bool* pure = nullptr );
+			std::vector<byte> assembleFunction( std::vector<Token>& tokens, int start, int end, bool anchor, bool raw = false );
+
+			void optimizeIfApplicable( std::vector<Token>& tokens );
+			int extractHeaderData( std::vector<Token>& tokens, StringTable* arrayPtr );
+			StringTable* getTable();
 
 	};
+
 #endif // SEQ_EXCLUDE_COMPILER
+
+#ifndef SEQ_EXCLUDE_DECOMPILER
+
+	class Indentation {
+
+		public:
+			Indentation();
+			void push();
+			void pop();
+			void set(std::string& str, int base);
+			std::string get();
+
+		private:
+			std::string str;
+			int index;
+
+	};
+
+	class Decompiler {
+
+		public:
+			Decompiler();
+			virtual ~Decompiler() {};
+
+			void setIndentation(std::string str, int base = 0);
+			std::string decompile(BufferReader& reader);
+			std::string decompile(Generic& generic);
+			std::string decompile(seq::Stream& stream);
+
+		protected:
+			Indentation indentation;
+
+			virtual std::string writeBool( Generic& tr ) = 0;
+			virtual std::string writeNull( Generic& tr ) = 0;
+			virtual std::string writeNumber( Generic& tr ) = 0;
+			virtual std::string writeFunc( Generic& tr ) = 0;
+			virtual std::string writeFlowc( Generic& tr ) = 0;
+			virtual std::string writeExpr( Generic& tr ) = 0;
+			virtual std::string writeName( Generic& tr ) = 0;
+			virtual std::string writeString( Generic& tr ) = 0;
+			virtual std::string writeStream( Generic& tr ) = 0;
+			virtual std::string writeVMCall( Generic& tr ) = 0;
+			virtual std::string writeArg( Generic& tr ) = 0;
+			virtual std::string writeType( Generic& tr ) = 0;
+
+			virtual std::string writeInvalid( Generic& tr );
+
+	};
+
+	class SourceDecompiler: public Decompiler {
+
+		private:
+			std::string writeBool( Generic& g ) override;
+			std::string writeNull( Generic& g ) override;
+			std::string writeNumber( Generic& g ) override;
+			std::string writeFunc( Generic& g ) override;
+			std::string writeFlowc( Generic& g ) override;
+			std::string writeExpr( Generic& g ) override;
+			std::string writeName( Generic& g ) override;
+			std::string writeString( Generic& g ) override;
+			std::string writeStream( Generic& g ) override;
+			std::string writeVMCall( Generic& g ) override;
+			std::string writeArg( Generic& g ) override;
+			std::string writeType( Generic& g ) override;
+
+			std::string anchor( Generic& g );
+			std::string condition( FlowCondition* c );
+			std::string exprop( ExprOperator op );
+
+	};
+
+#endif // SEQ_EXCLUDE_DECOMPILER
 
 }
 
@@ -1130,7 +1349,31 @@ seq::Generic seq::util::newNull( bool anchor ) noexcept {
 	return seq::Generic( new seq::type::Null( anchor ) );
 }
 
-seq::BufferWriter::BufferWriter( std::vector<byte>& _buffer ): buffer( _buffer ) {}
+int seq::util::insertUnique( seq::StringTable* table, std::string entry ) {
+	auto it = std::find(table->begin(), table->end(), entry);
+	int index = std::distance(table->begin(), it);
+
+	if( it == table->end() ) {
+		table->push_back( entry );
+	}
+
+	return index;
+}
+
+std::string seq::util::tableToString( StringTable& table, std::string separator ) {
+	std::string str;
+
+	for( std::string& entry : table ) {
+		str += entry;
+		str += separator;
+	}
+
+	str.erase( str.size() - separator.size() );
+
+	return str;
+}
+
+seq::BufferWriter::BufferWriter( std::vector<byte>& buffer, StringTable* table ): buffer( buffer ), table( table ) {}
 
 void seq::BufferWriter::putByte( byte b ) {
 	this->buffer.push_back( b );
@@ -1141,11 +1384,25 @@ void seq::BufferWriter::putOpcode( bool anchor, seq::Opcode code ) {
 }
 
 void seq::BufferWriter::putString( const char* str ) {
-	for ( long i = 0; str[i]; i ++ ) this->putByte( str[i] );
-	this->putByte( 0 );
+	if( table == nullptr ) {
+		for ( long i = 0; str[i]; i ++ ) this->putByte( str[i] );
+		this->putByte( 0 );
+	}else{
+		putUnsigned( util::insertUnique(table, str) );
+	}
 }
 
-void seq::BufferWriter::putInteger( byte length, long value ) {
+void seq::BufferWriter::putUnsigned( unsigned long value ) {
+	if( value < 0b1111 ) {
+		this->putHead( 0, value );
+	}else{
+		byte size = seq::type::Number::sizeOf(value);
+		this->putHead( size, 0 );
+		this->putUnsigned( size, value );
+	}
+}
+
+void seq::BufferWriter::putUnsigned( byte length, unsigned long value ) {
 	for( ; length != 0; length -- ) {
 		this->putByte( (byte) ( value & 0xFFl ) );
 		value = ( value >> 8 );
@@ -1158,6 +1415,10 @@ void seq::BufferWriter::putHead( byte left, byte right ) {
 
 void seq::BufferWriter::putBuffer( std::vector<byte>& buf ) {
 	this->buffer.insert(this->buffer.end(), buf.begin(), buf.end());
+}
+
+void seq::BufferWriter::putArray( const byte* data, size_t size ) {
+	for( size_t i = 0; i < size; i ++ ) this->putByte( *(i + data) );
 }
 
 void seq::BufferWriter::putNull( bool anchor ) {
@@ -1180,8 +1441,8 @@ void seq::BufferWriter::putNumber( bool anchor, seq::Fraction f ) {
 		byte a = seq::type::Number::sizeOf( n << 1 );
 		byte b = seq::type::Number::sizeOf( f.denominator );
 		this->putHead( a, b );
-		this->putInteger( a, sign ? n | (1 << (a * 8 - 1)) : n );
-		this->putInteger( b, f.denominator );
+		this->putUnsigned( a, sign ? n | (1 << (a * 8 - 1)) : n );
+		this->putUnsigned( b, f.denominator );
 	}
 }
 
@@ -1212,23 +1473,29 @@ void seq::BufferWriter::putName( bool anchor, bool define, const char* name ) {
 
 void seq::BufferWriter::putFunc( bool anchor, std::vector<byte>& buf, bool end ) {
 	this->putOpcode( anchor, (end ? seq::Opcode::FNE : seq::Opcode::FUN) );
-	long buffer_size = buf.size();
-	byte h = seq::type::Number::sizeOf( buffer_size );
-	this->putHead( h, 0 );
-	this->putInteger( h, buffer_size );
+	this->putUnsigned( buf.size() );
 	this->putBuffer( buf );
 }
 
 void seq::BufferWriter::putExpr( bool anchor, seq::ExprOperator op, std::vector<byte>& left, std::vector<byte>& right ) {
-	this->putOpcode( anchor, seq::Opcode::EXP );
+	size_t left_size = left.size();
+	size_t right_size = right.size();
+
+	bool tiny = ( left_size < 16 && right_size < 16 );
+
+	this->putOpcode( anchor, tiny ? seq::Opcode::TEX : seq::Opcode::EXP );
 	this->putByte( (byte) op );
-	long left_size = left.size();
-	long right_size = right.size();
-	byte a = seq::type::Number::sizeOf( left_size );
-	byte b = seq::type::Number::sizeOf( right_size );
-	this->putHead( a, b );
-	this->putInteger( a, left_size );
-	this->putInteger( b, right_size );
+
+	if( tiny ) {
+		this->putByte( (left_size << 4) | right_size );
+	}else{
+		byte a = seq::type::Number::sizeOf( left_size );
+		byte b = seq::type::Number::sizeOf( right_size );
+		this->putHead( a, b );
+		this->putUnsigned( a, left_size );
+		this->putUnsigned( b, right_size );
+	}
+
 	this->putBuffer( left );
 	this->putBuffer( right );
 }
@@ -1237,10 +1504,7 @@ void seq::BufferWriter::putFlowc( bool anchor, std::vector<std::vector<byte>>& b
 	this->putOpcode( anchor, seq::Opcode::FLC );
 	this->putByte( (byte) buffers.size() );
 	for( auto& buf : buffers ) {
-		long buffer_size = buf.size();
-		byte h = seq::type::Number::sizeOf( buffer_size );
-		this->putHead( h, 0 );
-		this->putInteger( h, buffer_size );
+		this->putUnsigned( buf.size() );
 		this->putBuffer( buf );
 	}
 }
@@ -1248,10 +1512,7 @@ void seq::BufferWriter::putFlowc( bool anchor, std::vector<std::vector<byte>>& b
 void seq::BufferWriter::putStream( bool anchor, byte tags, std::vector<byte>& buf ) {
 	this->putOpcode( anchor, seq::Opcode::SSL );
 	this->putByte( tags );
-	long buffer_size = buf.size();
-	byte h = seq::type::Number::sizeOf( buffer_size );
-	this->putHead( h, 0 );
-	this->putInteger( h, buffer_size );
+	this->putUnsigned( buf.size() );
 	this->putBuffer( buf );
 }
 
@@ -1264,19 +1525,46 @@ void seq::BufferWriter::putFileHeader( byte seq_major, byte seq_minor, byte seq_
 	this->putByte( seq_minor );
 	this->putByte( seq_patch );
 
-	std::string data_string;
+	size_t size = data.size();
+
+	if( size > 0xFF ) {
+		throw seq::InternalError( "Header data section too long to encode!" );
+	}
+
+	this->putByte( (byte) size );
+
 	for( const auto& x : data ) {
-		data_string.append( x.first );
-		data_string.push_back( 0 );
-		data_string.append( x.second );
-		data_string.push_back( 0 );
+		size = x.first.size();
+
+		if( size > 0xFF ) {
+			throw seq::InternalError( "The maximum length of data key exceed!" );
+		}
+
+		this->putByte( (byte) size );
+		this->putArray( (const byte*) x.first.data(), size );
+
+		size = x.second.size();
+
+		this->putUnsigned( size );
+		this->putArray( (const byte*) x.second.data(), size );
 	}
 
-	this->putInteger( 4, data_string.size() );
+}
 
-	for( const byte& b : data_string ) {
-		this->putByte( b );
+void seq::BufferWriter::putGeneric( seq::Generic& generic ) {
+
+	bool anchor = generic.getAnchor();
+
+	switch( generic.getDataType() ) {
+		case seq::DataType::Bool: putBool(anchor, generic.Bool().getBool()); break;
+		case seq::DataType::Number: putNumber(anchor, generic.Number().getFraction()); break;
+		case seq::DataType::String: putString(anchor, generic.String().getString().c_str()); break;
+		case seq::DataType::Null: putNull(anchor); break;
+		case seq::DataType::Type: putType(anchor, generic.Type().getDataType()); break;
+
+		default: throw seq::InternalError("Encoding of non-pure generics is not supported!");
 	}
+
 }
 
 seq::FileHeader::FileHeader(): seq_major( 0 ), seq_minor( 0 ), seq_patch( 0 ), properties( {} ) {};
@@ -1327,6 +1615,21 @@ std::string seq::FileHeader::getVersionString() {
 
 std::map<std::string, std::string> seq::FileHeader::getValueMap() {
 	return this->properties;
+}
+
+seq::StringTable seq::FileHeader::getValueTable( const char* key ) {
+	try{
+		std::string entry = this->properties.at(key), str = "";
+		StringTable table;
+
+		for( byte b : entry ) {
+			if(b) str.push_back(b); else { table.push_back(str); str.clear(); }
+		}
+
+		return std::move(table);
+	}catch(std::out_of_range& err) {
+		return {};
+	}
 }
 
 seq::FileHeader& seq::FileHeader::operator= ( const FileHeader& header ) {
@@ -1420,10 +1723,17 @@ const seq::Fraction seq::type::Number::getFraction() {
 }
 
 byte seq::type::Number::sizeOf( unsigned long value ) {
-	if( value > 0xFFFFFFFFul ) return 8;
-	if( value > 0xFFFFul ) return 4;
-	if( value > 0xFFul ) return 2;
-	return 1;
+	int s = 0;
+
+	for( int i = 1; i < 9; i ++ ) {
+		if( value & 0b11111111 ) {
+			s = i;
+		}
+
+		value = ( value >> 8 );
+	}
+
+	return s;
 }
 
 seq::type::String::String( bool _anchor, const char* _value ): seq::type::Generic( seq::DataType::String, _anchor ), value( _value ) {}
@@ -1499,7 +1809,7 @@ seq::type::Stream::~Stream() {
 	delete this->reader;
 }
 
-const bool seq::type::Stream::machesTags( byte _tags ) {
+const bool seq::type::Stream::matchesTags( byte _tags ) {
 
 	// execute stream on end ONLY if it has that tag
 	if( _tags & SEQ_TAG_END ) return this->tags & SEQ_TAG_END;
@@ -1515,6 +1825,10 @@ const bool seq::type::Stream::machesTags( byte _tags ) {
 	if( this->tags & SEQ_TAG_END ) return false;
 
 	throw seq::InternalError( "Invalid Tag!" );
+}
+
+const byte seq::type::Stream::getTags() {
+	return this->tags;
 }
 
 seq::BufferReader& seq::type::Stream::getReader() {
@@ -1680,18 +1994,26 @@ byte seq::ExecutorInterrupt::getCode() {
 	return this->code;
 }
 
-seq::CompilerError::CompilerError( const bool critical, const std::string& unexpected, const std::string& expected, const std::string& structure, int line ) {
+seq::CompilerError::CompilerError( const byte level, const std::string& unexpected, const std::string& expected, const std::string& structure, int line ) {
 	if( unexpected.empty() && expected.empty() ) this->error = "Unknown error"; else
 	if( !unexpected.empty() && expected.empty() ) this->error = "Unexpected " + unexpected; else
 	if( unexpected.empty() && !expected.empty() ) this->error = "Expected " + expected; else
 	if( !unexpected.empty() && !expected.empty() ) this->error = "Unexpected " + unexpected + " (expected " + expected + ")";
 	if( !structure.empty() ) this->error += " in " + structure;
 	this->error += " at line: " + std::to_string(line);
-	this->critical = critical;
+	this->level = level;
 }
 
 bool seq::CompilerError::isCritical() {
-	return this->critical;
+	return this->level == 2;
+}
+
+bool seq::CompilerError::isError() {
+	return this->level > 0;
+}
+
+bool seq::CompilerError::isWarning() {
+	return this->level == 0;
 }
 
 const char* seq::CompilerError::what() const throw() {
@@ -1701,22 +2023,36 @@ const char* seq::CompilerError::what() const throw() {
 seq::ByteBuffer::ByteBuffer( byte* buffer, long length ) {
 	this->pointer = buffer;
 	this->length = length;
+	this->table = nullptr;
+}
+
+void seq::ByteBuffer::setStringTable( StringTable* table ) {
+	this->table = table;
+}
+
+seq::StringTable* seq::ByteBuffer::getStringTable() {
+	return table;
+}
+
+long seq::ByteBuffer::size() {
+	return length;
 }
 
 seq::BufferReader seq::ByteBuffer::getReader() {
-	return seq::BufferReader( this->pointer, 0, this->length - 1 );
+	return seq::BufferReader( this->pointer, 0, this->length - 1, table );
 }
 
 seq::BufferReader seq::ByteBuffer::getReader( long first, long last ) {
 	if( first < 0 || last > (this->length - 1) || first > last ) throw seq::InternalError( "Invalid BufferReader range!" );
-	return seq::BufferReader( this->pointer, first, last );
+	return seq::BufferReader( this->pointer, first, last, table );
 }
 
-seq::BufferReader::BufferReader( byte* buffer, long first, long last ) {
+seq::BufferReader::BufferReader( byte* buffer, long first, long last, StringTable* table ) {
 	this->pointer = buffer;
 	this->position = first - 1;
 	this->first = first;
 	this->last = last;
+	this->table = table;
 }
 
 const byte seq::BufferReader::peekByte() noexcept {
@@ -1734,7 +2070,7 @@ const bool seq::BufferReader::hasNext() noexcept {
 }
 
 seq::TokenReader seq::BufferReader::next() noexcept {
-	return seq::TokenReader( *this );
+	return seq::TokenReader( *this, table != nullptr );
 }
 
 seq::BufferReader* seq::BufferReader::nextBlock( long length ) {
@@ -1744,22 +2080,7 @@ seq::BufferReader* seq::BufferReader::nextBlock( long length ) {
 	long old_pos = this->position + 1;
 
 	this->position = std::min( new_pos, this->last );
-	return new seq::BufferReader( this->pointer, old_pos, this->position );
-}
-
-long seq::BufferReader::nextInt() {
-
-	byte head = this->nextByte();
-	byte a = (head >> 4);
-	long n = 0;
-
-	if( a & (a - 1) ) throw seq::InternalError( "Invalid int header!" );
-
-	if( a ) for( byte i = 0; i < a; i ++ ) {
-		n |= ( (long) this->nextByte() ) << (i * 8);
-	} else n = 0;
-
-	return n;
+	return new seq::BufferReader( this->pointer, old_pos, this->position, this->table );
 }
 
 seq::FileHeader seq::BufferReader::getHeader() {
@@ -1774,34 +2095,32 @@ seq::FileHeader seq::BufferReader::getHeader() {
 	byte seq_minor = this->nextByte();
 	byte seq_patch = this->nextByte();
 
-	// read header data
-	long n = 0;
-	for( byte i = 0; i < 4; i ++ ) n |= ( (long) this->nextByte() ) << (i * 8);
 	std::map<std::string, std::string> data;
-	std::string key, val;
 
-	bool state = false;
+	// read header data
+	{
+		// number of key-value pairs
+		long n = this->nextByte();
+		std::string key, val;
 
-	for( ; n > 0; n -- ) {
-		byte b = this->nextByte();
+		for( ; n > 0; n -- ) {
 
-		if( b ) {
-			if( state ) {
-				val.push_back( b );
-			}else{
-				key.push_back( b );
+			{ // load key
+				size_t m = this->nextByte();
+				for( ; m > 0; m -- ) key.push_back( this->nextByte() );
 			}
-		}else{
-			if( state ) {
-				state = false;
-				data.insert( { key, val } );
-				key.erase();
-				val.erase();
-			} else state = true;
+
+			{ // load value
+				size_t m = this->nextUnsigned();
+				for( ; m > 0; m -- ) val.push_back( this->nextByte() );
+			}
+
+			data.insert( { key, val } );
+			key.clear();
+			val.clear();
+
 		}
 	}
-
-	if( state ) throw InternalError( "Invalid header data, expected value!" );
 
 	return seq::FileHeader( seq_major, seq_minor, seq_patch, data );
 }
@@ -1820,7 +2139,43 @@ seq::ByteBuffer seq::BufferReader::getSubBuffer() {
 	return seq::ByteBuffer( this->pointer + this->position + 1, this->last - this->position );
 }
 
-seq::TokenReader::TokenReader( seq::BufferReader& reader ): reader( reader ) {
+seq::StringTable* seq::BufferReader::getTable() {
+	return table;
+}
+
+void seq::BufferReader::nextString( std::string* str ) {
+	if( table != nullptr ) {
+		try{
+			*str = table->at( nextUnsigned() );
+		}catch(std::out_of_range& err) {
+			throw seq::InternalError("Invalid string index!");
+		}
+	}else{
+		byte b;
+		while( true ) {
+			b = this->nextByte();
+			if( b ) str->push_back( b ); else return;
+		}
+	}
+}
+
+unsigned long seq::BufferReader::nextUnsigned() {
+	byte head = this->nextByte();
+	unsigned long value = 0;
+
+	// integer length capped at 8 bytes
+	byte length = (head >> 4) % 9;
+
+	// load number byte by byte
+	for( byte i = 0; i < length; i ++ ) {
+		value |= (( (long) this->nextByte() ) << (i * 8));
+	}
+
+	// add number offset
+	return value + (head & 0b00001111);
+}
+
+seq::TokenReader::TokenReader( seq::BufferReader& reader, bool table ): reader( reader ), strings( table ) {
 	byte header = reader.nextByte();
 
 	this->header = (byte) ( header & 0b01111111 );
@@ -1872,7 +2227,8 @@ seq::DataType seq::TokenReader::getDataType( byte header ) {
 		/* 13 DEF */ seq::DataType::Name,
 		/* 14 FLC */ seq::DataType::Flowc,
 		/* 15 SSL */ seq::DataType::Stream,
-		/* 16 FNE */ seq::DataType::Func
+		/* 16 FNE */ seq::DataType::Func,
+		/* 17 TEX */ seq::DataType::Expr
 	};
 
 	if( header >= SEQ_MIN_OPCODE && header <= SEQ_MAX_OPCODE ) {
@@ -1900,25 +2256,30 @@ seq::type::Number* seq::TokenReader::loadNumber() {
 
 	if( this->header == (byte) seq::Opcode::NUM ) {
 
-		byte a = (head >> 4);
-		byte b = (head & 0b00001111);
 		unsigned long n = 0, d = 0;
 
-		if( a & (a - 1) ) throw seq::InternalError( "Invalid numerator size! size: " + std::to_string( (int) a ) );
-		if( b & (b - 1) ) throw seq::InternalError( "Invalid denominator size! size: " + std::to_string( (int) b ) );
+		// load left and right header, capped at 8 bytes
+		byte a = (head >> 4) % 9;
+		byte b = (head & 0b00001111) % 9;
 
-		if( a ) for( byte i = 0; i < a; i ++ ) {
+		// load numerator
+		for( byte i = 0; i < a; i ++ ) {
 			n |= (( (long) this->reader.nextByte() ) << (i * 8));
-		} else n = 0;
+		}
 
+		// load denominator, defaults to 1
 		if( b ) for( byte i = 0; i < b; i ++ ) {
 			d |= (( (long) this->reader.nextByte() ) << (i * 8));
 		} else d = 1;
 
-		if( !d ) throw seq::InternalError( "Invalid denominator! size: " + std::to_string( (int) b ) + " value: " + std::to_string( (int) d ) );
+		if( !d ) throw seq::InternalError( "Invalid denominator!" );
 
-		unsigned long s = (1ul << ((unsigned long) a * 8ul - 1ul));
-		return new seq::type::Number( this->anchor, (n & s) ? -(long)(s ^ n) : n, d );
+		// Handles negative numbers, sign holds a sign bit mask,
+		// then if the mask matches with a value the number is inverted and mask is Xored off from the value,
+		// otherwise nothing is done. (there is no sign bit that needs to be moved)
+		// Warning: Denominator is considered unsigned
+		unsigned long sign = (1ul << ((unsigned long) a * 8ul - 1ul));
+		return new seq::type::Number( this->anchor, (n & sign) ? -(long)(sign ^ n) : n, d );
 
 	}else{
 
@@ -1933,10 +2294,8 @@ seq::type::Arg* seq::TokenReader::loadArg() {
 
 seq::type::String* seq::TokenReader::loadString() {
 	std::string str;
-	while( true ) {
-		byte b = this->reader.nextByte();
-		if( b ) str.push_back( b ); else return new seq::type::String( this->isAnchored(), str.c_str() );
-	}
+	this->reader.nextString(&str);
+	return new seq::type::String( this->isAnchored(), str.c_str() );
 }
 
 seq::type::Type* seq::TokenReader::loadType() {
@@ -1953,16 +2312,12 @@ seq::type::VMCall* seq::TokenReader::loadCall() {
 
 seq::type::Name* seq::TokenReader::loadName() {
 	std::string str;
-	for( byte i = 0; true; i ++ ) {
-		byte b = this->reader.nextByte();
-		if( b ) str.push_back( b ); else break;
-	}
-
+	this->reader.nextString(&str);
 	return new seq::type::Name( this->anchor, this->header == (byte) seq::Opcode::DEF, str );
 }
 
 seq::type::Function* seq::TokenReader::loadFunc() {
-	long length = this->reader.nextInt();
+	long length = this->reader.nextUnsigned();
 	if( !length ) throw seq::InternalError( "Invalid function size!" );
 	return new seq::type::Function( this->anchor, this->reader.nextBlock( length ), this->header == (byte) seq::Opcode::FNE );
 }
@@ -1974,21 +2329,30 @@ seq::type::Expression* seq::TokenReader::loadExpr() {
 	}
 
 	seq::ExprOperator op = (seq::ExprOperator) this->reader.nextByte();
+	long l = 0, r = 0;
 
 	byte head = this->reader.nextByte();
 	byte a = (head >> 4);
 	byte b = (head & 0b00001111);
-	long l = 0, r = 0;
 
-	if( a & (a - 1) ) throw seq::InternalError( "Invalid expression (left) size!" );
-	if( b & (b - 1) ) throw seq::InternalError( "Invalid expression (right) size!" );
+	if( this->header == (byte) seq::Opcode::TEX ) {
 
-	if( a ) for( byte i = 0; i < a; i ++ ) {
-		l |= ( (long) this->reader.nextByte() ) << (i * 8);
-	}
+		l = a;
+		r = b;
 
-	if( b ) for( byte i = 0; i < a; i ++ ) {
-		r |= ( (long) this->reader.nextByte() ) << (i * 8);
+	}else{
+
+		a %= 9;
+		b %= 9;
+
+		for( byte i = 0; i < a; i ++ ) {
+			l |= ( (long) this->reader.nextByte() ) << (i * 8);
+		}
+
+		for( byte i = 0; i < a; i ++ ) {
+			r |= ( (long) this->reader.nextByte() ) << (i * 8);
+		}
+
 	}
 
 	if( !(l && r) ) throw seq::InternalError( "Invalid expression size!" );
@@ -2005,7 +2369,7 @@ seq::type::Flowc* seq::TokenReader::loadFlowc() {
 	byte block_count = this->reader.nextByte();
 	for( byte i = 0; i < block_count; i ++ ) {
 
-		long length = this->reader.nextInt();
+		long length = this->reader.nextUnsigned();
 		if( !length ) throw seq::InternalError( "Invalid flowc size!" );
 		seq::BufferReader* br = this->reader.nextBlock( length );
 		seq::TokenReader tr = br->next();
@@ -2029,7 +2393,7 @@ seq::type::Flowc* seq::TokenReader::loadFlowc() {
 
 seq::type::Stream* seq::TokenReader::loadStream() {
 	byte tags = this->reader.nextByte();
-	long length = this->reader.nextInt();
+	long length = this->reader.nextUnsigned();
 	if( !length ) throw seq::InternalError( "Invalid stream size!" );
 	return new seq::type::Stream( this->anchor, tags, this->reader.nextBlock( length ) );
 }
@@ -2160,7 +2524,11 @@ std::string seq::Executor::getResultString() {
 }
 
 seq::Generic seq::Executor::getResult() {
-	return this->result.at(0);
+	if( this->result.size() > 0 ) {
+		return this->result.at(0);
+	}else{
+		return seq::util::newNull();
+	}
 }
 
 seq::Stream& seq::Executor::getResults() {
@@ -2171,16 +2539,9 @@ void seq::Executor::setStrictMath( bool flag ) {
 	strictMath = flag;
 }
 
-void seq::Executor::execute( seq::ByteBuffer bb, seq::Stream args ) {
+void seq::Executor::execute( seq::ByteBuffer bb, seq::Stream args, bool stack ) {
 	try{
-		seq::Stream exitStream = this->executeFunction( bb.getReader(), args, true );
-
-		// IMPLEMENTATION ERROR (?)
-		// TODO remove to adhere to the standard
-		if( exitStream.empty() ) {
-			exitStream.push_back( seq::Generic( new seq::type::Null( false ) ) );
-		}
-
+		seq::Stream exitStream = this->executeFunction( bb.getReader(), args, true, stack );
 		this->exit( exitStream, 0 );
 	}catch( seq::ExecutorInterrupt& ex ) {
 		// this->result set by the this->exit method
@@ -2188,19 +2549,15 @@ void seq::Executor::execute( seq::ByteBuffer bb, seq::Stream args ) {
 }
 
 void seq::Executor::exit( seq::Stream& stream, byte code ) {
-	if( stream.size() == 0 ) {
-		throw seq::InternalError( "Unable to exit without arguments!" );
-	}
-
 	// stop program execution
 	this->result = stream;
 	throw seq::ExecutorInterrupt( code );
 }
 
-seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream& input_stream, bool end ) {
+seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream& input_stream, bool end, bool stack ) {
 
 	// push new stack into stack array
-	this->stack.push_back( seq::StackLevel() );
+	if( stack ) this->stack.push_back( seq::StackLevel() );
 
 	// accumulator of all returned entities
 	seq::Stream acc;
@@ -2251,7 +2608,7 @@ seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream& 
 
 				case seq::CommandResult::ResultType::Again:
 					// add returned arguments to CURRENT input stream
-					if( i == size ) throw RuntimeError( "Native function 'again' can not be called from 'end' taged stream!" );
+					if( i == size ) throw RuntimeError( "Native function 'again' can not be called from 'end' tagged stream!" );
 					input_stream.erase( input_stream.begin(), input_stream.begin() + i + 1 );
 					input_stream.insert( input_stream.begin(), cr.acc.begin(), cr.acc.end() );
 					i = -1;
@@ -2267,7 +2624,7 @@ seq::Stream seq::Executor::executeFunction( seq::BufferReader fbr, seq::Stream& 
 	exit:
 
 	// pop scope from stack
-	this->stack.pop_back();
+	if( stack ) this->stack.pop_back();
 
 	// return all accumulated entities
 	return acc;
@@ -2281,7 +2638,7 @@ seq::CommandResult seq::Executor::executeCommand( seq::TokenReader* tr, byte tag
 		// execute stream if stream tags match current state
 		auto& stream = tr->getGeneric().Stream();
 
-		if( stream.machesTags( tags ) ) {
+		if( stream.matchesTags( tags ) ) {
 			seq::Stream s = stream.getReader().readAll();
 			return this->executeStream( s );
 		}else{
@@ -2753,6 +3110,12 @@ seq::type::Native seq::Executor::resolveNative( std::string& name ) {
 
 }
 
+std::unordered_map<std::string, seq::type::Native>& seq::Executor::getNativesMap() {
+
+	return this->natives;
+
+}
+
 seq::Stream seq::Executor::executeFlowc( std::vector<seq::FlowCondition*> fcs, seq::Stream& input_stream ) {
 
 	seq::Stream acc;
@@ -2847,16 +3210,20 @@ const bool seq::Compiler::Token::getAnchor() {
 }
 
 const bool seq::Compiler::Token::isPrimitive() {
+	using Category = seq::Compiler::Token::Category;
+	return category == Category::Arg || category == Category::Null || category == Category::Bool || category == Category::Number ||
+			category == Category::Type || category == Category::String || category == Category::VMCall;
+}
 
-	if( this->category == seq::Compiler::Token::Category::Arg ) return true;
-	if( this->category == seq::Compiler::Token::Category::Null ) return true;
-	if( this->category == seq::Compiler::Token::Category::Bool ) return true;
-	if( this->category == seq::Compiler::Token::Category::Number ) return true;
-	if( this->category == seq::Compiler::Token::Category::Type ) return true;
-	if( this->category == seq::Compiler::Token::Category::String ) return true;
-	if( this->category == seq::Compiler::Token::Category::VMCall ) return true;
+const bool seq::Compiler::Token::isPure() {
+	using Category = seq::Compiler::Token::Category;
+	if( category == Category::Arg || category == Category::VMCall ) return false;
+	return this->isPrimitive();
+}
 
-	return false;
+const bool seq::Compiler::Token::isNamed() {
+	using Category = seq::Compiler::Token::Category;
+	return category == Category::String || category == Category::Name;
 }
 
 std::string seq::Compiler::Token::toString() {
@@ -2884,26 +3251,45 @@ std::string seq::Compiler::Token::toString() {
 	return catstr + "::" + this->getRaw();
 }
 
+seq::Compiler::Compiler() {
+	fail = seq::Compiler::defaultErrorHandle;
+	loades = nullptr;
+	names = nullptr;
+	flags = (oflag_t) Optimizations::None;
+}
 
-std::vector<byte> seq::Compiler::compile( std::string code, std::vector<std::string>* headerData ) {
-	auto tokens = seq::Compiler::tokenize( code );
+std::vector<byte> seq::Compiler::compile( std::string code ) {
+
+	// tokenize the program
+	auto tokens = tokenize( code );
+
+	// perform some optimizations if they are enabled
+	optimizeIfApplicable( tokens );
 
 	// skip empty files
 	if( tokens.empty() ) return std::vector<byte>();
 
-	int offset = seq::Compiler::extractHeaderData( tokens, headerData );
-	auto buffer = seq::Compiler::assembleFunction( tokens, offset, tokens.size(), true );
+	// compute load section size and store loads
+	int offset = extractHeaderData( tokens, loades );
 
-	// get rid of the first function opcode
-	int functionOffset = (buffer.at(1) >> 4) + 2;
+	// assemble bytecode
+	return assembleFunction( tokens, offset, tokens.size(), true, true );
 
-	// if that is NOT the case something weird has happened
-	// but we will pretend that everything is OK and just skip this step
-	if( functionOffset < (long) buffer.size() ) {
-		buffer.erase( buffer.begin(), buffer.begin() + functionOffset );
-	}
+}
 
-	return buffer;
+std::vector<byte> seq::Compiler::compileStatic( std::string code, StringTable* headerData, oflag_t flags ) {
+	Compiler compiler;
+	compiler.setLoadTable( headerData );
+	compiler.setOptimizationFlags( flags );
+	return compiler.compile(code);
+}
+
+std::vector<seq::Compiler::Token> seq::Compiler::tokenizeStatic( std::string code ) {
+	return Compiler().tokenize( code );
+}
+
+seq::Compiler obj() {
+	return seq::Compiler();
 }
 
 std::vector<seq::Compiler::Token> seq::Compiler::tokenize( std::string code ) {
@@ -2963,8 +3349,8 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( std::string code ) {
 		}
 
 		// bracket count cannot be negative
-		if( curlyBrackets < 0 ) fail( seq::CompilerError( false, "'}'", "", "", line ) );
-		if( roundBrackets < 0 ) fail( seq::CompilerError( false, "')'", "", "", line ) );
+		if( curlyBrackets < 0 ) fail( seq::CompilerError( 1, "'}'", "", "", line ) );
+		if( roundBrackets < 0 ) fail( seq::CompilerError( 1, "')'", "", "", line ) );
 
 		// square brackets cannot be nested
 		if( squareBrackets != 0 && squareBrackets != 1 ) {
@@ -2972,7 +3358,7 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( std::string code ) {
 			msg += (char) chr;
 			msg += '\'';
 
-			fail( seq::CompilerError( false, msg, "", "", line ) );
+			fail( seq::CompilerError( 1, msg, "", "", line ) );
 		}
 
 	};
@@ -2986,7 +3372,7 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( std::string code ) {
 		// keep line number up-to-date
 		if( c == '\n' ) {
 			if( state == State::Comment ) state = State::Start;
-			if( state == State::String ) fail( CompilerError( false, "end of line", "end of string", "", line ) );
+			if( state == State::String ) fail( CompilerError( 1, "end of line", "end of string", "", line ) );
 			next();
 			line ++;
 			continue;
@@ -3020,7 +3406,7 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( std::string code ) {
 					std::string msg = "char: '";
 					msg += (char) c;
 					msg += '\'';
-					fail( CompilerError( false, msg, "", "", line ) );
+					fail( CompilerError( 1, msg, "", "", line ) );
 					break;
 				}
 
@@ -3051,7 +3437,7 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( std::string code ) {
 						case 'r': token += '\r'; break;
 						case '\\': token += '\\'; break;
 						case '"': token += '"'; break;
-						default: fail( CompilerError( false, std::string("char '") + (char) c + std::string("'"), "escape code (n, t, r, \\ or \")", "string", line ) );
+						default: fail( CompilerError( 1, std::string("char '") + (char) c + std::string("'"), "escape code (n, t, r, \\ or \")", "string", line ) );
 					}
 					state = State::String;
 					break;
@@ -3124,10 +3510,10 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( std::string code ) {
 	}
 
 	// check brackets state
-	if( state == State::String ) fail( CompilerError( false, "end of input", "end of string", "", line ) );
-	if( curlyBrackets != 0 ) fail( CompilerError( false, "end of input", "curly bracket", "", line ) );
-	if( roundBrackets != 0 ) fail( CompilerError( false, "end of input", "round bracket", "", line ) );
-	if( squareBrackets != 0 ) fail( CompilerError( false, "end of input", "square bracket", "", line ) );
+	if( state == State::String ) fail( CompilerError( 1, "end of input", "end of string", "", line ) );
+	if( curlyBrackets != 0 ) fail( CompilerError( 1, "end of input", "curly bracket", "", line ) );
+	if( roundBrackets != 0 ) fail( CompilerError( 1, "end of input", "round bracket", "", line ) );
+	if( squareBrackets != 0 ) fail( CompilerError( 1, "end of input", "square bracket", "", line ) );
 
 	// if some token is still left, add it.
 	next();
@@ -3244,7 +3630,7 @@ seq::Compiler::Token seq::Compiler::construct( std::string raw, unsigned int lin
 		}
 	}
 
-	fail( seq::CompilerError( true, "token: " + raw, "", "", line ) );
+	fail( seq::CompilerError( 2, "token: " + raw, "", "", line ) );
 	throw seq::InternalError( "Critical error ignored!" );
 }
 
@@ -3337,7 +3723,7 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 	};
 
 	std::vector<byte> arr;
-	seq::BufferWriter bw( arr );
+	seq::BufferWriter bw( arr, getTable() );
 
 	State state = State::Start;
 
@@ -3363,8 +3749,10 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 
 				if( token.isPrimitive() ) {
 					if( embedded && token.getCategory() == seq::Compiler::Token::Category::VMCall ) {
-						fail( seq::CompilerError( false, "Build in native function '" + std::string( (char*) token.getClean().c_str() ) + "'", "", "embedded stream", token.getLine() ) );
+						fail( seq::CompilerError( 1, "Build in native function '" + std::string( (char*) token.getClean().c_str() ) + "'", "", "embedded stream", token.getLine() ) );
 					}
+
+					// TODO: emit unreachable code warning after any VMCall
 
 					auto buf = assemblePrimitive( token );
 					bw.putBuffer( buf );
@@ -3387,7 +3775,7 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 					break;
 				}
 
-				fail( seq::CompilerError( false, "token '" + token.getRaw() + "'", "name, value, argument, function, expression or flow controller", "stream", token.getLine() ) );
+				fail( seq::CompilerError( 1, "token '" + token.getRaw() + "'", "name, value, argument, function, expression or flow controller", "stream", token.getLine() ) );
 				break;
 
 			case State::Set:
@@ -3397,10 +3785,10 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 						state = State::Stream;
 						break;
 					}else{
-						fail( seq::CompilerError( false, "anchor after 'set' keyword", "name", "stream", token.getLine() ) );
+						fail( seq::CompilerError( 1, "anchor after 'set' keyword", "name", "stream", token.getLine() ) );
 					}
 				}
-				fail( seq::CompilerError( false, "token: '" + token.getRaw() + "'", "name", "stream", token.getLine() ) );
+				fail( seq::CompilerError( 1, "token: '" + token.getRaw() + "'", "name", "stream", token.getLine() ) );
 				break;
 
 			case State::Function: {
@@ -3435,7 +3823,7 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 
 			case State::Stream:
 				if( token.getCategory() != seq::Compiler::Token::Category::Stream ) {
-					fail( seq::CompilerError( false, "token '" + tokens.at(i).getRaw() + "'", "'<<'", "stream", token.getLine() ) );
+					fail( seq::CompilerError( 1, "token '" + tokens.at(i).getRaw() + "'", "'<<'", "stream", token.getLine() ) );
 				}else{
 					state = State::Continue;
 				}
@@ -3446,11 +3834,11 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 	}
 
 	if( state != State::Stream ) {
-		fail( seq::CompilerError( false, "end of stream", "", "stream", tokens[end].getLine() ) );
+		fail( seq::CompilerError( 1, "end of stream", "", "stream", tokens[end].getLine() ) );
 	}
 
 	std::vector<byte> ret;
-	seq::BufferWriter bw2( ret );
+	seq::BufferWriter bw2( ret, getTable() );
 	bw2.putStream( false, tags, arr );
 
 	return ret;
@@ -3460,16 +3848,12 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 std::vector<byte> seq::Compiler::assemblePrimitive( seq::Compiler::Token token ) {
 
 	std::vector<byte> arr;
-	seq::BufferWriter bw( arr );
+	seq::BufferWriter bw( arr, getTable() );
 	const bool flag = token.getAnchor();
 
 	try{
 
 		switch( token.getCategory() ) {
-
-			case seq::Compiler::Token::Category::Arg:
-				bw.putArg(flag, token.getData() );
-				break;
 
 			case seq::Compiler::Token::Category::Null:
 				bw.putNull(flag);
@@ -3496,8 +3880,12 @@ std::vector<byte> seq::Compiler::assemblePrimitive( seq::Compiler::Token token )
 				break;
 			}
 
+			case seq::Compiler::Token::Category::Arg:
+				bw.putArg(flag, token.getData());
+				break;
+
+			// Name is not a primitive value but this simplifies some things
 			case seq::Compiler::Token::Category::Name:
-				// Name is not a primitive value but this simplifies some things
 				bw.putName( token.getAnchor(), false, token.getClean().c_str() );
 				break;
 
@@ -3524,7 +3912,7 @@ std::vector<byte> seq::Compiler::assembleFlowc( std::vector<seq::Compiler::Token
 		seq::Compiler::Token& token = tokens[i];
 
 		if( token.getAnchor() ) {
-			fail( seq::CompilerError( false, "anchor", "", "flow controller", token.getLine() ) );
+			fail( seq::CompilerError( 1, "anchor", "", "flow controller", token.getLine() ) );
 		}
 
 		if( expectSeparator ) {
@@ -3532,7 +3920,7 @@ std::vector<byte> seq::Compiler::assembleFlowc( std::vector<seq::Compiler::Token
 			if( token.getCategory() == seq::Compiler::Token::Category::Comma ) {
 				expectSeparator = false;
 			}else{
-				fail( seq::CompilerError( false, "token '" + token.getRaw() + "'", "','", "flow controller", tokens.at(i).getLine() ) );
+				fail( seq::CompilerError( 1, "token '" + token.getRaw() + "'", "','", "flow controller", tokens.at(i).getLine() ) );
 			}
 
 		}else{
@@ -3546,7 +3934,7 @@ std::vector<byte> seq::Compiler::assembleFlowc( std::vector<seq::Compiler::Token
 						if( i + 2 < end && tokens.at( i + 2 ).getCategory() == seq::Compiler::Token::Category::Number ) {
 
 							if( tokens.at( i + 2 ).getAnchor() ) {
-								fail( seq::CompilerError( false, "anchor", "", "flow controller", token.getLine() ) );
+								fail( seq::CompilerError( 1, "anchor", "", "flow controller", token.getLine() ) );
 							}else{
 								auto arr1 = assemblePrimitive( token );
 								auto arr2 = assemblePrimitive( tokens.at( i + 2 ) );
@@ -3559,7 +3947,7 @@ std::vector<byte> seq::Compiler::assembleFlowc( std::vector<seq::Compiler::Token
 							}
 
 						}else{
-							fail( seq::CompilerError( false, "token '" + tokens.at( i + 2 ).getRaw() + "'", "number", "flow controller", tokens.at(i + 2).getLine() ) );
+							fail( seq::CompilerError( 1, "token '" + tokens.at( i + 2 ).getRaw() + "'", "number", "flow controller", tokens.at(i + 2).getLine() ) );
 						}
 
 					}else{
@@ -3580,7 +3968,7 @@ std::vector<byte> seq::Compiler::assembleFlowc( std::vector<seq::Compiler::Token
 				}
 
 				default:
-					fail( seq::CompilerError( false, "token '" + token.getRaw() + "'", "value or range", "flow controller", token.getLine() ) );
+					fail( seq::CompilerError( 1, "token '" + token.getRaw() + "'", "value or range", "flow controller", token.getLine() ) );
 
 			}
 
@@ -3589,24 +3977,24 @@ std::vector<byte> seq::Compiler::assembleFlowc( std::vector<seq::Compiler::Token
 	}
 
 	if( !expectSeparator || arr.empty() ) {
-		fail( seq::CompilerError( false, "", "value or range", "flow controller", tokens.at(i).getLine() ) );
+		fail( seq::CompilerError( 1, "", "value or range", "flow controller", tokens.at(i).getLine() ) );
 	}
 
 	std::vector<byte> ret;
-	seq::BufferWriter bw( ret );
+	seq::BufferWriter bw( ret, getTable() );
 	bw.putFlowc(anchor, arr);
 
 	return ret;
 
 }
 
-std::vector<byte> seq::Compiler::assembleExpression( std::vector<seq::Compiler::Token>& tokens, int start, int end, bool anchor, bool top ) {
+std::vector<byte> seq::Compiler::assembleExpression( std::vector<seq::Compiler::Token>& tokens, int start, int end, bool anchor, bool top, bool* pure ) {
 
 	if( top && tokens[start].getCategory() == seq::Compiler::Token::Category::Stream ) {
 		if( start + 1 < end ) {
 			return assembleStream( tokens, start + 1, end - 1, 0, false );
 		}else{
-			fail( seq::CompilerError( true, "end of embedded stream", "", "stream", tokens[start].getLine() ) );
+			fail( seq::CompilerError( 2, "end of embedded stream", "", "stream", tokens[start].getLine() ) );
 		}
 	}
 
@@ -3614,12 +4002,15 @@ std::vector<byte> seq::Compiler::assembleExpression( std::vector<seq::Compiler::
 
 		auto& token = tokens.at( start );
 
+		if( pure != nullptr && !token.isPure() ) {
+			*pure = false;
+		}
+
 		if( token.getAnchor() ) {
-			fail( seq::CompilerError( false, "anchor", "", "expression", token.getLine() ) );
+			fail( seq::CompilerError( 1, "anchor", "", "expression", token.getLine() ) );
 		}
 
 		return assemblePrimitive( token );
-
 	}
 
 	int h = -1;
@@ -3635,16 +4026,16 @@ std::vector<byte> seq::Compiler::assembleExpression( std::vector<seq::Compiler::
 		if( token.getCategory() == seq::Compiler::Token::Category::MathBracket ) {
 
 			if( token.getData() == 1 ) {
-				if( eop ) fail( seq::CompilerError( false, "", "operator", "expression", token.getLine() ) );
+				if( eop ) fail( seq::CompilerError( 1, "", "operator", "expression", token.getLine() ) );
 			}else{
-				if( !eop ) fail( seq::CompilerError( false, "operator", "", "expression", token.getLine() ) );
+				if( !eop ) fail( seq::CompilerError( 1, "operator", "", "expression", token.getLine() ) );
 			}
 
 		} else {
 			if( eop && token.getCategory() != seq::Compiler::Token::Category::Operator ) {
-				fail( seq::CompilerError( false, "", "operator", "expression", token.getLine() ) );
+				fail( seq::CompilerError( 1, "", "operator", "expression", token.getLine() ) );
 			}else if( !eop && token.getCategory() == seq::Compiler::Token::Category::Operator ) {
-				fail( seq::CompilerError( false, "operator", "", "expression", token.getLine() ) );
+				fail( seq::CompilerError( 1, "operator", "", "expression", token.getLine() ) );
 			}
 			eop = !eop;
 		}
@@ -3673,7 +4064,7 @@ std::vector<byte> seq::Compiler::assembleExpression( std::vector<seq::Compiler::
 
 		if( h == -1 ) {
 			if( f != 0 ) {
-				fail( seq::CompilerError( true, "end of expression", "operator", "expression", tokens.at(end - 1).getLine() ) );
+				fail( seq::CompilerError( 2, "end of expression", "operator", "expression", tokens.at(end - 1).getLine() ) );
 			}
 
 			l = 0;
@@ -3684,26 +4075,50 @@ std::vector<byte> seq::Compiler::assembleExpression( std::vector<seq::Compiler::
 
 	}
 
-	auto lt = assembleExpression( tokens, start + f + 0, j, false, false );
-	auto rt = assembleExpression( tokens, j + 1, end - f, false, false );
+	// settings this to true in turn enables the optimization,
+	// otherwise nothing will be done.
+	bool isPure = flags & (oflag_t) Optimizations::PureExpr;
+
+	auto lt = assembleExpression( tokens, start + f, j, false, false, &isPure );
+	auto rt = assembleExpression( tokens, j + 1, end - f, false, false, &isPure );
 	seq::ExprOperator op = (seq::ExprOperator) (tokens.at(j).getData() >> 8);
 
 	std::vector<byte> arr;
-	seq::BufferWriter bw( arr );
+	seq::BufferWriter bw( arr, getTable() );
 	bw.putExpr(anchor, op, lt, rt);
+
+	if( isPure ) {
+		Generic computed;
+
+		{
+			ByteBuffer bb( arr.data(), arr.size() );
+			BufferReader br = bb.getReader();
+			TokenReader tr = br.next();
+			Generic expr = tr.getGeneric();
+
+			seq::Executor executor;
+			computed = executor.executeExpr( expr );
+		}
+
+		arr.clear();
+		bw.putGeneric(computed);
+
+	}else if( pure != nullptr ) {
+		*pure = false;
+	}
 
 	return arr;
 }
 
-std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::Token>& tokens, int start, int end, bool anchor ) {
+std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::Token>& tokens, int start, int end, bool anchor, bool raw ) {
 
 	std::vector<byte> arr;
-	seq::BufferWriter bw( arr );
+	seq::BufferWriter bw( arr, getTable() );
 	bool hasEndTag = false;
 
 	// throw on empty functions
 	if( end - start < 2 ) {
-		fail( seq::CompilerError( false, "end of scope", "stream", "function", tokens.at(start).getLine() ) );
+		fail( seq::CompilerError( 1, "end of scope", "stream", "function", tokens.at(start).getLine() ) );
 	}
 
 	for( int i = start; i < end; i ++ ) {
@@ -3721,7 +4136,7 @@ std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::To
 
 			// end must not be the last token
 			if( (++ i) >= end ) {
-				fail( seq::CompilerError( false, "end of input", "start of stream", "function", tokens[i].getLine() ) );
+				fail( seq::CompilerError( 1, "end of input", "start of stream", "function", tokens[i].getLine() ) );
 			}
 		}
 
@@ -3733,20 +4148,68 @@ std::vector<byte> seq::Compiler::assembleFunction( std::vector<seq::Compiler::To
 			i = j;
 
 		}else{
-			fail( seq::CompilerError( false, "end of input", "end of stream", "function", tokens.at(i).getLine() ) );
+			fail( seq::CompilerError( 1, "end of input", "end of stream", "function", tokens.at(i).getLine() ) );
 		}
 
 	}
 
 	// write function to output
 	std::vector<byte> ret;
-	seq::BufferWriter bw2( ret );
-	bw2.putFunc( anchor, arr, hasEndTag );
+	seq::BufferWriter bw2( ret, getTable() );
+
+	if(raw) {
+		bw2.putBuffer(arr);
+	}else{
+		bw2.putFunc( anchor, arr, hasEndTag );
+	}
 
 	return ret;
 }
 
-int seq::Compiler::extractHeaderData( std::vector<Token>& tokens, std::vector<std::string>* arrayPtr ) {
+void seq::Compiler::optimizeIfApplicable( std::vector<Token>& tokens ) {
+
+	// if string pre-gen is enabled try searching for strings in tokens
+	// and pregenerating sorted string table
+	if( flags & (oflag_t) Optimizations::StrPreGen ) {
+		if( this->names != nullptr ) {
+
+			typedef std::pair<int, std::string> Pair;
+			std::vector<Pair> pairs;
+
+			for( int i = tokens.size() - 1; i >= 0; i -- ) {
+				auto& token = tokens[i];
+
+				if( token.isNamed() && (i == 0 || tokens[i - 1].getCategory() != Compiler::Token::Category::Load) ) {
+
+					const std::string& entry = token.getClean();
+
+					auto it = std::find_if( pairs.begin(), pairs.end(), [&entry] (const Pair& p) {
+						return p.second == entry;
+					} );
+
+					if( it == pairs.end() ) {
+						pairs.push_back( { 1, entry } );
+					}else{
+						pairs[ std::distance(pairs.begin(), it) ].first ++;
+					}
+
+				}
+			}
+
+			std::sort(pairs.begin(), pairs.end(), [](Pair& a, Pair& b) {
+				return a.first > b.first;
+			});
+
+			for( Pair& pair : pairs ) {
+				names->push_back( pair.second );
+			}
+
+		}
+	}
+
+}
+
+int seq::Compiler::extractHeaderData( std::vector<Token>& tokens, StringTable* table ) {
 
 	int s = 0;
 
@@ -3767,18 +4230,18 @@ int seq::Compiler::extractHeaderData( std::vector<Token>& tokens, std::vector<st
 
 					// validate load statement
 					if( i + 1 >= size || (i + 2 >= size && (int) tokens.at( i + 2 ).getLine() == l) ) {
-						fail( seq::CompilerError( true, "token " + token.getRaw(), "load statement", "header", l ) );
+						fail( seq::CompilerError( 2, "token " + token.getRaw(), "load statement", "header", l ) );
 					}
 
 					auto& token2 = tokens[ i + 1 ];
 
 					if( token2.getCategory() != seq::Compiler::Token::Category::String || token2.getAnchor() ) {
-						fail( seq::CompilerError( true, "token " + token.getRaw(), "load statement", "header", l ) );
+						fail( seq::CompilerError( 2, "token " + token.getRaw(), "load statement", "header", l ) );
 					}
 
 					// add load to supplied load array
-					if( arrayPtr != nullptr ) {
-						arrayPtr->push_back( token2.getClean() );
+					if( table != nullptr ) {
+						seq::util::insertUnique(table, token2.getClean());
 					}
 
 					s = i;
@@ -3797,16 +4260,284 @@ int seq::Compiler::extractHeaderData( std::vector<Token>& tokens, std::vector<st
 
 }
 
+seq::StringTable* seq::Compiler::getTable() {
+	return ( flags & (seq::oflag_t) Optimizations::Name ) ? names : nullptr;
+}
+
 void seq::Compiler::defaultErrorHandle( seq::CompilerError err ) {
-	throw err;
+	if( err.isError() ) throw err;
 }
 
 void seq::Compiler::setErrorHandle( seq::Compiler::ErrorHandle handle ) {
-	fail = handle;
+	this->fail = handle;
 }
 
+void seq::Compiler::setNameTable( seq::StringTable* strings ) {
+	this->names = strings;
+}
+
+void seq::Compiler::setLoadTable( seq::StringTable* strings ) {
+	this->loades = strings;
+}
+
+void seq::Compiler::setOptimizationFlags( seq::oflag_t flags ) {
+	this->flags = flags;
+}
 
 #endif // SEQ_EXCLUDE_COMPILER
+
+#ifndef SEQ_EXCLUDE_DECOMPILER
+
+seq::Indentation::Indentation() {
+	this->str = "\t";
+	this->index = 0;
+}
+
+void seq::Indentation::push() {
+	this->index ++;
+}
+
+void seq::Indentation::pop() {
+	if( -- this->index < 0 ) {
+		throw seq::InternalError( "Invalid indentation index!" );
+	}
+}
+
+void seq::Indentation::set(std::string& str, int base) {
+	this->str = str;
+	this->index = base;
+}
+
+std::string seq::Indentation::get() {
+	if( this->index == 0 ) return "";
+	std::string indentation;
+
+	for( int i = 0; i < this->index; i ++ ) {
+		indentation += this->str;
+	}
+
+	return std::move(indentation);
+}
+
+seq::Decompiler::Decompiler() {
+}
+
+void seq::Decompiler::setIndentation(std::string str, int base) {
+	this->indentation.set(str, base);
+}
+
+std::string seq::Decompiler::decompile(BufferReader& reader) {
+	seq::Stream stream = reader.readAll();
+	return decompile( stream );
+}
+
+std::string seq::Decompiler::decompile(Generic& generic) {
+	typedef std::string (*Writer)(Decompiler*, Generic&);
+
+	static Writer WriterArr[ SEQ_MAX_DATA_TYPE ] = {
+		/* 1  Bool   */ [] (Decompiler* dc, Generic& g) { return dc->writeBool(g); },
+		/* 2  Null   */ [] (Decompiler* dc, Generic& g) { return dc->writeNull(g); },
+		/* 3  Number */ [] (Decompiler* dc, Generic& g) { return dc->writeNumber(g); },
+		/* 4  String */ [] (Decompiler* dc, Generic& g) { return dc->writeString(g); },
+		/* 5  Type   */ [] (Decompiler* dc, Generic& g) { return dc->writeType(g); },
+		/* 6  VMCall */ [] (Decompiler* dc, Generic& g) { return dc->writeVMCall(g); },
+		/* 7  Arg    */ [] (Decompiler* dc, Generic& g) { return dc->writeArg(g); },
+		/* 8  Func   */ [] (Decompiler* dc, Generic& g) { return dc->writeFunc(g); },
+		/* 9  Expr   */ [] (Decompiler* dc, Generic& g) { return dc->writeExpr(g); },
+		/* 10 Name   */ [] (Decompiler* dc, Generic& g) { return dc->writeName(g); },
+		/* 11 Flowc  */ [] (Decompiler* dc, Generic& g) { return dc->writeFlowc(g); },
+		/* 12 Stream */ [] (Decompiler* dc, Generic& g) { return dc->writeStream(g); },
+		/* 13 Blob   */ [] (Decompiler* dc, Generic& g) { return dc->writeInvalid(g); }
+	};
+
+	return WriterArr[((seq::byte) generic.getDataType()) - 1]( this, generic );
+}
+
+std::string seq::Decompiler::decompile(Stream& stream) {
+	std::string str;
+
+	for( Generic& generic : stream ) {
+		str += decompile( generic );
+	}
+
+	return std::move(str);
+}
+
+std::string seq::Decompiler::writeInvalid(Generic& g) {
+	throw seq::InternalError("Invalid!");
+}
+
+std::string seq::SourceDecompiler::writeBool( Generic& g ) {
+	return anchor(g) + (g.Bool().getBool() ? "true " : "false ");
+}
+
+std::string seq::SourceDecompiler::writeNull( Generic& g ) {
+	return anchor(g) + "null ";
+}
+
+std::string seq::SourceDecompiler::writeNumber( Generic& g ) {
+	type::Number& n = g.Number();
+	return anchor(g) + (n.isNatural() ? std::to_string(n.getLong()) : std::to_string(n.getDouble())) + " ";
+}
+
+std::string seq::SourceDecompiler::writeFunc( Generic& g ) {
+	indentation.push();
+	std::string str = anchor(g) + "{\n" + decompile( g.Function().getReader() );
+	indentation.pop();
+	return str + indentation.get() + "} ";
+}
+
+std::string seq::SourceDecompiler::writeFlowc( Generic& g ) {
+	std::string str = anchor(g) + "[";
+
+	for( FlowCondition* c : g.Flowc().getConditions() ) {
+		str += condition( c );
+		str += ", ";
+	}
+
+	str.pop_back();
+	str.pop_back();
+
+	return str + "] ";
+}
+
+std::string seq::SourceDecompiler::writeExpr( Generic& g ) {
+	type::Expression& e = g.Expression();
+	return "( " + decompile( e.getLeftReader() ) + exprop(e.getOperator()) + " " + decompile(e.getRightReader()) + ") ";
+}
+
+std::string seq::SourceDecompiler::writeName( Generic& g ) {
+	type::Name& n = g.Name();
+	return std::string(n.getDefine() ? "set " : "") + anchor(g) + n.getName() + " ";
+}
+
+std::string seq::SourceDecompiler::writeString( Generic& g ) {
+	std::string str = anchor(g) + "\"";
+
+	for( char chr : g.String().getString() ) {
+		switch( chr ) {
+			case '\n': str += "\\n"; break;
+			case '\t': str += "\\t"; break;
+			case '\"': str += "\\\""; break;
+			case '\\': str += "\\\\"; break;
+			case '\r': str += "\\r"; break;
+			default: str += chr;
+		}
+	}
+
+	return str + "\" ";
+}
+
+std::string seq::SourceDecompiler::writeStream( Generic& g ) {
+	seq::Stream stream = g.Stream().getReader().readAll();
+	int size = stream.size();
+	byte tags = g.Stream().getTags();
+
+	std::string str = indentation.get();
+
+	if( tags & SEQ_TAG_END ) str += "end; ";
+	if( tags & SEQ_TAG_FIRST ) str += "first; ";
+	if( tags & SEQ_TAG_LAST ) str += "last; ";
+
+	for( int i = 0; i < size; i ++ ) {
+		Generic& g = stream[i];
+		std::string sub = decompile( stream[i] );
+
+		if( g.getDataType() == DataType::Stream ) {
+
+			// remove trailing newline
+			sub.pop_back();
+
+			str += "( << " + sub + ") ";
+		}else{
+			str += sub;
+		}
+
+		if( i + 1 != size ) str += "<< ";
+	}
+
+	return str + "\n";
+}
+
+std::string seq::SourceDecompiler::writeVMCall( Generic& g ) {
+	using CallType = type::VMCall::CallType;
+	switch( g.VMCall().getCall() ) {
+		case CallType::Again: return anchor(g) + "again ";
+		case CallType::Break: return anchor(g) + "break ";
+		case CallType::Exit: return anchor(g) + "exit ";
+		case CallType::Final: return anchor(g) + "final ";
+		case CallType::Return: return anchor(g) + "return ";
+	}
+
+	throw seq::InternalError("Invalid VMCall ID!");
+}
+
+std::string seq::SourceDecompiler::writeArg( Generic& g ) {
+	return anchor(g) + std::string( (size_t) g.Arg().getLevel() + 1, '@' ) + " ";
+}
+
+std::string seq::SourceDecompiler::writeType( Generic& g ) {
+	DataType type = g.Type().getType();
+
+	if( type == seq::DataType::Number ) return anchor(g) + "number ";
+	if( type == seq::DataType::Bool ) return anchor(g) + "bool ";
+	if( type == seq::DataType::String ) return anchor(g) + "string ";
+	if( type == seq::DataType::Type ) return anchor(g) + "type ";
+
+	throw seq::InternalError("Invalid Type ID!");
+}
+
+std::string seq::SourceDecompiler::anchor( Generic& g ) {
+	return std::string(g.getAnchor() ? "#" : "");
+}
+
+std::string seq::SourceDecompiler::condition( FlowCondition* c ) {
+	std::string str = decompile( c->a );
+
+	// remove trailing space
+	str.pop_back();
+
+	if( c->type != FlowCondition::Type::Range ) {
+		return str;
+	}else{
+		std::string str2 = decompile( c->b );
+
+		// remove trailing space
+		str2.pop_back();
+
+		return str + ":" + str2;
+	}
+}
+
+std::string seq::SourceDecompiler::exprop( ExprOperator op ) {
+	switch( op ) {
+		case ExprOperator::Less: return "<";
+		case ExprOperator::Greater: return ">";
+		case ExprOperator::Equal: return "=";
+		case ExprOperator::NotEqual: return "!=";
+		case ExprOperator::NotGreater: return "<=";
+		case ExprOperator::NotLess: return ">=";
+		case ExprOperator::And: return "&&";
+		case ExprOperator::Or: return "||";
+		case ExprOperator::Xor: return "^^";
+		case ExprOperator::Not: return "!";
+		case ExprOperator::Multiplication: return "*";
+		case ExprOperator::Division: return "/";
+		case ExprOperator::Addition: return "+";
+		case ExprOperator::Subtraction: return "-";
+		case ExprOperator::Modulo: return "%";
+		case ExprOperator::Power: return "**";
+		case ExprOperator::BinaryAnd: return "&";
+		case ExprOperator::BinaryOr: return "|";
+		case ExprOperator::BinaryXor: return "^";
+		case ExprOperator::BinaryNot: return "~";
+		case ExprOperator::Accessor: return "::";
+	}
+
+	throw seq::InternalError("Invalid state!");
+}
+
+#endif // SEQ_EXCLUDE_DECOMPILER
 
 #undef SEQ_IMPLEMENT
 #endif // SEQ_IMPLEMENT

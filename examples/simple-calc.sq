@@ -1,0 +1,42 @@
+
+// Simple Calculator, MIT licence
+// operator first, supports +, -, /, *
+
+load "stdio"
+load "utils"
+load "string"
+
+#std:out << "Enter 'exit' to exit.\n"
+
+set read << {
+	#return << #number << #std:split << " " << #std:in << #std:call << 2
+}
+
+#{
+	set o << #std:in << null
+			
+	#{
+		set a << #read << null
+		#std:out << (a :: 0 + a :: 1) << std:br
+	} << #["+"] << o
+
+	#{
+		set a << #read << null
+		#std:out << (a :: 0 - a :: 1) << std:br
+	} << #["-"] << o
+
+	#{
+		set a << #read << null
+		#std:out << (a :: 0 / a :: 1) << std:br
+	} << #["/"] << o
+
+	#{
+		set a << #read << null
+		#std:out << (a :: 0 * a :: 1) << std:br
+	} << #["*"] << o
+
+	#exit << #["exit"] << o
+
+	#again << @
+} << null	
+		
