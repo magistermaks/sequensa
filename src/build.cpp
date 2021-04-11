@@ -27,6 +27,8 @@
 #include "modules.hpp"
 
 bool failed = false;
+bool singular = false;
+bool silent = false;
 
 bool build( std::string input, std::vector<seq::byte>* buffer, std::vector<std::string>* dependencies, std::vector<std::string>* natives, bool verbose, seq::Compiler& compiler ) {
 
@@ -43,12 +45,7 @@ bool build( std::string input, std::vector<seq::byte>* buffer, std::vector<std::
 			std::string content( (std::istreambuf_iterator<char>(infile)), (std::istreambuf_iterator<char>()) );
 			*buffer = compiler.compile(content);
 
-		}catch( seq::CompilerError& err ){
-
-			std::cout << "Error: " << err.what() << std::endl;
-			failed = true;
-
-		}
+		}catch( seq::CompilerError& err ){}
 
 		// set by error handle
 		if( failed ) {
@@ -221,20 +218,26 @@ void build( ArgParse& argp, Options opt ) {
 	}
 
 	if( vars.size() == 2 ) {
+		singular = opt.no_multi_error;
+		silent = opt.no_warn;
 
-		if( !opt.no_multi_error ) {
-			compiler.setErrorHandle( [] (seq::CompilerError err) {
-				if( err.isError() ) {
-					if( err.isCritical() ) {
-						std::cout << "Fatal: ";
-						throw err;
-					}
+		compiler.setErrorHandle( [] (seq::CompilerError err) {
+			if( err.isCritical() ) {
+				std::cout << "Fatal: " << err.what() << std::endl;
+				failed = true;
+				throw err;
+			}
 
-					std::cout << "Error: " << err.what() << std::endl;
-					failed = true;
-				}
-			} );
-		}
+			if( err.isError() ) {
+				std::cout << "Error: " << err.what() << std::endl;
+				failed = true;
+				if( singular ) throw err;
+			}
+
+			if( err.isWarning() && !silent ) {
+				std::cout << "Warning: " << err.what() << std::endl;
+			}
+		} );
 
 		if( !build_tree( vars.at(0), vars.at(1), opt.verbose, compiler, table ) ) {
 

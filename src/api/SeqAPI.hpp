@@ -719,6 +719,7 @@ namespace seq {
 
 		public:
 			explicit CompilerError ( const byte level, const std::string& unexpected, const std::string& expected, const std::string& structure, int line );
+			explicit CompilerError ( const std::string& warning, const std::string& structure, int line );
 			virtual const char* what() const throw();
 			bool isCritical();
 			bool isError();
@@ -2002,6 +2003,13 @@ seq::CompilerError::CompilerError( const byte level, const std::string& unexpect
 	if( !structure.empty() ) this->error += " in " + structure;
 	this->error += " at line: " + std::to_string(line);
 	this->level = level;
+}
+
+seq::CompilerError::CompilerError( const std::string& warning, const std::string& structure, int line ) {
+	this->error = warning;
+	if( !structure.empty() ) this->error += " in " + structure;
+	this->error += " at line: " + std::to_string(line);
+	this->level = 0;
 }
 
 bool seq::CompilerError::isCritical() {
@@ -3726,6 +3734,7 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 	seq::BufferWriter bw( arr, getTable() );
 
 	State state = State::Start;
+	int statmentCounter = 0;
 
 	for( int i = start; i <= end; i ++ ) {
 
@@ -3748,11 +3757,22 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 				}
 
 				if( token.isPrimitive() ) {
-					if( embedded && token.getCategory() == seq::Compiler::Token::Category::VMCall ) {
-						fail( seq::CompilerError( 1, "Build in native function '" + std::string( (char*) token.getClean().c_str() ) + "'", "", "embedded stream", token.getLine() ) );
+					if( token.getCategory() == Compiler::Token::Category::VMCall ) {
+						if( embedded ) {
+							fail( seq::CompilerError( 1, "Build in native function '" + std::string( (char*) token.getClean().c_str() ) + "'", "", "embedded stream", token.getLine() ) );
+						}else{
+
+							// warnings
+							if( statmentCounter == 1 ) {
+								fail( seq::CompilerError( "Unreachable statement", "stream", token.getLine() ) );
+							}else if( statmentCounter > 1 ) {
+								fail( seq::CompilerError( "Unreachable statements", "stream", token.getLine() ) );
+							}
+
+						}
 					}
 
-					// TODO: emit unreachable code warning after any VMCall
+					statmentCounter ++;
 
 					auto buf = assemblePrimitive( token );
 					bw.putBuffer( buf );
@@ -3778,6 +3798,7 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 				fail( seq::CompilerError( 1, "token '" + token.getRaw() + "'", "name, value, argument, function, expression or flow controller", "stream", token.getLine() ) );
 				break;
 
+
 			case State::Set:
 				if( token.getCategory() == seq::Compiler::Token::Category::Name ) {
 					if( !token.getAnchor() ) {
@@ -3791,12 +3812,14 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 				fail( seq::CompilerError( 1, "token: '" + token.getRaw() + "'", "name", "stream", token.getLine() ) );
 				break;
 
+
 			case State::Function: {
 					int j = findClosing( tokens, i - 1, seq::Compiler::Token::Category::FuncBracket ) - 1;
 					auto buf = assembleFunction( tokens, i, j, tokens.at(i - 1).getAnchor() );
 					bw.putBuffer(buf);
 					i = j;
 					state = State::Stream;
+					statmentCounter ++;
 					break;
 				}
 
@@ -3807,6 +3830,7 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 					bw.putBuffer(buf);
 					i = j;
 					state = State::Stream;
+					statmentCounter ++;
 					break;
 				}
 
@@ -3817,6 +3841,7 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 					bw.putBuffer(buf);
 					i = j;
 					state = State::Stream;
+					statmentCounter ++;
 					break;
 				}
 

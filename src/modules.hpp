@@ -49,6 +49,7 @@ struct Options {
 	bool strict_math: 1;
 	bool no_multi_error: 1;
 	bool optimize: 1;
+	bool no_warn: 1;
 };
 
 #define USAGE_HELP( error, mode ) std::cout << error << "\nUse '--help " << mode << "' for usage help." << std::endl;

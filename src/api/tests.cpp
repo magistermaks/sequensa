@@ -2485,7 +2485,6 @@ TEST( c_error_handle, {
 	} );
 
 	compiler.compile( "#exit << [#4]" );
-	compiler.setErrorHandle( seq::Compiler::defaultErrorHandle );
 
 	if( flag ) {
 		FAIL( "Error handle test failed!" );
@@ -2722,6 +2721,33 @@ TEST( ce_empty_result, {
 
 } );
 
+TEST( c_warn_unreachable, {
+
+	static int counter;
+	counter = 0;
+
+	seq::Compiler compiler;
+
+	compiler.setErrorHandle( [] (seq::CompilerError err) {
+		if( err.isWarning() ) counter ++;
+	} );
+
+	// single warnings
+	compiler.compile( "1 << #return << true" );
+	compiler.compile( "#1 << #return << true" );
+	compiler.compile( "#{ #return << 1 } << #return << true" );
+	compiler.compile( "[1] << #return << true" );
+	compiler.compile( "null << #exit << true" );
+
+	// two warnings
+	compiler.compile( "#{ 11 << #return << 1 } << #exit << true" );
+	compiler.compile( "#exit << #exit << #exit << 1" );
+
+	if( counter != 9 ) {
+		FAIL( "Warning handle test failed!" );
+	}
+
+} );
 
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );

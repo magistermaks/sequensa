@@ -53,6 +53,7 @@ int main( int argc, char **argv ) {
 	options.strict_math = argp.hasFlag("-S");
 	options.no_multi_error = argp.hasFlag("-xm");
 	options.optimize = argp.hasFlag("-o");
+	options.no_warn = argp.hasFlag("-xw");
 
 	try{
 
