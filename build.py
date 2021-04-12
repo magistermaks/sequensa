@@ -166,7 +166,6 @@ if comcfg["binary"] != "g++":
 # warn about Microsoft being Microsoft
 if comcfg["binary"] == "cl":
     print("\nWarning: Selected compiler requires special configuration!")
-    print("Warning: MSVC requires a special script to be executed prior to compilation.")
     print("Warning: Learn more here: docs.microsoft.com/en-us/cpp/build/building-on-the-command-line.")
     
 # warn about problems this flag may cause
@@ -304,6 +303,7 @@ print( "\nBuilding Targets..." )
 # compile all Sequensa files
 fPIC = comcfg["shared"]["compiler"]
 compile( "src/api/seqapi.cpp", fPIC )
+compile( "src/api/dyncapi.cpp", fPIC )
 compile( "src/main.cpp" )
 compile( "src/help.cpp" )
 compile( "src/build.cpp" )
@@ -328,6 +328,7 @@ print( "\nLinking Targets..." )
 # link targets
 shared = comcfg["shared"]["linker"]
 link( syscfg["path"] + "/sequensa" + syscfg["exe"], ["/src/api/seqapi.o", "/src/lib/whereami.o", "/src/main.o", "/src/help.o", "/src/build.o", "/src/run.o", "/src/utils.o", "/src/info.o", "/src/decompile.o", "/src/shell.o"] )
+link( syscfg["path"] + "/seqapi" + syscfg["lib"], ["/src/api/seqapi.o", "/src/api/dyncapi.o"], shared )
 link( syscfg["path"] + "/lib/stdio/native" + syscfg["lib"], ["/src/api/seqapi.o", "/src/std/stdio.o"], shared )
 link( syscfg["path"] + "/lib/math/native" + syscfg["lib"], ["/src/api/seqapi.o", "/src/std/math.o"], shared )
 link( syscfg["path"] + "/lib/meta/native" + syscfg["lib"], ["/src/api/seqapi.o", "/src/std/meta.o"], shared )

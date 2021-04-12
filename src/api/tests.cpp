@@ -24,6 +24,7 @@
  */
 
 #include "SeqAPI.hpp"
+#include "dyncapi.cpp"
 #include "../lib/vstl.hpp"
 
 // Test coverage: 91.89%
@@ -674,22 +675,22 @@ TEST( tokenizer_basic, {
 
 	// for some reason Eclipse complains here, you can safely ignore it
 
-	std::vector<seq::Compiler::Token> tokens = seq::Compiler::tokenizeStatic( "#exit << 1 << \"Hello\" << 3" );
+	auto tokens = seq::Compiler::tokenizeStatic( "#exit << 1 << \"Hello\" << 3" );
 
 	if( tokens.at(0).getCategory() != seq::Compiler::Token::Category::VMCall ) {
-		FAIL( "Expected 'VMCall' token at index 0, found " + tokens.at(0).toString() );
+		FAIL( "Expected 'VMCall' token at index 0" );
 	}
 
 	if( tokens.at(1).getCategory() != seq::Compiler::Token::Category::Stream ) {
-		FAIL( "Expected 'Stream' token at index 1, found " + tokens.at(1).toString() );
+		FAIL( "Expected 'Stream' token at index 1 " );
 	}
 
 	if( tokens.at(2).getCategory() != seq::Compiler::Token::Category::Number ) {
-		FAIL( "Expected 'Number' token at index 2, found " + tokens.at(2).toString() );
+		FAIL( "Expected 'Number' token at index 2 " );
 	}
 
 	if( tokens.at(6).getCategory() != seq::Compiler::Token::Category::Number ) {
-		FAIL( "Expected 'Number' token at index 6, found " + tokens.at(6).toString() );
+		FAIL( "Expected 'Number' token at index 6 " );
 	}
 
 } );
@@ -2733,19 +2734,112 @@ TEST( c_warn_unreachable, {
 	} );
 
 	// single warnings
-	compiler.compile( "1 << #return << true" );
+	compiler.compile( "#1 << #return << true" );
 	compiler.compile( "#1 << #return << true" );
 	compiler.compile( "#{ #return << 1 } << #return << true" );
-	compiler.compile( "[1] << #return << true" );
-	compiler.compile( "null << #exit << true" );
+	compiler.compile( "#[1] << #return << true" );
+	compiler.compile( "#null << #exit << true" );
 
 	// two warnings
 	compiler.compile( "#{ 11 << #return << 1 } << #exit << true" );
 	compiler.compile( "#exit << #exit << #exit << 1" );
 
 	if( counter != 9 ) {
-		FAIL( "Warning handle test failed!" );
+		FAIL( "Warning test failed!" );
 	}
+
+} );
+
+TEST( c_warn_dangling, {
+
+	static int counter;
+	counter = 0;
+
+	seq::Compiler compiler;
+
+	compiler.setErrorHandle( [] (seq::CompilerError err) {
+		if( err.isWarning() ) counter ++;
+	} );
+
+	// single warnings
+	compiler.compile( "1 << true" );
+
+	if( counter != 1 ) {
+		FAIL( "Warning test failed!" );
+	}
+
+} );
+
+TEST( capi_basic, {
+
+	// create objects
+	const char* code = "#exit << 123";
+	void* compiler = seq_compiler_new();
+	void* executor = seq_executor_new();
+
+	// compile program
+	int size;
+	void* buffer = seq_compiler_build_new(compiler, code, &size);
+
+	// execute and get output
+	seq_executor_execute(executor, buffer, size);
+	void* results = seq_executor_results_stream_ptr(executor);
+	int count = seq_stream_size(results);
+
+	// check results
+	if( count != 1 ) FAIL( "Expected one result!" );
+	void* generic = seq_stream_generic_ptr( results, 0 );
+	if( seq_generic_type(generic) != (int) seq::DataType::Number ) FAIL( "Expected number!" );
+	if( seq_generic_anchor(generic) ) FAIL( "Expected no anchor!" );
+	if( seq_generic_number_long(generic) != 123 ) FAIL( "Expected 123!" );
+
+	// free memory
+	seq_compiler_build_free(buffer);
+	seq_compiler_free(compiler);
+	seq_executor_free(executor);
+
+} );
+
+TEST( capi_natives, {
+
+	// create objects
+	const char* code = "#exit << #hello << 100";
+	void* compiler = seq_compiler_new();
+	void* executor = seq_executor_new();
+
+	// define function to multiply input by 2
+	NativeVoid fn = [] (void * stream) {
+		void* generic = seq_stream_generic_ptr(stream, 0);
+		int value = seq_generic_number_long(generic);
+		seq_stream_clear(stream);
+		void* data = seq_data_number_unique( false, value * 2 );
+		seq_stream_add(stream, data);
+		return stream;
+	};
+
+	// define native
+	seq_executor_add_native(executor, "hello", (void*) fn );
+
+	// compile program
+	int size;
+	void* buffer = seq_compiler_build_new(compiler, code, &size);
+
+	// execute and get output
+	seq_executor_execute(executor, buffer, size);
+	void* results = seq_executor_results_stream_ptr(executor);
+	int count = seq_stream_size(results);
+
+	// check results
+	if( count != 1 ) FAIL( "Expected one result!" );
+	void* generic = seq_stream_generic_ptr( results, 0 );
+	if( seq_generic_type(generic) != (int) seq::DataType::Number ) FAIL( "Expected number!" );
+	if( seq_generic_anchor(generic) ) FAIL( "Expected no anchor!" );
+	if( seq_generic_number_long(generic) != 200 ) FAIL( "Expected 200!" );
+
+	// free memory
+	seq_compiler_build_free(buffer);
+	seq_compiler_free(compiler);
+	seq_executor_free(executor);
 
 } );
 

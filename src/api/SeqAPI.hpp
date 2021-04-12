@@ -215,7 +215,7 @@
  * 		explicitly told do do so using the compiler optimization flags. they can be supplied as a 3th
  * 		argument to the `compileStatic` function or set using `setOptimizationFlags` on the compiler object.
  *
- * 		The following flags are available; they can be combined using the || operator.
+ * 		The following flags are available; they can be combined using the | operator.
  *
  * 			Optimizations::None (default value)
  * 				Disables all forms of compile-time optimization,
@@ -3735,6 +3735,13 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 
 	State state = State::Start;
 	int statmentCounter = 0;
+	bool dangling = false;
+
+	// warning
+	if( start <= end && !tokens[start].getAnchor() ) {
+		fail( seq::CompilerError( "Dangling statement", "stream", tokens[start].getLine() ) );
+		dangling = true;
+	}
 
 	for( int i = start; i <= end; i ++ ) {
 
@@ -3760,13 +3767,11 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 					if( token.getCategory() == Compiler::Token::Category::VMCall ) {
 						if( embedded ) {
 							fail( seq::CompilerError( 1, "Build in native function '" + std::string( (char*) token.getClean().c_str() ) + "'", "", "embedded stream", token.getLine() ) );
-						}else{
+						}else if( !dangling ){
 
-							// warnings
-							if( statmentCounter == 1 ) {
+							// warning
+							if( statmentCounter >= 1 ) {
 								fail( seq::CompilerError( "Unreachable statement", "stream", token.getLine() ) );
-							}else if( statmentCounter > 1 ) {
-								fail( seq::CompilerError( "Unreachable statements", "stream", token.getLine() ) );
 							}
 
 						}
