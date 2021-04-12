@@ -39,8 +39,7 @@
 #	define FUNC extern "C"
 #endif
 
-/// Mostly for use in testing
-using NativeVoid = void* (*) (void*);
+using Native = void* (*) (void*);
 
 /// Dummy function, it can be used to verify if the API is correctly loaded
 FUNC bool seq_verify() {
@@ -93,13 +92,13 @@ FUNC void* seq_executor_results_stream_ptr( void* executor ) {
 }
 
 /// Add native function to executor, not thread safe
-FUNC void seq_executor_add_native( void* executor, const char* name, void* funcptr ) {
+FUNC void seq_executor_add_native( void* executor, const char* name, Native func ) {
 
 	// thread safety? what thread safety?
 	static void* ptr;
 
 	using VoidFunc = seq::Stream* (*) (seq::Stream*);
-	ptr = funcptr;
+	ptr = (void*) func;
 	((seq::Executor*) executor)->inject(std::string(name), [] (seq::Stream& stream) -> seq::Stream {
 		return *((VoidFunc) ptr)( &stream );
 	} );

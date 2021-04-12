@@ -2808,7 +2808,7 @@ TEST( capi_natives, {
 	void* executor = seq_executor_new();
 
 	// define function to multiply input by 2
-	NativeVoid fn = [] (void * stream) {
+	Native fn = [] (void * stream) {
 		void* generic = seq_stream_generic_ptr(stream, 0);
 		int value = seq_generic_number_long(generic);
 		seq_stream_clear(stream);
@@ -2818,7 +2818,7 @@ TEST( capi_natives, {
 	};
 
 	// define native
-	seq_executor_add_native(executor, "hello", (void*) fn );
+	seq_executor_add_native(executor, "hello", fn );
 
 	// compile program
 	int size;
