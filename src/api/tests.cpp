@@ -2812,7 +2812,7 @@ TEST( capi_natives, {
 		void* generic = seq_stream_generic_ptr(stream, 0);
 		int value = seq_generic_number_long(generic);
 		seq_stream_clear(stream);
-		void* data = seq_data_number_unique( false, value * 2 );
+		void* data = seq_generic_number_create( false, value * 2 );
 		seq_stream_add(stream, data);
 		return stream;
 	};

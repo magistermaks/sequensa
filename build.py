@@ -328,7 +328,7 @@ print( "\nLinking Targets..." )
 # link targets
 shared = comcfg["shared"]["linker"]
 link( syscfg["path"] + "/sequensa" + syscfg["exe"], ["/src/api/seqapi.o", "/src/lib/whereami.o", "/src/main.o", "/src/help.o", "/src/build.o", "/src/run.o", "/src/utils.o", "/src/info.o", "/src/decompile.o", "/src/shell.o"] )
-link( syscfg["path"] + "/seqapi" + syscfg["lib"], ["/src/api/seqapi.o", "/src/api/dyncapi.o"], shared )
+link( syscfg["path"] + "/libseqapi" + syscfg["lib"], ["/src/api/seqapi.o", "/src/api/dyncapi.o"], shared )
 link( syscfg["path"] + "/lib/stdio/native" + syscfg["lib"], ["/src/api/seqapi.o", "/src/std/stdio.o"], shared )
 link( syscfg["path"] + "/lib/math/native" + syscfg["lib"], ["/src/api/seqapi.o", "/src/std/math.o"], shared )
 link( syscfg["path"] + "/lib/meta/native" + syscfg["lib"], ["/src/api/seqapi.o", "/src/std/meta.o"], shared )

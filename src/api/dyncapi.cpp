@@ -42,6 +42,11 @@
 /// Mostly for use in testing
 using NativeVoid = void* (*) (void*);
 
+/// Dummy function, it can be used to verify if the API is correctly loaded
+FUNC bool seq_verify() {
+	return true;
+}
+
 /// Free Compiler object allocated using seq_compiler_new
 FUNC void seq_compiler_free( void* ptr ) {
 	delete (seq::Compiler*) ptr;
@@ -105,9 +110,9 @@ FUNC int seq_stream_size( void* stream ) {
 	return ((seq::Stream*) stream)->size();
 }
 
-// Get generic from stream
+/// Get generic from stream
 FUNC void* seq_stream_generic_ptr( void* stream, int index ) {
-	return (void*) &((*((seq::Stream*) stream))[index]);
+	return (void*) (*((seq::Stream*) stream))[index].getRaw();
 }
 
 /// Clear the stream
@@ -116,52 +121,57 @@ FUNC void seq_stream_clear( void* stream ) {
 }
 
 /// Append to stream
-FUNC void seq_stream_add( void* stream, void* raw_data ) {
-	((seq::Stream*) stream)->push_back( seq::Generic( (seq::type::Generic*) raw_data ) );
+FUNC void seq_stream_add( void* stream, void* generic ) {
+	((seq::Stream*) stream)->push_back( seq::Generic( (seq::type::Generic*) generic ) );
 }
 
 /// Get data type from generic
 FUNC int seq_generic_type( void* generic ) {
-	return (int) ((seq::Generic*) generic)->getDataType();
+	return (int) ((seq::type::Generic*) generic)->getDataType();
 }
 
 /// Get anchor from generic
 FUNC int seq_generic_anchor( void* generic ) {
-	return (int) ((seq::Generic*) generic)->getAnchor();
+	return (int) ((seq::type::Generic*) generic)->getAnchor();
 }
 
 /// Query long from number generic
 FUNC long seq_generic_number_long( void* generic ) {
-	return ((seq::Generic*) generic)->Number().getLong();
+	return ((seq::type::Number*) generic)->getLong();
 }
 
-// Query double from number generic
-FUNC long seq_generic_number_double( void* generic ) {
-	return ((seq::Generic*) generic)->Number().getLong();
+/// Query double from number generic
+FUNC double seq_generic_number_double( void* generic ) {
+	return ((seq::type::Number*) generic)->getDouble();
 }
 
 /// Query string from string generic
-FUNC void* seq_generic_string_string( void* generic ) {
-	return (void*) ((seq::Generic*) generic)->String().getString().c_str();
+FUNC const char* seq_generic_string_string( void* generic ) {
+	return ((seq::type::String*) generic)->getString().c_str();
 }
 
-/// Create new unique data number object
-FUNC void* seq_data_number_unique( bool anchor, double value ) {
+/// Query bool from string generic
+FUNC bool seq_generic_bool_bool( void* generic ) {
+	return ((seq::type::Bool*) generic)->getBool();
+}
+
+/// Create new generic number object
+FUNC void* seq_generic_number_create( bool anchor, double value ) {
 	return (void*) new seq::type::Number( anchor, value );
 }
 
-/// Create new unique data bool object
-FUNC void* seq_data_bool_unique( bool anchor, bool value ) {
+/// Create new generic bool object
+FUNC void* seq_generic_bool_create( bool anchor, bool value ) {
 	return (void*) new seq::type::Bool( anchor, value );
 }
 
-/// Create new unique data string object
-FUNC void* seq_data_string_unique( bool anchor, const char* value ) {
+/// Create new generic string object
+FUNC void* seq_generic_string_create( bool anchor, const char* value ) {
 	return (void*) new seq::type::String( anchor, value );
 }
 
-/// Create new unique data null object
-FUNC void* seq_data_null_unique( bool anchor ) {
+/// Create new generic null object
+FUNC void* seq_generic_null_create( bool anchor ) {
 	return (void*) new seq::type::Null( anchor );
 }
 
