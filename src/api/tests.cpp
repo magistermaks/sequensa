@@ -51,19 +51,21 @@ void print_buffer( seq::ByteBuffer& bb ) {
     std::cout << std::endl << std::flush;
 }
 
-seq::Stream native_join_strings( seq::Stream& input ) {
+seq::Stream* native_join_strings( seq::Stream* input ) {
 	std::string str;
 
-	for( auto& arg : input ) {
+	for( auto& arg : *input ) {
 		if( arg.getDataType() == seq::DataType::String ) {
 			str += arg.String().getString();
 		}else{
 			throw seq::RuntimeError( "Invalid argument for 'join', string expected!" );
 		}
 	}
-	input.clear();
 
-	return { seq::Generic( new seq::type::String( false, str.c_str() ) ) };
+	input->clear();
+	input->push_back( seq::util::newString(str.c_str()) );
+
+	return nullptr;
 }
 
 
@@ -602,16 +604,17 @@ TEST( executor_hello_world_func, {
 TEST( executor_native, {
 
 	seq::Executor exe;
-	exe.inject( "sum", [] ( seq::Stream& input ) -> seq::Stream {
+	exe.inject( "sum", [] ( seq::Stream* input ) -> seq::Stream* {
 		double sum = 0;
-		for( auto& arg : input ) {
+
+		for( auto& arg : *input ) {
 			sum += seq::util::numberCast( arg ).Number().getDouble();
 		}
-		input.clear();
 
-		seq::Stream acc;
-		acc.push_back( seq::Generic( new seq::type::Number( false, sum ) ) );
-		return acc;
+		input->clear();
+		input->push_back( seq::Generic( new seq::type::Number( false, sum ) ) );
+
+		return nullptr;
 	} );
 
 	std::vector<byte> arr_1;
@@ -1603,24 +1606,24 @@ TEST( ce_blob, {
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
-	exe.inject( "pack", [] ( seq::Stream& input ) -> seq::Stream {
-		return seq::Stream {
+	exe.inject( "pack", [] ( seq::Stream* input ) -> seq::Stream* {
+		return new seq::Stream {
 			seq::Generic( new Thing( false, 123, 456 ) )
 		};
 	} );
 
-	exe.inject( "unpack", [] ( seq::Stream& input ) -> seq::Stream {
-		if( input[0].getDataType() != seq::DataType::Blob ) {
-			return seq::Stream();
+	exe.inject( "unpack", [] ( seq::Stream* input ) -> seq::Stream* {
+		if( (*input)[0].getDataType() != seq::DataType::Blob ) {
+			return new seq::Stream();
 		}else{
 
-			if( input[0].Blob().toString() != "blobus" ) {
+			if( (*input)[0].Blob().toString() != "blobus" ) {
 				FAIL( "Invalid blob string!" );
 			}
 
-			return seq::Stream {
-				seq::Generic( new seq::type::Number( false, ((Thing&) input[0].Blob()).a ) ),
-				seq::Generic( new seq::type::Number( false, ((Thing&) input[0].Blob()).b ) )
+			return new seq::Stream {
+				seq::Generic( new seq::type::Number( false, ((Thing&) (*input)[0].Blob()).a ) ),
+				seq::Generic( new seq::type::Number( false, ((Thing&) (*input)[0].Blob()).b ) )
 			};
 		}
 	} );
@@ -2481,8 +2484,9 @@ TEST( c_error_handle, {
 
 	seq::Compiler compiler;
 
-	compiler.setErrorHandle( [] (seq::CompilerError err) {
+	compiler.setErrorHandle( [] (seq::CompilerError* err) -> bool {
 		flag = false;
+		return false;
 	} );
 
 	compiler.compile( "#exit << [#4]" );
@@ -2507,28 +2511,33 @@ TEST( ce_executor_parenting, {
 	static seq::Executor exe;
 	exe = seq::Executor();
 
-	exe.inject( "inc_func", [] (seq::Stream& stream) -> seq::Stream {
-		if( stream[0].getDataType() != seq::DataType::Number ) {
+	exe.inject( "inc_func", [] (seq::Stream* stream) -> seq::Stream* {
+		if( (*stream)[0].getDataType() != seq::DataType::Number ) {
 			throw seq::RuntimeError("Expected number!");
 		}
 
-		double i = stream[0].Number().getDouble() + 1;
-		return { seq::util::newNumber( i ) };
+		double i = (*stream)[0].Number().getDouble() + 1;
+		return new seq::Stream { seq::util::newNumber( i ) };
 	} );
 
-	exe.inject( "test_func", [] (seq::Stream& stream) -> seq::Stream {
-		if( stream[0].getDataType() != seq::DataType::String ) {
+	exe.inject( "test_func", [] (seq::Stream* stream) -> seq::Stream* {
+		if( (*stream)[0].getDataType() != seq::DataType::String ) {
 			throw seq::RuntimeError("Expected string!");
 		}
 
-		std::string code = stream[0].String().getString();
+		std::string code = (*stream)[0].String().getString();
 		auto buf = seq::Compiler::compileStatic( code );
 		seq::ByteBuffer bb( buf.data(), buf.size() );
 
 		seq::Executor local_exe( &exe );
 		local_exe.execute( bb );
 
-		return local_exe.getResults();
+		auto& output = local_exe.getResults();
+
+		stream->clear();
+		stream->insert(stream->end(), output.begin(), output.end());
+
+		return nullptr;
 	} );
 
 	exe.execute( bb );
@@ -2729,8 +2738,9 @@ TEST( c_warn_unreachable, {
 
 	seq::Compiler compiler;
 
-	compiler.setErrorHandle( [] (seq::CompilerError err) {
-		if( err.isWarning() ) counter ++;
+	compiler.setErrorHandle( [] (seq::CompilerError* err) -> bool {
+		if( err->isWarning() ) counter ++;
+		return false;
 	} );
 
 	// single warnings
@@ -2757,8 +2767,9 @@ TEST( c_warn_dangling, {
 
 	seq::Compiler compiler;
 
-	compiler.setErrorHandle( [] (seq::CompilerError err) {
-		if( err.isWarning() ) counter ++;
+	compiler.setErrorHandle( [] (seq::CompilerError* err) -> bool {
+		if( err->isWarning() ) counter ++;
+		return false;
 	} );
 
 	// single warnings
@@ -2808,13 +2819,13 @@ TEST( capi_natives, {
 	void* executor = seq_executor_new();
 
 	// define function to multiply input by 2
-	Native fn = [] (void * stream) {
+	seq::type::Native fn = [] (seq::Stream * stream) -> seq::Stream* {
 		void* generic = seq_stream_generic_ptr(stream, 0);
 		int value = seq_generic_number_long(generic);
 		seq_stream_clear(stream);
 		void* data = seq_generic_number_create( false, value * 2 );
 		seq_stream_add(stream, data);
-		return stream;
+		return nullptr;
 	};
 
 	// define native

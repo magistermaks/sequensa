@@ -221,22 +221,24 @@ void build( ArgParse& argp, Options opt ) {
 		singular = opt.no_multi_error;
 		silent = opt.no_warn;
 
-		compiler.setErrorHandle( [] (seq::CompilerError err) {
-			if( err.isCritical() ) {
-				std::cout << "Fatal: " << err.what() << std::endl;
+		compiler.setErrorHandle( [] (seq::CompilerError* err) -> bool {
+			if( err->isCritical() ) {
+				std::cout << "Fatal: " << err->what() << std::endl;
 				failed = true;
-				throw err;
+				return true;
 			}
 
-			if( err.isError() ) {
-				std::cout << "Error: " << err.what() << std::endl;
+			if( err->isError() ) {
+				std::cout << "Error: " << err->what() << std::endl;
 				failed = true;
-				if( singular ) throw err;
+				return singular;
 			}
 
-			if( err.isWarning() && !silent ) {
-				std::cout << "Warning: " << err.what() << std::endl;
+			if( err->isWarning() && !silent ) {
+				std::cout << "Warning: " << err->what() << std::endl;
 			}
+
+			return false;
 		} );
 
 		if( !build_tree( vars.at(0), vars.at(1), opt.verbose, compiler, table ) ) {

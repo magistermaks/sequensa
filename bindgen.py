@@ -57,7 +57,7 @@ for x in range( len(lines) ):
     line = lines[x]
     if line.startswith("FUNC"):
 
-        obj = { "comment": lines[x - 1], "function": line[5:-2] }
+        obj = { "comment": lines[x-1][4:], "function": line[5:-2] }
         api.append(obj)
         
         if args.verbose:
@@ -95,12 +95,16 @@ if args.lang == "java":
     output += "        Pointer call( Pointer stream );\n"
     output += "    }\n\n"
     
+    output += "    interface CompilerErrorHandle extends Callback {\n"
+    output += "        boolean call( Pointer error );\n"
+    output += "    }\n\n"
+    
     def get_interface( func ):
         str1 = func.replace("void*", "Pointer").replace("const char*", "String").replace("int*", "Pointer")
         return re.sub(r"\bbool\b", "boolean", str1) + ";"
     
     for method in api:
-        output += "    " + method["comment"] + "\n"
+        output += "    /// " + method["comment"] + "\n"
         output += "    " + get_interface( method["function"] ) + "\n\n"
         
     output += "}\n"

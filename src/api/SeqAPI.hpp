@@ -640,7 +640,7 @@ namespace seq {
 	namespace type {
 
 		/// define Sequensa native function signature
-		typedef std::vector<seq::Generic>(*Native)(std::vector<seq::Generic>&);
+		typedef std::vector<seq::Generic>*(*Native)(std::vector<seq::Generic>*);
 
 	}
 
@@ -724,6 +724,7 @@ namespace seq {
 			bool isCritical();
 			bool isError();
 			bool isWarning();
+			byte getLevel();
 	};
 
 	class FileHeader {
@@ -970,7 +971,7 @@ namespace seq {
 		public:
 
 			// define error handle signature
-			typedef void(*ErrorHandle)(seq::CompilerError);
+			using ErrorHandle = bool (*) (seq::CompilerError*);
 
 			class Token {
 
@@ -1023,7 +1024,7 @@ namespace seq {
 		private:
 			StringTable* names;
 			StringTable* loades;
-			ErrorHandle fail;
+			ErrorHandle handle;
 			oflag_t flags;
 
 		public:
@@ -1037,7 +1038,7 @@ namespace seq {
 			std::vector<byte> compile( std::string code );
 			std::vector<Token> tokenize( std::string code );
 
-			static void defaultErrorHandle( CompilerError err );
+			static bool defaultErrorHandle( CompilerError* err );
 
 			// Legacy API
 			static std::vector<byte> compileStatic( std::string codec, StringTable* headerData = nullptr, oflag_t flags = (oflag_t) Optimizations::None );
@@ -1059,6 +1060,10 @@ namespace seq {
 			void optimizeIfApplicable( std::vector<Token>& tokens );
 			int extractHeaderData( std::vector<Token>& tokens, StringTable* arrayPtr );
 			StringTable* getTable();
+
+			void emit( seq::CompilerError error );
+			void fail( seq::CompilerError error );
+			void warn( seq::CompilerError warning );
 
 	};
 
@@ -2024,6 +2029,10 @@ bool seq::CompilerError::isWarning() {
 	return this->level == 0;
 }
 
+byte seq::CompilerError::getLevel() {
+	return this->level;
+}
+
 const char* seq::CompilerError::what() const throw() {
 	return this->error.c_str();
 }
@@ -2753,7 +2762,16 @@ seq::CommandResult seq::Executor::executeAnchor( seq::Generic entity, seq::Strea
 
 		// test if name refers to native function, and if so execute it
 		try{
-			return CommandResult( seq::CommandResult::ResultType::None, resolveNative( name.getName() )( input_stream ) );
+			// this will throw std::out_of_range if native is not found
+			seq::Stream* ptr = resolveNative( name.getName() )( &input_stream );
+
+			// If null pointer is returned the input_stream is to be treated as output
+			if( ptr != nullptr ) {
+				input_stream = std::move( *ptr );
+				delete ptr;
+			}
+
+			return CommandResult( seq::CommandResult::ResultType::None, input_stream );
 		} catch (std::out_of_range &ignore) {
 
 			// if it isn't native, try finding it on the stack
@@ -3260,7 +3278,7 @@ std::string seq::Compiler::Token::toString() {
 }
 
 seq::Compiler::Compiler() {
-	fail = seq::Compiler::defaultErrorHandle;
+	handle = seq::Compiler::defaultErrorHandle;
 	loades = nullptr;
 	names = nullptr;
 	flags = (oflag_t) Optimizations::None;
@@ -3739,7 +3757,7 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 
 	// warning
 	if( start <= end && !tokens[start].getAnchor() ) {
-		fail( seq::CompilerError( "Dangling statement", "stream", tokens[start].getLine() ) );
+		warn( seq::CompilerError( "Dangling statement", "stream", tokens[start].getLine() ) );
 		dangling = true;
 	}
 
@@ -3771,7 +3789,7 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 
 							// warning
 							if( statmentCounter >= 1 ) {
-								fail( seq::CompilerError( "Unreachable statement", "stream", token.getLine() ) );
+								warn( seq::CompilerError( "Unreachable statement", "stream", token.getLine() ) );
 							}
 
 						}
@@ -4294,12 +4312,26 @@ seq::StringTable* seq::Compiler::getTable() {
 	return ( flags & (seq::oflag_t) Optimizations::Name ) ? names : nullptr;
 }
 
-void seq::Compiler::defaultErrorHandle( seq::CompilerError err ) {
-	if( err.isError() ) throw err;
+void seq::Compiler::emit( seq::CompilerError error ) {
+	if( this->handle( &error ) || error.isCritical() ) {
+		throw error;
+	}
+}
+
+void seq::Compiler::fail( seq::CompilerError error ) {
+	emit(error);
+}
+
+void seq::Compiler::warn( seq::CompilerError warning ) {
+	emit(warning);
+}
+
+bool seq::Compiler::defaultErrorHandle( seq::CompilerError* err ) {
+	return err->isError();
 }
 
 void seq::Compiler::setErrorHandle( seq::Compiler::ErrorHandle handle ) {
-	this->fail = handle;
+	this->handle = handle;
 }
 
 void seq::Compiler::setNameTable( seq::StringTable* strings ) {

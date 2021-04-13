@@ -25,15 +25,15 @@
 
 #include "common.hpp"
 
-seq::Stream seq_std_call( seq::Stream& input ) {
-	seq::Stream output;
+seq::Stream* seq_std_call( seq::Stream* input ) {
+	seq::Stream* output = new seq::Stream();
 
-	for( auto& arg : input ) {
+	for( auto& arg : *input ) {
 
 		long val = seq::util::numberCast(arg).Number().getLong();
 
 		while( val --> 0 ) {
-			output.push_back( seq::util::newNull() );
+			output->push_back( seq::util::newNull() );
 		}
 
 	}
@@ -41,8 +41,8 @@ seq::Stream seq_std_call( seq::Stream& input ) {
 	return output;
 }
 
-seq::Stream seq_std_length( seq::Stream& input ) {
-	return { seq::util::newNumber( input.size() ) };
+seq::Stream* seq_std_length( seq::Stream* input ) {
+	return new seq::Stream { seq::util::newNumber( input->size() ) };
 }
 
 INIT( seq::Executor* exe, seq::FileHeader* head ) {

@@ -31,61 +31,61 @@ seq::byte major;
 seq::byte minor;
 seq::byte patch;
 
-seq::Stream seq_std_meta_major( seq::Stream& input ) {
-	seq::Stream output;
+seq::Stream* seq_std_meta_major( seq::Stream* input ) {
+	seq::Stream* output = new seq::Stream();
 
-	for( int i = input.size(); i > 0; i -- ) {
+	for( int i = input->size(); i > 0; i -- ) {
 
-		output.push_back( seq::util::newNumber( (int) major ) );
-
-	}
-
-	return output;
-}
-
-seq::Stream seq_std_meta_minor( seq::Stream& input ) {
-	seq::Stream output;
-
-	for( int i = input.size(); i > 0; i -- ) {
-
-		output.push_back( seq::util::newNumber( (int) minor ) );
+		output->push_back( seq::util::newNumber( (int) major ) );
 
 	}
 
 	return output;
 }
 
-seq::Stream seq_std_meta_patch( seq::Stream& input ) {
-	seq::Stream output;
+seq::Stream* seq_std_meta_minor( seq::Stream* input ) {
+	seq::Stream* output = new seq::Stream();
 
-	for( int i = input.size(); i > 0; i -- ) {
+	for( int i = input->size(); i > 0; i -- ) {
 
-		output.push_back( seq::util::newNumber( (int) patch ) );
+		output->push_back( seq::util::newNumber( (int) minor ) );
 
 	}
 
 	return output;
 }
 
-seq::Stream seq_std_meta_value( seq::Stream& input ) {
-	seq::Stream output;
+seq::Stream* seq_std_meta_patch( seq::Stream* input ) {
+	seq::Stream* output = new seq::Stream();
 
-	for( auto& arg : input ) {
+	for( int i = input->size(); i > 0; i -- ) {
+
+		output->push_back( seq::util::newNumber( (int) patch ) );
+
+	}
+
+	return output;
+}
+
+seq::Stream* seq_std_meta_value( seq::Stream* input ) {
+	seq::Stream* output = new seq::Stream();
+
+	for( auto& arg : *input ) {
 
 		if( arg.getDataType() != seq::DataType::String ) {
 
-			output.push_back( seq::util::newNull() );
+			output->push_back( seq::util::newNull() );
 			continue;
 
 		}
 
 		try{
 
-			output.push_back( seq::util::newString(  values.at( arg.String().getString().c_str() ).c_str() ) );
+			output->push_back( seq::util::newString(  values.at( arg.String().getString().c_str() ).c_str() ) );
 
 		}catch( std::out_of_range& err ) {
 
-			output.push_back( seq::util::newNull() );
+			output->push_back( seq::util::newNull() );
 
 		}
 
@@ -94,18 +94,18 @@ seq::Stream seq_std_meta_value( seq::Stream& input ) {
 	return output;
 }
 
-seq::Stream seq_std_meta_build_time( seq::Stream& input ) {
-	seq::Stream output;
+seq::Stream* seq_std_meta_build_time( seq::Stream* input ) {
+	seq::Stream* output = new seq::Stream();
 
-	for( int i = input.size(); i > 0; i -- ) {
+	for( int i = input->size(); i > 0; i -- ) {
 
 		try{
 
-			output.push_back( seq::util::newNumber( std::stoi( (char*) values.at( "time" ).c_str() ) ) );
+			output->push_back( seq::util::newNumber( std::stoi( (char*) values.at( "time" ).c_str() ) ) );
 
 		}catch( std::out_of_range& err ) {
 
-			output.push_back( seq::util::newNull() );
+			output->push_back( seq::util::newNull() );
 
 		}
 
@@ -114,13 +114,13 @@ seq::Stream seq_std_meta_build_time( seq::Stream& input ) {
 	return output;
 }
 
-seq::Stream seq_std_meta_natives( seq::Stream& input ) {
-	seq::Stream output;
+seq::Stream* seq_std_meta_natives( seq::Stream* input ) {
+	seq::Stream* output = new seq::Stream();
 
-	for( int i = input.size(); i > 0; i -- ) {
+	for( int i = input->size(); i > 0; i -- ) {
 
 		for( auto& native : executor->getNativesMap() ) {
-			output.push_back( seq::util::newString( native.first.c_str() ) );
+			output->push_back( seq::util::newString( native.first.c_str() ) );
 		}
 
 	}
@@ -128,23 +128,21 @@ seq::Stream seq_std_meta_natives( seq::Stream& input ) {
 	return output;
 }
 
-seq::Stream seq_std_meta_libs( seq::Stream& input ) {
-	seq::Stream output;
+seq::Stream* seq_std_meta_libs( seq::Stream* input ) {
+	seq::Stream* output = new seq::Stream();
 
-	for( int i = input.size(); i > 0; i -- ) {
+	for( int i = input->size(); i > 0; i -- ) {
 
 		try{
 			std::string entry = values.at("load"), str = "";
 
 			for( seq::byte b : entry ) {
 				if(b) str.push_back(b); else {
-					output.push_back( seq::util::newString(str.c_str()) );
+					output->push_back( seq::util::newString(str.c_str()) );
 					str.clear();
 				}
 			}
-		}catch(std::out_of_range& err) {
-			return EMPTY;
-		}
+		}catch(std::out_of_range& err) {}
 
 	}
 

@@ -39,11 +39,37 @@
 #	define FUNC extern "C"
 #endif
 
-using Native = void* (*) (void*);
+using Native = seq::type::Native;
+using CompilerErrorHandle = seq::Compiler::ErrorHandle;
 
 /// Dummy function, it can be used to verify if the API is correctly loaded
-FUNC bool seq_verify() {
-	return true;
+FUNC int seq_verify() {
+	return 0x534551;
+}
+
+/// Generic free()
+FUNC void seq_free( void* ptr ) {
+	free(ptr);
+}
+
+/// Get major version component
+FUNC int seq_version_major() {
+	return SEQ_API_VERSION_MAJOR;
+}
+
+/// Get minor version component
+FUNC int seq_version_minor() {
+	return SEQ_API_VERSION_MINOR;
+}
+
+/// Get path version component
+FUNC int seq_version_patch() {
+	return SEQ_API_VERSION_PATCH;
+}
+
+/// Get standard name
+FUNC const char* seq_standard() {
+	return SEQ_API_STANDARD;
 }
 
 /// Free Compiler object allocated using seq_compiler_new
@@ -63,11 +89,50 @@ FUNC void seq_compiler_build_free( void* ptr ) {
 
 /// Create and populate new program buffer
 FUNC void* seq_compiler_build_new( void* compiler, const char* str, int* size ) {
-	auto data = ((seq::Compiler*) compiler)->compile( std::string(str) );
-	*size = data.size();
-	seq::byte* buffer = (seq::byte*) malloc(*size);
-	memcpy(buffer, data.data(), *size);
-	return buffer;
+	try{
+		auto data = ((seq::Compiler*) compiler)->compile( std::string(str) );
+		*size = data.size();
+		seq::byte* buffer = (seq::byte*) malloc(*size);
+		memcpy(buffer, data.data(), *size);
+		return buffer;
+	}catch(seq::CompilerError& err) {
+		*size = 0;
+		return nullptr;
+	}
+}
+
+/// Set compiler optimization flags
+FUNC void seq_compiler_optimizations( void* compiler, int flags ) {
+	((seq::Compiler*) compiler)->setOptimizationFlags(flags);
+}
+
+/// Set Compiler error handle
+FUNC void seq_compiler_error_handle( void* compiler, CompilerErrorHandle func ) {
+	((seq::Compiler*) compiler)->setErrorHandle(func);
+}
+
+/// Query error message from any exception
+FUNC const char* seq_exception_message( void* exception ) {
+	return ((std::exception*) exception)->what();
+}
+
+/// Query error level from compiler exception
+FUNC int seq_compiler_error_level( void* exception ) {
+	return ((seq::CompilerError*) exception)->getLevel();
+}
+
+/// Decompile given bytecode buffer
+FUNC void* seq_decompile( void* buffer, int size, const char* indentation, int base ) {
+	seq::ByteBuffer bb( (seq::byte*) buffer, size );
+	seq::SourceDecompiler decompiler;
+	seq::BufferReader br = bb.getReader();
+
+	decompiler.setIndentation(indentation, base);
+	std::string code = decompiler.decompile( br );
+
+	char* str = (char*) malloc( code.size() + 1 );
+	strcpy( str, code.c_str() );
+	return (void*) str;
 }
 
 /// Free Executor object allocated using seq_executor_new
@@ -93,20 +158,22 @@ FUNC void* seq_executor_results_stream_ptr( void* executor ) {
 
 /// Add native function to executor, not thread safe
 FUNC void seq_executor_add_native( void* executor, const char* name, Native func ) {
-
-	// thread safety? what thread safety?
-	static void* ptr;
-
-	using VoidFunc = seq::Stream* (*) (seq::Stream*);
-	ptr = (void*) func;
-	((seq::Executor*) executor)->inject(std::string(name), [] (seq::Stream& stream) -> seq::Stream {
-		return *((VoidFunc) ptr)( &stream );
-	} );
+	((seq::Executor*) executor)->inject(std::string(name), func);
 }
 
 /// Get stream size
 FUNC int seq_stream_size( void* stream ) {
 	return ((seq::Stream*) stream)->size();
+}
+
+/// Get a new stream object, for use in native functions
+FUNC void* seq_stream_create() {
+	return new seq::Stream();
+}
+
+/// Free Stream object allocated using seq_stream_create
+FUNC void seq_stream_free( void* stream ) {
+	delete (seq::Stream*) stream;
 }
 
 /// Get generic from stream
