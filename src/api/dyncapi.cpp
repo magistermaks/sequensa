@@ -101,7 +101,7 @@ FUNC void* seq_compiler_build_new( void* compiler, const char* str, int* size ) 
 	}
 }
 
-/// created new buffer, it needs to be later freed
+/// create new buffer, it needs to be later freed
 FUNC void* seq_buffer_new( void* data, int size ) {
 	seq::byte* buffer = (seq::byte*) malloc(size);
 	memcpy(buffer, data, size);
@@ -163,7 +163,7 @@ FUNC void* seq_executor_results_stream_ptr( void* executor ) {
 	return (void*) &(((seq::Executor*) executor)->getResults());
 }
 
-/// Add native function to executor, not thread safe
+/// Add native function to executor
 FUNC void seq_executor_add_native( void* executor, const char* name, Native func ) {
 	((seq::Executor*) executor)->inject(std::string(name), func);
 }

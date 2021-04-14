@@ -3499,7 +3499,6 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( std::string code ) {
 					}
 					break;
 
-
 				case State::Number:
 					if( std::isdigit(c) ) token += c; else {
 						if( c == '.' ) {

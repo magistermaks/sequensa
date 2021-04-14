@@ -4,7 +4,7 @@ import argparse
 import os.path
 import re
 
-langs = {"java"}
+langs = {"java", "python"}
 
 # parse cl args
 parser = argparse.ArgumentParser( description="Sequensa Dynamic API binding generator" )
@@ -108,6 +108,55 @@ if args.lang == "java":
         output += "    " + get_interface( method["function"] ) + "\n\n"
         
     output += "}\n"
+    
+if args.lang == "python":
+    
+    pattern = re.compile(r"(.+?(?=seq_))(\bseq_[a-z_]+\b)(.+)")
+    
+    def map_type( type ):
+        type = ("c_" + type).replace("c_int*", "POINTER(c_int)").replace("*", "_p").replace("const ", "")
+        return type.replace("c_CompilerErrorHandle", "c_void_p").replace("c_Native", "c_void_p");
+    
+    def map_args( str ):
+        if str == "()":
+            return ""
+        else:
+            return ", ".join( [ map_type(x.rsplit(' ', 1)[0]) for x in str[2:-2].split(", ") ] )
+    
+    def get_function( func, doc ):
+        result = pattern.search(func)
+        str = ""
+        
+        if result:
+            res = map_type(result.group(1))
+            name = result.group(2)
+            args = result.group(3)
+            
+            if re.match(r"\bc_void\b", res):
+                res = "None"
+            
+            str += "libsq." + name + ".__doc__ = \"" + doc + "\"\n"
+            str += "libsq." + name + ".restype = " + res + "\n"
+            str += "libsq." + name + ".argtypes = [" + map_args( args ) + "]\n"
+            
+        else:
+            raise Exception("Pattern failed to match!")
+            
+        return str
+    
+    output += "\n"
+    output += "from ctypes import *\n"
+    output += "libsq = cdll.LoadLibrary('/home/magistermaks/sequensa/libseqapi.so')\n"
+    output += "\n"
+    output += "SQNATIVE = CFUNCTYPE(c_void_p, c_void_p)\n"
+    output += "SQERRHANDLE = CFUNCTYPE(c_bool, c_void_p)\n"
+    output += "\n"
+    
+    for method in api:
+        output += "# " + method["comment"] + "\n"
+        output += get_function( method["function"], method["comment"] ) + "\n"
+        
+    output += "\n"
 
 ofile.write( output )
 ofile.close()
