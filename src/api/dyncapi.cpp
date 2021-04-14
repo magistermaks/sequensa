@@ -101,6 +101,13 @@ FUNC void* seq_compiler_build_new( void* compiler, const char* str, int* size ) 
 	}
 }
 
+/// created new buffer, it needs to be later freed
+FUNC void* seq_buffer_new( void* data, int size ) {
+	seq::byte* buffer = (seq::byte*) malloc(size);
+	memcpy(buffer, data, size);
+	return buffer;
+}
+
 /// Set compiler optimization flags
 FUNC void seq_compiler_optimizations( void* compiler, int flags ) {
 	((seq::Compiler*) compiler)->setOptimizationFlags(flags);
@@ -240,5 +247,6 @@ FUNC void* seq_generic_string_create( bool anchor, const char* value ) {
 FUNC void* seq_generic_null_create( bool anchor ) {
 	return (void*) new seq::type::Null( anchor );
 }
+
 
 

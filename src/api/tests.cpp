@@ -2854,6 +2854,10 @@ TEST( capi_natives, {
 
 } );
 
+TEST( c_var_names, {
+	seq::Compiler::compileStatic( "#exit << #test123 << ar2d2 << #tmp123 << #c_3p0 << s3_:h0 << #_:_" );
+} );
+
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );
 REGISTER_EXCEPTION( seq_runtime_error, seq::RuntimeError );

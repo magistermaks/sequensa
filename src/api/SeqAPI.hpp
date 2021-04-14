@@ -3471,6 +3471,12 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( std::string code ) {
 				case State::Name: // or Tag
 					if( std::isalpha(c) || c == '_' ) token += c; else {
 
+						if( std::isdigit(c) && token.size() > 0 ) {
+							char p = token[token.size() - 1];
+							if( std::isalpha(p) || p == '_' ) token += c;
+							break;
+						}
+
 						if( c == ':' ) {
 							if( std::isalpha(n) || n == '_' ) {
 								token += c;
@@ -3492,6 +3498,7 @@ std::vector<seq::Compiler::Token> seq::Compiler::tokenize( std::string code ) {
 						next();
 					}
 					break;
+
 
 				case State::Number:
 					if( std::isdigit(c) ) token += c; else {
