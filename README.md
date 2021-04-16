@@ -18,6 +18,7 @@ This repository contains:
 - Compiler and decompiler
 - Easy to embed (single file API)
 - Simple to use dynamic library interface
+- Bindings to different languages ([Java](https://github.com/magistermaks/sequensa-java), [Python](https://github.com/magistermaks/sequensa-python))
 
 #### Sequensa API
 
