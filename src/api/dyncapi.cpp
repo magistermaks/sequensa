@@ -29,6 +29,15 @@
  * 		Sequensa Dynamic C API is a layer of abstraction build on top of Sequensa API that allows Sequensa to be
  * 		used in Languages compatible with Dynamic Libraries such as C, Java, and C#.
  * 		For the Sequensa API itself see: SeqAPI.hpp
+ *
+ * Known issues:
+ *
+ * 		- No String tables support
+ * 		- No buffer writer/reader interface
+ * 		- No file header interface
+ * 		- Limited error handling
+ * 		- Limited generic types
+ *
  */
 
 #include "SeqAPI.hpp"
@@ -40,9 +49,9 @@
 #endif
 
 using Native = seq::type::Native;
-using CompilerErrorHandle = seq::Compiler::ErrorHandle;
+using ErrorHandle = bool (*) (void*);
 
-/// Dummy function, it can be used to verify if the API is correctly loaded
+/// Dummy function
 FUNC int seq_verify() {
 	return 0x534551;
 }
@@ -95,7 +104,7 @@ FUNC void* seq_compiler_build_new( void* compiler, const char* str, int* size ) 
 		seq::byte* buffer = (seq::byte*) malloc(*size);
 		memcpy(buffer, data.data(), *size);
 		return buffer;
-	}catch(seq::CompilerError& err) {
+	}catch(...) {
 		*size = 0;
 		return nullptr;
 	}
@@ -114,8 +123,8 @@ FUNC void seq_compiler_optimizations( void* compiler, int flags ) {
 }
 
 /// Set Compiler error handle
-FUNC void seq_compiler_error_handle( void* compiler, CompilerErrorHandle func ) {
-	((seq::Compiler*) compiler)->setErrorHandle(func);
+FUNC void seq_compiler_error_handle( void* compiler, ErrorHandle func ) {
+	((seq::Compiler*) compiler)->setErrorHandle((seq::Compiler::ErrorHandle) func);
 }
 
 /// Query error message from any exception
@@ -130,16 +139,20 @@ FUNC int seq_compiler_error_level( void* exception ) {
 
 /// Decompile given bytecode buffer
 FUNC void* seq_decompile( void* buffer, int size, const char* indentation, int base ) {
-	seq::ByteBuffer bb( (seq::byte*) buffer, size );
-	seq::SourceDecompiler decompiler;
-	seq::BufferReader br = bb.getReader();
+	try{
+		seq::ByteBuffer bb( (seq::byte*) buffer, size );
+		seq::SourceDecompiler decompiler;
+		seq::BufferReader br = bb.getReader();
 
-	decompiler.setIndentation(indentation, base);
-	std::string code = decompiler.decompile( br );
+		decompiler.setIndentation(indentation, base);
+		std::string code = decompiler.decompile( br );
 
-	char* str = (char*) malloc( code.size() + 1 );
-	strcpy( str, code.c_str() );
-	return (void*) str;
+		char* str = (char*) malloc( code.size() + 1 );
+		strcpy( str, code.c_str() );
+		return (void*) str;
+	}catch(...) {
+		return nullptr;
+	}
 }
 
 /// Free Executor object allocated using seq_executor_new
@@ -152,10 +165,19 @@ FUNC void* seq_executor_new() {
 	return new seq::Executor();
 }
 
+/// Set Executor's strict math flag
+FUNC void seq_executor_strict_math( void* executor, bool flag ) {
+	((seq::Executor*) executor)->setStrictMath(flag);
+}
+
 /// Execute given program
-FUNC void seq_executor_execute( void* executor, void* buffer, int size ) {
-	seq::ByteBuffer bb( (seq::byte*) buffer, size );
-	((seq::Executor*) executor)->execute( bb );
+FUNC void seq_executor_execute( void* executor, void* buffer, int size, ErrorHandle func ) {
+	try{
+		seq::ByteBuffer bb( (seq::byte*) buffer, size );
+		((seq::Executor*) executor)->execute( bb );
+	}catch(std::exception& err) {
+		func((void*) &err);
+	}
 }
 
 /// Get pointer to the results stream

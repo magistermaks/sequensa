@@ -95,7 +95,7 @@ if args.lang == "java":
     output += "        Pointer call( Pointer stream );\n"
     output += "    }\n\n"
     
-    output += "    interface CompilerErrorHandle extends Callback {\n"
+    output += "    interface ErrorHandle extends Callback {\n"
     output += "        boolean call( Pointer error );\n"
     output += "    }\n\n"
     
@@ -109,13 +109,15 @@ if args.lang == "java":
         
     output += "}\n"
     
+# python binding generator
 if args.lang == "python":
     
+    # spilt function to (return type) (name) (args)
     pattern = re.compile(r"(.+?(?=seq_))(\bseq_[a-z_]+\b)(.+)")
     
     def map_type( type ):
         type = ("c_" + type).replace("c_int*", "POINTER(c_int)").replace("*", "_p").replace("const ", "")
-        return type.replace("c_CompilerErrorHandle", "c_void_p").replace("c_Native", "c_void_p");
+        return type.replace("c_ErrorHandle", "c_void_p").replace("c_Native", "c_void_p");
     
     def map_args( str ):
         if str == "()":
@@ -138,6 +140,7 @@ if args.lang == "python":
             str += "libsq." + name + ".__doc__ = \"" + doc + "\"\n"
             str += "libsq." + name + ".restype = " + res + "\n"
             str += "libsq." + name + ".argtypes = [" + map_args( args ) + "]\n"
+            str += name + " = libsq." + name + "\n"
             
         else:
             raise Exception("Pattern failed to match!")
@@ -148,8 +151,8 @@ if args.lang == "python":
     output += "from ctypes import *\n"
     output += "libsq = cdll.LoadLibrary('/home/magistermaks/sequensa/libseqapi.so')\n"
     output += "\n"
-    output += "SQNATIVE = CFUNCTYPE(c_void_p, c_void_p)\n"
-    output += "SQERRHANDLE = CFUNCTYPE(c_bool, c_void_p)\n"
+    output += "libsq.SQNATIVE = CFUNCTYPE(c_void_p, c_void_p)\n"
+    output += "libsq.SQERRHANDLE = CFUNCTYPE(c_bool, c_void_p)\n"
     output += "\n"
     
     for method in api:
