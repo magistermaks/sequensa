@@ -2793,7 +2793,7 @@ TEST( capi_basic, {
 	void* buffer = seq_compiler_build_new(compiler, code, &size);
 
 	// execute and get output
-	seq_executor_execute(executor, buffer, size);
+	seq_executor_execute(executor, buffer, size, seq_null_error_handle);
 	void* results = seq_executor_results_stream_ptr(executor);
 	int count = seq_stream_size(results);
 
@@ -2836,7 +2836,7 @@ TEST( capi_natives, {
 	void* buffer = seq_compiler_build_new(compiler, code, &size);
 
 	// execute and get output
-	seq_executor_execute(executor, buffer, size);
+	seq_executor_execute(executor, buffer, size, seq_null_error_handle);
 	void* results = seq_executor_results_stream_ptr(executor);
 	int count = seq_stream_size(results);
 

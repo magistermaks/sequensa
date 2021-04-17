@@ -21,9 +21,87 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+# load stuff
 import os
 import shutil
 import subprocess
+
+syscfg = {}
+comcfg = {}
+args = {}
+
+# set parsed args
+def set_args( a ):
+    global args
+    args = a
+    return a
+
+# set tmp path
+def set_tmp_path( path ):
+    global tmp_path
+    tmp_path = path
+    return path
+
+# load compiler config
+def load_compiler_config( config, key ):
+    global comcfg
+    if config[key]["inherit"] == "":
+        comcfg = config[key]
+    else:
+        child = config[key]
+        parent = load_compiler_config(config, child["inherit"])
+        
+        for x in child:
+            parent[x] = child[x]
+        
+        comcfg = parent
+    return comcfg
+
+# define exit code checking function
+def check_exit_code( code ):
+    if code != 0:
+        if not args.force:
+            print( "\nError: Task returned non-zero exit code!" )
+            print( " * Try running with `--force` to supress this error" )
+            print( " * Try reporting this to project maintainers" )
+            exit()
+        else:
+            print( "\nWarning: Task returned non-zero exit code!" )
+            print( " * Try reporting this to project maintainers" )
+        
+# load system config
+def load_system_config( config, key ):
+    global syscfg
+    syscfg = config[key]
+    return syscfg
+
+# define function used to invoke compiler
+def compile( path, cargs = "" ):
+    path = localize_path( path )
+    target = os.path.splitext( path )[0] + ".o"
+    
+    command = comcfg["compile"].replace( "$input", path ).replace( "$bin", comcfg["binary"] )
+    command = command.replace( "$output", tmp_path + syscfg["sep"] + target )
+    command = command.replace( "$args", cargs )
+    
+    print( "Compiling '." + syscfg["sep"] + path + "' => '" + tmp_path + syscfg["sep"] + target + "'" )
+    check_exit_code( run_command( command ) )
+
+# define function used to invoke linker
+def link( target, paths, largs = "" ):
+    target = localize_path( target )
+    
+    x = ""
+    for p in paths:
+        x = x + localize_path( tmp_path + p ) + " "
+    
+    command = comcfg["link"].replace( "$input", x ).replace( "$bin", comcfg["binary"] )
+    command = command.replace( "$output", target )
+    command = command.replace( "$libs", comcfg["libs"][ os.name ] )
+    command = command.replace( "$args", largs )
+    
+    print( "Linking '" + target + "'" )
+    check_exit_code( run_command( command ) )
 
 # localize given path
 def localize_path( pth ):

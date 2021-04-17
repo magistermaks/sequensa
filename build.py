@@ -42,18 +42,17 @@ parser.add_argument( "--workspace", help="preserve workspace", action="store_tru
 parser.add_argument( "--uninstall", help="uninstall Sequensa", action="store_true" )
 parser.add_argument( "--silent", help="don't ask for confirmations", action="store_true" )
 parser.add_argument( "--force", help="ignore task exit codes", action="store_true" )
-args = parser.parse_args()
+args = set_args(parser.parse_args())
 
 # get temporary workspace
-tmp_path = tempfile.gettempdir() + "/seq-tmp"
+tmp_path = set_tmp_path( tempfile.gettempdir() + "/seq-tmp" )
 
 # define per-compiler configuration
 compilers_config = {
     "g++": {
-        "alias": "",
-        "compile": "g++ -O3 -g0 -Wall -std=c++11 -c $args -o \"$output\" $input",
-        "link": "g++ -std=c++11 $args -o \"$output\" $input $libs",
-        "ignore_exit_code": False,
+        "inherit": "",
+        "compile": "$bin -O3 -g0 -Wall -std=c++11 -c $args -o \"$output\" $input",
+        "link": "$bin -std=c++11 $args -o \"$output\" $input $libs",
         "binary": "g++",
         "shared": {
             "compiler": "-fPIC", 
@@ -65,28 +64,17 @@ compilers_config = {
         }
     },
     "gcc": {
-        "alias": "g++"
+        "inherit": "g++",
+        "binary": "gcc"
     },
     "clang": {
-        "alias": "",
-        "compile": "clang -O3 -g0 -Wall -std=c++11 -c $args -o \"$output\" $input",
-        "link": "clang -std=c++11 $args -o \"$output\" $input $libs",
-        "ignore_exit_code": False,
-        "binary": "clang",
-        "shared": {
-            "compiler": "-fPIC", 
-            "linker": "-shared"
-        },
-        "libs": {
-            "posix": "-ldl",
-            "nt": ""
-        }
+        "inherit": "g++",
+        "binary": "clang"
     },
     "msvc": {
-        "alias": "",
+        "inherit": "",
         "compile": "cl /O2 /c $args $input /Fo\"$output\" /EHsc",
         "link": "link $args $input /OUT:\"$output\" $libs",
-        "ignore_exit_code": False,
         "binary": "cl",
         "shared": {
             "compiler": "", 
@@ -96,9 +84,6 @@ compilers_config = {
             "posix": "",
             "nt": ""
         }
-    },
-    "cl": {
-        "alias": "msvc"
     }
 }
 
@@ -107,7 +92,7 @@ patform_config = {
     "posix": {
         "exe": "",
         "lib": ".so",
-        "path": "##invalid name to replace##",
+        "path": "",
         "sep": "/"
     },
     "nt": {
@@ -118,18 +103,11 @@ patform_config = {
     }
 }
 
-# get correct compiler configuration dict
-def get_compiler_config( key ):
-    if compilers_config[ key ]["alias"] == "":
-        return compilers_config[ key ]
-    else:
-        return get_compiler_config( compilers_config[key]["alias"] )
-
 if os.name == "posix":
     patform_config["posix"]["path"] = os.getenv('HOME') + "/sequensa"
 
-syscfg = patform_config[os.name]
-comcfg = get_compiler_config( args.compiler )
+syscfg = load_system_config(patform_config, os.name)
+comcfg = load_compiler_config(compilers_config, args.compiler)
 
 # check selected compiler
 if args.compiler not in compilers_config:
@@ -184,46 +162,6 @@ if not test_for_command( comcfg["binary"] + syscfg["exe"] ):
 
     print(" * Try selecting different compiler using the '--compiler' flag")
     exit()
-    
-# define exit code checking function
-def check_exit_code( code ):
-    if code != 0 and not comcfg["ignore_exit_code"]:
-        if not args.force:
-            print( "\nError: Task returned non-zero exit code!" )
-            print( " * Try running with `--force` to supress this error" )
-            print( " * Try reporting this to project maintainers" )
-            exit()
-        else:
-            print( "\nWarning: Task returned non-zero exit code!" )
-            print( " * Try reporting this to project maintainers" )
-    
-# define function used to invoke compiler
-def compile( path, cargs = "" ):
-    path = localize_path( path )
-    target = os.path.splitext( path )[0] + ".o"
-    
-    command = comcfg["compile"].replace( "$input", path )
-    command = command.replace( "$output", tmp_path + syscfg["sep"] + target )
-    command = command.replace( "$args", cargs )
-    
-    print( "Compiling '." + syscfg["sep"] + path + "' => '" + tmp_path + syscfg["sep"] + target + "'" )
-    check_exit_code( run_command( command ) )
-
-# define function used to invoke linker
-def link( target, paths, largs = "" ):
-    target = localize_path( target )
-    
-    x = ""
-    for p in paths:
-        x = x + localize_path( tmp_path + p ) + " "
-    
-    command = comcfg["link"].replace( "$input", x )
-    command = command.replace( "$output", target )
-    command = command.replace( "$libs", comcfg["libs"][ os.name ] )
-    command = command.replace( "$args", largs )
-    
-    print( "Linking '" + target + "'" )
-    check_exit_code( run_command( command ) )
 
 # build API unit tests
 if args.test:

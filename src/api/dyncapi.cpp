@@ -56,6 +56,11 @@ FUNC int seq_verify() {
 	return 0x534551;
 }
 
+/// Null callback
+FUNC bool seq_null_error_handle(void* error) {
+	return false;
+}
+
 /// Generic free()
 FUNC void seq_free( void* ptr ) {
 	free(ptr);
