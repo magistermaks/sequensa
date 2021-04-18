@@ -32,20 +32,21 @@ import tempfile
 # import utils
 from utils import *
 
+# get temporary workspace
+tmp_path = set_tmp_path( tempfile.gettempdir() + "/seq-tmp" )
+project = "Sequensa"
+
 # parse cl args
-parser = argparse.ArgumentParser( description="Sequensa build system" )
-parser.add_argument( "--test", help="run Sequensa API unit tests", action="store_true" )
+parser = argparse.ArgumentParser( description="C/C++ build system" )
+parser.add_argument( "--test", help=f"run {project} API unit tests", action="store_true" )
 parser.add_argument( "--Xalias", help="don't create 'sq' alias", action="store_true" )
 parser.add_argument( "--Xpath", help="don't attempt to add sequensa to PATH", action="store_true" )
 parser.add_argument( "--compiler", help="specify compiler to use [g++, gcc, clang, msvc]", type=str, default="g++" )
 parser.add_argument( "--workspace", help="preserve workspace", action="store_true" )
-parser.add_argument( "--uninstall", help="uninstall Sequensa", action="store_true" )
+parser.add_argument( "--uninstall", help=f"uninstall {project}", action="store_true" )
 parser.add_argument( "--silent", help="don't ask for confirmations", action="store_true" )
 parser.add_argument( "--force", help="ignore task exit codes", action="store_true" )
 args = set_args(parser.parse_args())
-
-# get temporary workspace
-tmp_path = set_tmp_path( tempfile.gettempdir() + "/seq-tmp" )
 
 # define per-compiler configuration
 compilers_config = {
@@ -116,11 +117,11 @@ if args.compiler not in compilers_config:
     exit()
 
 # print basic info
-print( "Sequensa builder v2.0" )
+print( f"{project} builder v2.0" )
 print( "Platform: " + platform.system() + ", Selected '" + args.compiler + "' compiler." )
 
 if args.uninstall:
-    print( "\nSequensa will be uninstalled from: " + syscfg["path"] )
+    print( f"\n{project} will be uninstalled from: " + syscfg["path"] )
     
     if not args.silent:
         print( "That dir will be deleted with all Sequensa libraries, do you wish to continue? y/n" )
@@ -133,7 +134,7 @@ if args.uninstall:
     # uninstall
     rem_dir( syscfg["path"] )
     
-    print( "\nSequensa uninstalled!" )
+    print( f"\n{project} uninstalled!" )
     exit();
 
 # warn about non-standard compiler
@@ -199,7 +200,7 @@ if args.test:
     exit() 
 
 # warn about target directory
-print( "\nSequensa will be installed in: " + syscfg["path"] )
+print( f"\n{project} will be installed in: " + syscfg["path"] )
 
 if not args.silent:
     print( "If that dir already exists it will be deleted, do you wish to continue? y/n" )
@@ -238,7 +239,7 @@ except:
 # print build status
 print( "\nBuilding Targets..." )
 
-# compile all Sequensa files
+# compile all files
 fPIC = comcfg["shared"]["compiler"]
 compile( "src/api/seqapi.cpp", fPIC )
 compile( "src/api/dyncapi.cpp", fPIC )
