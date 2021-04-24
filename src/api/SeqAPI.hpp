@@ -434,8 +434,8 @@ namespace seq {
 
 			public:
 				virtual ~Generic() {}
-				const DataType getDataType() const noexcept;
-				const bool getAnchor() const noexcept;
+				DataType getDataType() const noexcept;
+				bool getAnchor() const noexcept;
 				void setAnchor( bool anchor ) noexcept;
 		};
 
@@ -443,7 +443,7 @@ namespace seq {
 
 			public:
 				Bool( bool anchor, bool value );
-				const bool getBool();
+				bool getBool();
 
 			private:
 				const bool value;
@@ -454,9 +454,9 @@ namespace seq {
 			public:
 				Number( bool anchor, long numerator, long denominator );
 				Number( bool anchor, double value );
-				const double getDouble();
-				const long getLong();
-				const bool isNatural();
+				double getDouble();
+				long getLong();
+				bool isNatural();
 				const Fraction getFraction();
 				static byte sizeOfSigned( unsigned long value );
 				static byte sizeOf( unsigned long value );
@@ -469,7 +469,7 @@ namespace seq {
 
 			public:
 				Arg( bool anchor, byte level );
-				const byte getLevel();
+				byte getLevel();
 
 			private:
 				const byte level;
@@ -489,7 +489,7 @@ namespace seq {
 
 			public:
 				Type( bool anchor, DataType value );
-				const DataType getType();
+				DataType getType();
 
 			public:
 				const DataType value;
@@ -507,7 +507,7 @@ namespace seq {
 				};
 
 				VMCall( bool anchor, CallType value );
-				const CallType getCall();
+				CallType getCall();
 
 			private:
 				const CallType value;
@@ -519,7 +519,7 @@ namespace seq {
 			public:
 				Name( bool anchor, bool define, std::string name );
 				std::string& getName();
-				const bool getDefine();
+				bool getDefine();
 
 			private:
 				const bool define;
@@ -533,7 +533,7 @@ namespace seq {
 				Function( const Function& func );
 				~Function();
 				BufferReader& getReader();
-				const bool hasEnd() noexcept;
+				bool hasEnd() noexcept;
 
 			private:
 				BufferReader* reader;
@@ -546,7 +546,7 @@ namespace seq {
 				Expression( bool anchor, ExprOperator op, BufferReader* left, BufferReader* right );
 				Expression( const Expression& expr );
 				~Expression();
-				const ExprOperator getOperator();
+				ExprOperator getOperator();
 				BufferReader& getLeftReader();
 				BufferReader& getRightReader();
 
@@ -574,8 +574,8 @@ namespace seq {
 				Stream( bool anchor, byte tags, BufferReader* reader );
 				Stream( const Stream& stream );
 				~Stream();
-				const bool matchesTags( byte tags );
-				const byte getTags();
+				bool matchesTags( byte tags );
+				byte getTags();
 				BufferReader& getReader();
 
 			private:
@@ -613,7 +613,7 @@ namespace seq {
 			Generic& operator= ( const Generic& generic );
 			Generic& operator= ( Generic&& generic ) noexcept;
 
-			const DataType getDataType() const noexcept;
+			DataType getDataType() const noexcept;
 			bool getAnchor() const noexcept;
 			void setAnchor( bool anchor ) noexcept;
 
@@ -759,7 +759,7 @@ namespace seq {
 	class TokenReader {
 
 		public:
-			TokenReader( BufferReader& reader, bool useStringTable );
+			TokenReader( BufferReader& reader );
 			DataType getDataType();
 			bool isAnchored();
 			seq::Generic& getGeneric();
@@ -768,7 +768,6 @@ namespace seq {
 			BufferReader& reader;
 			byte header;
 			bool anchor: 4;
-			bool strings: 4;
 			DataType type;
 			seq::Generic generic;
 
@@ -807,9 +806,9 @@ namespace seq {
 
 		public:
 			BufferReader( byte* buffer, long first, long last, StringTable* table = nullptr );
-			const byte nextByte() noexcept;
-			const byte peekByte() noexcept;
-			const bool hasNext() noexcept;
+			byte nextByte() noexcept;
+			byte peekByte() noexcept;
+			bool hasNext() noexcept;
 			TokenReader next() noexcept;
 			BufferReader* nextBlock( long length );
 			FileHeader getHeader();
@@ -1001,15 +1000,15 @@ namespace seq {
 					Token( unsigned int line, long data, bool anchor, Category category, std::string& raw, std::string& clean );
 					Token( const Token& token );
 					Token( Token&& token );
-					const unsigned int getLine();
-					const Category getCategory();
+					unsigned int getLine();
+					Category getCategory();
 					const std::string& getRaw();
 					const std::string& getClean();
-					const bool isPrimitive();
-					const bool isPure();
-					const bool isNamed();
-					const long getData();
-					const bool getAnchor();
+					bool isPrimitive();
+					bool isPure();
+					bool isNamed();
+					long getData();
+					bool getAnchor();
 					std::string toString();
 
 				private:
@@ -1633,7 +1632,7 @@ seq::StringTable seq::FileHeader::getValueTable( const char* key ) {
 			if(b) str.push_back(b); else { table.push_back(str); str.clear(); }
 		}
 
-		return std::move(table);
+		return table;
 	}catch(std::out_of_range& err) {
 		return {};
 	}
@@ -1661,7 +1660,7 @@ seq::FileHeader& seq::FileHeader::operator= ( FileHeader&& header ) noexcept {
 
 seq::type::Generic::Generic( const DataType _type, bool _anchor ): type( _type ), anchor( _anchor ) {}
 
-const bool seq::type::Generic::getAnchor() const noexcept {
+bool seq::type::Generic::getAnchor() const noexcept {
 	return this->anchor;
 }
 
@@ -1669,19 +1668,19 @@ void seq::type::Generic::setAnchor( bool anchor ) noexcept {
 	this->anchor = anchor;
 }
 
-const seq::DataType seq::type::Generic::getDataType() const noexcept {
+seq::DataType seq::type::Generic::getDataType() const noexcept {
 	return this->type;
 }
 
 seq::type::Bool::Bool( bool _anchor, bool _value ): seq::type::Generic( seq::DataType::Bool, _anchor ), value( _value ) {}
 
-const bool seq::type::Bool::getBool() {
+bool seq::type::Bool::getBool() {
 	return this->value;
 }
 
 seq::type::Arg::Arg( bool _anchor, byte _level ): seq::type::Generic( seq::DataType::Arg, _anchor ), level( _level ) {}
 
-const byte seq::type::Arg::getLevel() {
+byte seq::type::Arg::getLevel() {
 	return this->level;
 }
 
@@ -1689,15 +1688,15 @@ seq::type::Number::Number( bool _anchor, double _value ): seq::type::Generic( se
 
 seq::type::Number::Number( bool _anchor, long numerator, long denominator ): seq::type::Generic( seq::DataType::Number, _anchor ), value( (double) numerator / denominator ) {};
 
-const double seq::type::Number::getDouble() {
+double seq::type::Number::getDouble() {
 	return this->value;
 }
 
-const long seq::type::Number::getLong() {
+long seq::type::Number::getLong() {
 	return trunc( this->value );
 }
 
-const bool seq::type::Number::isNatural() {
+bool seq::type::Number::isNatural() {
 	return this->getLong() == this->value;
 }
 
@@ -1751,19 +1750,19 @@ std::string& seq::type::String::getString() {
 
 seq::type::Type::Type( bool _anchor, seq::DataType _value ): seq::type::Generic( seq::DataType::Type, _anchor ), value( _value ) {}
 
-const seq::DataType seq::type::Type::getType() {
+seq::DataType seq::type::Type::getType() {
 	return this->value;
 }
 
 seq::type::VMCall::VMCall( bool _anchor, seq::type::VMCall::CallType _value ): seq::type::Generic( seq::DataType::VMCall, _anchor ), value( _value ) {}
 
-const seq::type::VMCall::CallType seq::type::VMCall::getCall() {
+seq::type::VMCall::CallType seq::type::VMCall::getCall() {
 	return this->value;
 }
 
 seq::type::Name::Name( bool _anchor, bool _define, std::string _name ): seq::type::Generic( seq::DataType::Name, _anchor ), define( _define ), name( _name ) {}
 
-const bool seq::type::Name::getDefine() {
+bool seq::type::Name::getDefine() {
 	return this->define;
 }
 
@@ -1783,7 +1782,7 @@ seq::BufferReader& seq::type::Function::getReader() {
 	return *(this->reader);
 }
 
-const bool seq::type::Function::hasEnd() noexcept {
+bool seq::type::Function::hasEnd() noexcept {
 	return this->end;
 }
 
@@ -1796,7 +1795,7 @@ seq::type::Expression::~Expression() {
 	delete this->right;
 }
 
-const seq::ExprOperator seq::type::Expression::getOperator() {
+seq::ExprOperator seq::type::Expression::getOperator() {
 	return this->op;
 }
 
@@ -1816,7 +1815,7 @@ seq::type::Stream::~Stream() {
 	delete this->reader;
 }
 
-const bool seq::type::Stream::matchesTags( byte _tags ) {
+bool seq::type::Stream::matchesTags( byte _tags ) {
 
 	// execute stream on end ONLY if it has that tag
 	if( _tags & SEQ_TAG_END ) return this->tags & SEQ_TAG_END;
@@ -1834,7 +1833,7 @@ const bool seq::type::Stream::matchesTags( byte _tags ) {
 	throw seq::InternalError( "Invalid Tag!" );
 }
 
-const byte seq::type::Stream::getTags() {
+byte seq::type::Stream::getTags() {
 	return this->tags;
 }
 
@@ -1905,7 +1904,7 @@ seq::Generic& seq::Generic::operator= ( Generic&& generic ) noexcept {
 	return *this;
 }
 
-const seq::DataType seq::Generic::getDataType() const noexcept {
+seq::DataType seq::Generic::getDataType() const noexcept {
 	return this->generic->getDataType();
 }
 
@@ -2073,22 +2072,22 @@ seq::BufferReader::BufferReader( byte* buffer, long first, long last, StringTabl
 	this->table = table;
 }
 
-const byte seq::BufferReader::peekByte() noexcept {
+byte seq::BufferReader::peekByte() noexcept {
 	if( this->position >= this->last ) return 0;
 	return this->pointer[ this->position + 1 ];
 }
 
-const byte seq::BufferReader::nextByte() noexcept {
+byte seq::BufferReader::nextByte() noexcept {
 	if( this->position >= this->last ) return 0;
 	return this->pointer[ ++ this->position ];
 }
 
-const bool seq::BufferReader::hasNext() noexcept {
+bool seq::BufferReader::hasNext() noexcept {
 	return ( this->position < this->last );
 }
 
 seq::TokenReader seq::BufferReader::next() noexcept {
-	return seq::TokenReader( *this, table != nullptr );
+	return seq::TokenReader( *this );
 }
 
 seq::BufferReader* seq::BufferReader::nextBlock( long length ) {
@@ -2193,7 +2192,7 @@ unsigned long seq::BufferReader::nextUnsigned() {
 	return value + (head & 0b00001111);
 }
 
-seq::TokenReader::TokenReader( seq::BufferReader& reader, bool table ): reader( reader ), strings( table ) {
+seq::TokenReader::TokenReader( seq::BufferReader& reader ): reader( reader ) {
 	byte header = reader.nextByte();
 
 	this->header = (byte) ( header & 0b01111111 );
@@ -2831,8 +2830,8 @@ seq::Generic seq::Executor::executeExprPair( seq::Generic left, seq::Generic rig
 
 		// try returning element from stream (left) at index (right)
 		try{
-			const Stream stream = std::move( this->resolveName( left.Name().getName(), anchor ) );
-			return std::move( stream.at( right.Number().getLong() ) );
+			const Stream stream = this->resolveName( left.Name().getName(), anchor );
+			return stream.at( right.Number().getLong() );
 		}catch( std::out_of_range& err ){
 			return seq::util::newNull(anchor);
 		}
@@ -3051,7 +3050,7 @@ seq::Generic seq::Executor::executeExpr( seq::Generic entity ) {
 		}
 
 		// return stack argument
-		auto ret = std::move( this->stack[s].getArg() );
+		auto ret = this->stack[s].getArg();
 		ret.setAnchor(anchor);
 		return ret;
 	}
@@ -3067,7 +3066,7 @@ seq::Stream seq::Executor::resolveName( std::string& name, bool anchor ) {
 	for( int i = (int) this->stack.size() - 1; i >= 0; i -- ) {
 
 		try{
-			return std::move( this->stack.at(i).getVar( name, anchor ) );
+			return this->stack.at(i).getVar( name, anchor );
 		} catch (std::out_of_range &err) {
 			continue;
 		}
@@ -3212,11 +3211,11 @@ seq::Compiler::Token::Token( const Token& token ): line( token.line ), data( tok
 
 seq::Compiler::Token::Token( seq::Compiler::Token&& token ): line( std::move( token.line ) ), data( std::move( token.data ) ), anchor( std::move( token.anchor ) ), category( std::move( token.category ) ), raw( std::move( token.raw ) ), clean( std::move( token.clean ) ) {}
 
-const unsigned int seq::Compiler::Token::getLine() {
+unsigned int seq::Compiler::Token::getLine() {
 	return this->line;
 }
 
-const seq::Compiler::Token::Category seq::Compiler::Token::getCategory() {
+seq::Compiler::Token::Category seq::Compiler::Token::getCategory() {
 	return this->category;
 }
 
@@ -3228,27 +3227,27 @@ const std::string& seq::Compiler::Token::getClean() {
 	return this->clean;
 }
 
-const long seq::Compiler::Token::getData() {
+long seq::Compiler::Token::getData() {
 	return this->data;
 }
 
-const bool seq::Compiler::Token::getAnchor() {
+bool seq::Compiler::Token::getAnchor() {
 	return this->anchor;
 }
 
-const bool seq::Compiler::Token::isPrimitive() {
+bool seq::Compiler::Token::isPrimitive() {
 	using Category = seq::Compiler::Token::Category;
 	return category == Category::Arg || category == Category::Null || category == Category::Bool || category == Category::Number ||
 			category == Category::Type || category == Category::String || category == Category::VMCall;
 }
 
-const bool seq::Compiler::Token::isPure() {
+bool seq::Compiler::Token::isPure() {
 	using Category = seq::Compiler::Token::Category;
 	if( category == Category::Arg || category == Category::VMCall ) return false;
 	return this->isPrimitive();
 }
 
-const bool seq::Compiler::Token::isNamed() {
+bool seq::Compiler::Token::isNamed() {
 	using Category = seq::Compiler::Token::Category;
 	return category == Category::String || category == Category::Name;
 }
@@ -3779,6 +3778,7 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 					state = State::Set;
 					break;
 				}
+				/* fall through */
 				// no break //
 
 			case State::Continue:
@@ -4385,7 +4385,7 @@ std::string seq::Indentation::get() {
 		indentation += this->str;
 	}
 
-	return std::move(indentation);
+	return indentation;
 }
 
 seq::Decompiler::Decompiler() {
@@ -4429,7 +4429,7 @@ std::string seq::Decompiler::decompile(Stream& stream) {
 		str += decompile( generic );
 	}
 
-	return std::move(str);
+	return str;
 }
 
 std::string seq::Decompiler::writeInvalid(Generic& g) {

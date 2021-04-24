@@ -52,7 +52,7 @@ args = set_args(parser.parse_args())
 compilers_config = {
     "g++": {
         "inherit": "",
-        "compile": "$bin -O3 -g0 -Wall -std=c++11 -c $args -o \"$output\" $input",
+        "compile": "$bin -O3 -g0 -Wall -Wextra -Wno-unused-parameter -std=c++11 -c $args -o \"$output\" $input",
         "link": "$bin -std=c++11 $args -o \"$output\" $input $libs",
         "binary": "g++",
         "shared": {
@@ -70,7 +70,7 @@ compilers_config = {
     },
     "clang": {
         "inherit": "g++",
-        "binary": "clang"
+        "binary": "clang++"
     },
     "msvc": {
         "inherit": "",

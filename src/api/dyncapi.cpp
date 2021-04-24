@@ -27,7 +27,7 @@
  * Sequensa Dynamic C API:
  *
  * 		Sequensa Dynamic C API is a layer of abstraction build on top of Sequensa API that allows Sequensa to be
- * 		used in Languages compatible with Dynamic Libraries such as C, Java, and C#.
+ * 		used in Languages compatible with Dynamic Libraries such as C, Java, Python, and C#.
  * 		For the Sequensa API itself see: SeqAPI.hpp
  *
  * Known issues:

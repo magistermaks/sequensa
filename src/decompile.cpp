@@ -74,7 +74,7 @@ std::string decompile( std::string input, Options opt ) {
 		str.append( decompiler.decompile( bytecodeReader ) );
 
 		infile.close();
-		return std::move(str);
+		return str;
 
 	}else{
 		std::cout << "Failed to open input file!" << std::endl;
