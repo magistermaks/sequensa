@@ -75,9 +75,11 @@ TEST( buffer_reader_simple, {
 	seq::ByteBuffer bb = seq::ByteBuffer( buffer, 4 );
 	seq::BufferReader br = bb.getReader();
 
+	CHECK( br.size(), 4 );
 	CHECK( br.nextByte(), (byte) 'A' );
 	CHECK( br.peekByte(), (byte) 'B' );
 	CHECK( br.nextByte(), (byte) 'B' );
+	CHECK( br.size(), 2 );
 
 } );
 

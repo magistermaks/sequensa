@@ -2174,7 +2174,7 @@ void seq::BufferReader::move(int size) {
 }
 
 int seq::BufferReader::size() {
-	return this->last - this->position - 1;
+	return this->last - this->position;
 }
 
 void seq::BufferReader::nextString( std::string* str ) {
