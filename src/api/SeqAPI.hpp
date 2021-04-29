@@ -808,13 +808,17 @@ namespace seq {
 			BufferReader( byte* buffer, long first, long last, StringTable* table = nullptr );
 			byte nextByte() noexcept;
 			byte peekByte() noexcept;
-			bool hasNext() noexcept;
+ 			bool hasNext() noexcept;
 			TokenReader next() noexcept;
 			BufferReader* nextBlock( long length );
-			FileHeader getHeader();
+			FileHeader getHeader( bool ignore_version = false );
 			Stream readAll();
 			ByteBuffer getSubBuffer();
 			StringTable* getTable();
+
+			byte* bytes();
+			void move(int length);
+			int size();
 
 			void nextString( std::string* str );
 			unsigned long nextUnsigned();
@@ -844,7 +848,7 @@ namespace seq {
 			void putStaticAccess( bool anchor, const char* str, byte index );
 			void putFlowc( bool anchor, std::vector<std::vector<byte>>& buffers );
 			void putStream( bool anchor, byte tags, std::vector<byte>& buf );
-			void putFileHeader( byte seq_major, byte seq_minor, byte seq_patch, const std::map<std::string, std::string>& data );
+			void putHeader( byte seq_major, byte seq_minor, byte seq_patch, const std::map<std::string, std::string>& data );
 
 			// Currently it only supports pure types
 			void putGeneric( Generic& gereric );
@@ -1522,7 +1526,7 @@ void seq::BufferWriter::putStream( bool anchor, byte tags, std::vector<byte>& bu
 	this->putBuffer( buf );
 }
 
-void seq::BufferWriter::putFileHeader( byte seq_major, byte seq_minor, byte seq_patch, const std::map<std::string, std::string>& data ) {
+void seq::BufferWriter::putHeader( byte seq_major, byte seq_minor, byte seq_patch, const std::map<std::string, std::string>& data ) {
 	this->putByte( 's' );
 	this->putByte( 'q' );
 	this->putByte( 'c' );
@@ -2100,12 +2104,15 @@ seq::BufferReader* seq::BufferReader::nextBlock( long length ) {
 	return new seq::BufferReader( this->pointer, old_pos, this->position, this->table );
 }
 
-seq::FileHeader seq::BufferReader::getHeader() {
+seq::FileHeader seq::BufferReader::getHeader( bool ignore_version ) {
 
 	// validate file signature
-	const byte s1[] = { this->nextByte(), this->nextByte(), this->nextByte(), this->nextByte() };
-	const byte s2[] = { 's', 'q', 'c', 0 };
-	if( !std::equal(std::begin(s1), std::end(s1), std::begin(s2)) ) throw InternalError( "Invalid header signature!" );
+	const byte* head = this->bytes(); this->move(4);
+	const byte valid[] = { 's', 'q', 'c', 0 };
+
+	if( memcmp( head, valid, 4 ) ) {
+		throw InternalError( "Invalid header signature!" );
+	}
 
 	// read sequensa version
 	byte seq_major = this->nextByte();
@@ -2114,8 +2121,9 @@ seq::FileHeader seq::BufferReader::getHeader() {
 
 	std::map<std::string, std::string> data;
 
-	// read header data
-	{
+	// read header data if version matches (to avoid problems)
+	if( ignore_version || (seq_major == SEQ_API_VERSION_MAJOR && seq_minor == SEQ_API_VERSION_MINOR) ) {
+
 		// number of key-value pairs
 		long n = this->nextByte();
 		std::string key, val;
@@ -2158,6 +2166,18 @@ seq::ByteBuffer seq::BufferReader::getSubBuffer() {
 
 seq::StringTable* seq::BufferReader::getTable() {
 	return table;
+}
+
+byte* seq::BufferReader::bytes() {
+	return this->pointer + this->position + 1;
+}
+
+void seq::BufferReader::move(int size) {
+	this->position += size;
+}
+
+int seq::BufferReader::size() {
+	return this->last - this->position - 1;
 }
 
 void seq::BufferReader::nextString( std::string* str ) {

@@ -65,7 +65,7 @@ void shell( ArgParse& argp, Options opt );
 std::map<std::string, std::string> build_header_map( std::vector<std::string>& natives, std::vector<std::string>& strings );
 void unload_native_libs();
 bool load_native_libs( seq::Executor& exe, seq::FileHeader& header, bool verbose );
-bool load_header( seq::FileHeader* header, seq::BufferReader& br );
+bool load_header( seq::FileHeader* header, seq::BufferReader& br, bool force );
 std::string posix_time_to_date( time_t rawtime );
 bool validate_version( seq::FileHeader& header, bool force, bool verbose );
 bool file_exist( const char *path );

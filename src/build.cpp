@@ -185,7 +185,7 @@ bool build_tree( std::string input, std::string output, bool verbose, seq::Compi
 			auto header = build_header_map( natives, strings );
 			std::vector<seq::byte> arr;
 			seq::BufferWriter bw(arr);
-			bw.putFileHeader(SEQ_API_VERSION_MAJOR, SEQ_API_VERSION_MINOR, SEQ_API_VERSION_PATCH, header);
+			bw.putHeader(SEQ_API_VERSION_MAJOR, SEQ_API_VERSION_MINOR, SEQ_API_VERSION_PATCH, header);
 			outfile.write((char*)arr.data(), arr.size());
 		}
 

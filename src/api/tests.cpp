@@ -426,12 +426,12 @@ TEST( buffer_writer_file_header, {
 	data["number"] = "123.4";
 	data["table"] = table;
 
-	bw.putFileHeader( 1, 2, 3, data );
+	bw.putHeader( 1, 2, 3, data );
 	bw.putByte( (byte) 'A' );
 
 	seq::ByteBuffer bb( arr.data(), arr.size() );
 	seq::BufferReader br = bb.getReader();
-	seq::FileHeader header = br.getHeader();
+	seq::FileHeader header = br.getHeader(true);
 
 	CHECK( header.checkVersion( 1, 2 ), true );
 	CHECK( header.checkVersion( 1, 3 ), false );
@@ -2856,6 +2856,30 @@ TEST( capi_natives, {
 
 TEST( c_var_names, {
 	seq::Compiler::compileStatic( "#exit << #test123 << ar2d2 << #tmp123 << #c_3p0 << s3_:h0 << #_:_" );
+} );
+
+TEST( bwr_header_version, {
+
+		std::vector<byte> arr;
+		seq::BufferWriter bw( arr );
+
+		std::map<std::string, std::string> data;
+		data["foo"] = "abc";
+
+		bw.putHeader(0, 1, 2, data);
+
+		seq::ByteBuffer bb( arr.data(), arr.size() );
+		auto a = bb.getReader().getHeader(false);
+		auto b = bb.getReader().getHeader(true);
+
+		if( std::string( b.getValue("foo") ) != "abc" ) {
+			FAIL( "Value not read!" );
+		}
+
+		EXPECT_ERR({
+			a.getValue("foo");
+		})
+
 } );
 
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );

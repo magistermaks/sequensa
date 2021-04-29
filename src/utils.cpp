@@ -157,9 +157,9 @@ bool load_native_libs( seq::Executor& exe, seq::FileHeader& header, bool verbose
 
 #undef TRY_LOADING
 
-bool load_header( seq::FileHeader* header, seq::BufferReader& br ) {
+bool load_header( seq::FileHeader* header, seq::BufferReader& br, bool force ) {
 	try {
-		*header = br.getHeader();
+		*header = br.getHeader(force);
 		return true;
 	} catch( seq::InternalError& err ) {
 		std::cout << "Error! Failed to parse file header, invalid signature!" << std::endl;

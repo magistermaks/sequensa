@@ -36,7 +36,7 @@ void run( std::string input, Options opt ) {
 		seq::BufferReader br = bb.getReader();
 		seq::FileHeader header;
 
-		if( !load_header( &header, br ) ) return;
+		if( !load_header( &header, br, opt.force_execution ) ) return;
 		if( !validate_version( header, opt.force_execution, opt.verbose ) ) return;
 
 		seq::ByteBuffer bytecode = br.getSubBuffer();

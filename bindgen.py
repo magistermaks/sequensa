@@ -61,7 +61,7 @@ except:
 try:
     ofile = open(args.output, mode='w')
 except:
-    print( "Error: Failed to open output file at '" + args.source + "'!" )
+    print( "Error: Failed to open output file at '" + args.output + "'!" )
     print( " * Try changing output file location using '--output' flag" )
     exit()
 

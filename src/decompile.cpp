@@ -48,7 +48,7 @@ std::string decompile( std::string input, Options opt ) {
 		seq::BufferReader br = bb.getReader();
 		seq::FileHeader header;
 
-		if( !load_header( &header, br ) ) throw 0;
+		if( !load_header( &header, br, opt.force_execution ) ) throw 0;
 		if( !validate_version( header, opt.force_execution, opt.verbose ) ) throw 0;
 
 		seq::ByteBuffer bytecode = br.getSubBuffer();
