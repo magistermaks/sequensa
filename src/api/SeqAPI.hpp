@@ -3779,7 +3779,7 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 	bool dangling = false;
 
 	// warning
-	if( start <= end && !tokens[start].getAnchor() ) {
+	if( start <= end && (!tokens[start].getAnchor() && tokens[start].getCategory() != Compiler::Token::Category::Set) ) {
 		warn( seq::CompilerError( "Dangling statement", "stream", tokens[start].getLine() ) );
 		dangling = true;
 	}

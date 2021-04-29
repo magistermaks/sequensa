@@ -2776,6 +2776,8 @@ TEST( c_warn_dangling, {
 
 	// single warnings
 	compiler.compile( "1 << true" );
+	compiler.compile( "set test << 123" );
+	compiler.compile( "#name << 456" );
 
 	if( counter != 1 ) {
 		FAIL( "Warning test failed!" );
