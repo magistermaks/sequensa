@@ -57,7 +57,7 @@ FUNC int seq_verify() {
 }
 
 /// Null callback
-FUNC bool seq_null_error_handle(void* error) {
+FUNC bool seq_null_error_handle( void* error ) {
 	return false;
 }
 

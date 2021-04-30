@@ -171,7 +171,9 @@ if args.lang == "python":
     
     output += "\n"
     output += "from ctypes import *\n"
-    output += "libsq = cdll.LoadLibrary('/home/magistermaks/sequensa/libseqapi.so')\n"
+    output += "import os\n"
+    output += "\n"
+    output += "libsq = cdll.LoadLibrary( 'C:/sequensa/libseqapi.dll' if os.name == 'nt' else os.path.expanduser('~') + '/sequensa/libseqapi.so' )\n"
     output += "\n"
     output += "libsq.SQNATIVE = CFUNCTYPE(c_void_p, c_void_p)\n"
     output += "libsq.SQERRHANDLE = CFUNCTYPE(c_bool, c_void_p)\n"
