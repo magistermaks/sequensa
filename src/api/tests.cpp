@@ -24,6 +24,7 @@
  */
 
 #include "SeqAPI.hpp"
+#include "dyncapi.cpp"
 #include "../lib/vstl.hpp"
 
 // Test coverage: 91.89%
@@ -50,19 +51,21 @@ void print_buffer( seq::ByteBuffer& bb ) {
     std::cout << std::endl << std::flush;
 }
 
-seq::Stream native_join_strings( seq::Stream& input ) {
+seq::Stream* native_join_strings( seq::Stream* input ) {
 	std::string str;
 
-	for( auto& arg : input ) {
+	for( auto& arg : *input ) {
 		if( arg.getDataType() == seq::DataType::String ) {
 			str += arg.String().getString();
 		}else{
 			throw seq::RuntimeError( "Invalid argument for 'join', string expected!" );
 		}
 	}
-	input.clear();
 
-	return { seq::Generic( new seq::type::String( false, str.c_str() ) ) };
+	input->clear();
+	input->push_back( seq::util::newString(str.c_str()) );
+
+	return nullptr;
 }
 
 
@@ -72,9 +75,11 @@ TEST( buffer_reader_simple, {
 	seq::ByteBuffer bb = seq::ByteBuffer( buffer, 4 );
 	seq::BufferReader br = bb.getReader();
 
+	CHECK( br.size(), 4 );
 	CHECK( br.nextByte(), (byte) 'A' );
 	CHECK( br.peekByte(), (byte) 'B' );
 	CHECK( br.nextByte(), (byte) 'B' );
+	CHECK( br.size(), 2 );
 
 } );
 
@@ -423,12 +428,12 @@ TEST( buffer_writer_file_header, {
 	data["number"] = "123.4";
 	data["table"] = table;
 
-	bw.putFileHeader( 1, 2, 3, data );
+	bw.putHeader( 1, 2, 3, data );
 	bw.putByte( (byte) 'A' );
 
 	seq::ByteBuffer bb( arr.data(), arr.size() );
 	seq::BufferReader br = bb.getReader();
-	seq::FileHeader header = br.getHeader();
+	seq::FileHeader header = br.getHeader(true);
 
 	CHECK( header.checkVersion( 1, 2 ), true );
 	CHECK( header.checkVersion( 1, 3 ), false );
@@ -601,16 +606,17 @@ TEST( executor_hello_world_func, {
 TEST( executor_native, {
 
 	seq::Executor exe;
-	exe.inject( "sum", [] ( seq::Stream& input ) -> seq::Stream {
+	exe.inject( "sum", [] ( seq::Stream* input ) -> seq::Stream* {
 		double sum = 0;
-		for( auto& arg : input ) {
+
+		for( auto& arg : *input ) {
 			sum += seq::util::numberCast( arg ).Number().getDouble();
 		}
-		input.clear();
 
-		seq::Stream acc;
-		acc.push_back( seq::Generic( new seq::type::Number( false, sum ) ) );
-		return acc;
+		input->clear();
+		input->push_back( seq::Generic( new seq::type::Number( false, sum ) ) );
+
+		return nullptr;
 	} );
 
 	std::vector<byte> arr_1;
@@ -674,22 +680,22 @@ TEST( tokenizer_basic, {
 
 	// for some reason Eclipse complains here, you can safely ignore it
 
-	std::vector<seq::Compiler::Token> tokens = seq::Compiler::tokenizeStatic( "#exit << 1 << \"Hello\" << 3" );
+	auto tokens = seq::Compiler::tokenizeStatic( "#exit << 1 << \"Hello\" << 3" );
 
 	if( tokens.at(0).getCategory() != seq::Compiler::Token::Category::VMCall ) {
-		FAIL( "Expected 'VMCall' token at index 0, found " + tokens.at(0).toString() );
+		FAIL( "Expected 'VMCall' token at index 0" );
 	}
 
 	if( tokens.at(1).getCategory() != seq::Compiler::Token::Category::Stream ) {
-		FAIL( "Expected 'Stream' token at index 1, found " + tokens.at(1).toString() );
+		FAIL( "Expected 'Stream' token at index 1 " );
 	}
 
 	if( tokens.at(2).getCategory() != seq::Compiler::Token::Category::Number ) {
-		FAIL( "Expected 'Number' token at index 2, found " + tokens.at(2).toString() );
+		FAIL( "Expected 'Number' token at index 2 " );
 	}
 
 	if( tokens.at(6).getCategory() != seq::Compiler::Token::Category::Number ) {
-		FAIL( "Expected 'Number' token at index 6, found " + tokens.at(6).toString() );
+		FAIL( "Expected 'Number' token at index 6 " );
 	}
 
 } );
@@ -1602,24 +1608,24 @@ TEST( ce_blob, {
 	seq::ByteBuffer bb( buf.data(), buf.size() );
 
 	seq::Executor exe;
-	exe.inject( "pack", [] ( seq::Stream& input ) -> seq::Stream {
-		return seq::Stream {
+	exe.inject( "pack", [] ( seq::Stream* input ) -> seq::Stream* {
+		return new seq::Stream {
 			seq::Generic( new Thing( false, 123, 456 ) )
 		};
 	} );
 
-	exe.inject( "unpack", [] ( seq::Stream& input ) -> seq::Stream {
-		if( input[0].getDataType() != seq::DataType::Blob ) {
-			return seq::Stream();
+	exe.inject( "unpack", [] ( seq::Stream* input ) -> seq::Stream* {
+		if( (*input)[0].getDataType() != seq::DataType::Blob ) {
+			return new seq::Stream();
 		}else{
 
-			if( input[0].Blob().toString() != "blobus" ) {
+			if( (*input)[0].Blob().toString() != "blobus" ) {
 				FAIL( "Invalid blob string!" );
 			}
 
-			return seq::Stream {
-				seq::Generic( new seq::type::Number( false, ((Thing&) input[0].Blob()).a ) ),
-				seq::Generic( new seq::type::Number( false, ((Thing&) input[0].Blob()).b ) )
+			return new seq::Stream {
+				seq::Generic( new seq::type::Number( false, ((Thing&) (*input)[0].Blob()).a ) ),
+				seq::Generic( new seq::type::Number( false, ((Thing&) (*input)[0].Blob()).b ) )
 			};
 		}
 	} );
@@ -2480,12 +2486,12 @@ TEST( c_error_handle, {
 
 	seq::Compiler compiler;
 
-	compiler.setErrorHandle( [] (seq::CompilerError err) {
+	compiler.setErrorHandle( [] (seq::CompilerError* err) -> bool {
 		flag = false;
+		return false;
 	} );
 
 	compiler.compile( "#exit << [#4]" );
-	compiler.setErrorHandle( seq::Compiler::defaultErrorHandle );
 
 	if( flag ) {
 		FAIL( "Error handle test failed!" );
@@ -2507,28 +2513,33 @@ TEST( ce_executor_parenting, {
 	static seq::Executor exe;
 	exe = seq::Executor();
 
-	exe.inject( "inc_func", [] (seq::Stream& stream) -> seq::Stream {
-		if( stream[0].getDataType() != seq::DataType::Number ) {
+	exe.inject( "inc_func", [] (seq::Stream* stream) -> seq::Stream* {
+		if( (*stream)[0].getDataType() != seq::DataType::Number ) {
 			throw seq::RuntimeError("Expected number!");
 		}
 
-		double i = stream[0].Number().getDouble() + 1;
-		return { seq::util::newNumber( i ) };
+		double i = (*stream)[0].Number().getDouble() + 1;
+		return new seq::Stream { seq::util::newNumber( i ) };
 	} );
 
-	exe.inject( "test_func", [] (seq::Stream& stream) -> seq::Stream {
-		if( stream[0].getDataType() != seq::DataType::String ) {
+	exe.inject( "test_func", [] (seq::Stream* stream) -> seq::Stream* {
+		if( (*stream)[0].getDataType() != seq::DataType::String ) {
 			throw seq::RuntimeError("Expected string!");
 		}
 
-		std::string code = stream[0].String().getString();
+		std::string code = (*stream)[0].String().getString();
 		auto buf = seq::Compiler::compileStatic( code );
 		seq::ByteBuffer bb( buf.data(), buf.size() );
 
 		seq::Executor local_exe( &exe );
 		local_exe.execute( bb );
 
-		return local_exe.getResults();
+		auto& output = local_exe.getResults();
+
+		stream->clear();
+		stream->insert(stream->end(), output.begin(), output.end());
+
+		return nullptr;
 	} );
 
 	exe.execute( bb );
@@ -2722,6 +2733,185 @@ TEST( ce_empty_result, {
 
 } );
 
+TEST( c_warn_unreachable_1, {
+
+	static int counter;
+	counter = 0;
+
+	seq::Compiler compiler;
+
+	compiler.setErrorHandle( [] (seq::CompilerError* err) -> bool {
+		if( err->isWarning() ) counter ++;
+		return false;
+	} );
+
+	// 1 warn
+	compiler.compile( "#1 << #return << true" );
+	compiler.compile( "#1 << #return << true" );
+	compiler.compile( "#{ #return << 1 } << #return << true" );
+	compiler.compile( "#[1] << #return << true" );
+	compiler.compile( "#null << #exit << true" );
+
+	// 2 warn
+	compiler.compile( "#{ 11 << #return << 1 } << #exit << true" );
+	compiler.compile( "#exit << #exit << #exit << 1" );
+
+	// 0 warn
+	compiler.compile( "#return << 1" );
+	compiler.compile( "#exit << true" );
+
+	CHECK( counter, 9 );
+
+} );
+
+TEST( c_warn_unreachable_2, {
+
+	static int counter;
+	counter = 0;
+
+	seq::Compiler compiler;
+
+	compiler.setErrorHandle( [] (seq::CompilerError* err) -> bool {
+		if( err->isWarning() ) counter ++;
+		return false;
+	} );
+
+	// 1 warn
+	compiler.compile( "#1 << #1 << #true" );
+	compiler.compile( "#exit << true << #true" );
+	compiler.compile( "#return << #true" );
+
+	// 0 warn
+	compiler.compile( "#return << #1 << true" );
+
+	CHECK( counter, 3 );
+
+} );
+
+TEST( c_warn_dangling, {
+
+	static int counter;
+	counter = 0;
+
+	seq::Compiler compiler;
+
+	compiler.setErrorHandle( [] (seq::CompilerError* err) -> bool {
+		if( err->isWarning() ) counter ++;
+		return false;
+	} );
+
+	// 1 warn
+	compiler.compile( "1 << true" );
+	compiler.compile( "1 << #true << 1" );
+
+	// 0 warn
+	compiler.compile( "set test << 123" );
+	compiler.compile( "#name << 456" );
+
+	CHECK( counter, 2 );
+
+} );
+
+TEST( capi_basic, {
+
+	// create objects
+	const char* code = "#exit << 123";
+	void* compiler = seq_compiler_new();
+	void* executor = seq_executor_new();
+
+	// compile program
+	int size;
+	void* buffer = seq_compiler_build_new(compiler, code, &size);
+
+	// execute and get output
+	seq_executor_execute(executor, buffer, size, seq_null_error_handle);
+	void* results = seq_executor_results_stream_ptr(executor);
+	int count = seq_stream_size(results);
+
+	// check results
+	if( count != 1 ) FAIL( "Expected one result!" );
+	void* generic = seq_stream_generic_ptr( results, 0 );
+	if( seq_generic_type(generic) != (int) seq::DataType::Number ) FAIL( "Expected number!" );
+	if( seq_generic_anchor(generic) ) FAIL( "Expected no anchor!" );
+	if( seq_generic_number_long(generic) != 123 ) FAIL( "Expected 123!" );
+
+	// free memory
+	seq_compiler_build_free(buffer);
+	seq_compiler_free(compiler);
+	seq_executor_free(executor);
+
+} );
+
+TEST( capi_natives, {
+
+	// create objects
+	const char* code = "#exit << #hello << 100";
+	void* compiler = seq_compiler_new();
+	void* executor = seq_executor_new();
+
+	// define function to multiply input by 2
+	seq::type::Native fn = [] (seq::Stream * stream) -> seq::Stream* {
+		void* generic = seq_stream_generic_ptr(stream, 0);
+		int value = seq_generic_number_long(generic);
+		seq_stream_clear(stream);
+		void* data = seq_generic_number_create( false, value * 2 );
+		seq_stream_add(stream, data);
+		return nullptr;
+	};
+
+	// define native
+	seq_executor_add_native(executor, "hello", fn );
+
+	// compile program
+	int size;
+	void* buffer = seq_compiler_build_new(compiler, code, &size);
+
+	// execute and get output
+	seq_executor_execute(executor, buffer, size, seq_null_error_handle);
+	void* results = seq_executor_results_stream_ptr(executor);
+	int count = seq_stream_size(results);
+
+	// check results
+	if( count != 1 ) FAIL( "Expected one result!" );
+	void* generic = seq_stream_generic_ptr( results, 0 );
+	if( seq_generic_type(generic) != (int) seq::DataType::Number ) FAIL( "Expected number!" );
+	if( seq_generic_anchor(generic) ) FAIL( "Expected no anchor!" );
+	if( seq_generic_number_long(generic) != 200 ) FAIL( "Expected 200!" );
+
+	// free memory
+	seq_compiler_build_free(buffer);
+	seq_compiler_free(compiler);
+	seq_executor_free(executor);
+
+} );
+
+TEST( c_var_names, {
+	seq::Compiler::compileStatic( "#exit << #test123 << ar2d2 << #tmp123 << #c_3p0 << s3_:h0 << #_:_" );
+} );
+
+TEST( bwr_header_version, {
+
+		std::vector<byte> arr;
+		seq::BufferWriter bw( arr );
+
+		std::map<std::string, std::string> data;
+		data["foo"] = "abc";
+
+		bw.putHeader(0, 1, 2, data);
+
+		seq::ByteBuffer bb( arr.data(), arr.size() );
+		auto a = bb.getReader().getHeader(false);
+		auto b = bb.getReader().getHeader(true);
+
+		if( std::string( b.getValue("foo") ) != "abc" ) {
+			FAIL( "Value not read!" );
+		}
+
+		EXPECT_ERR({
+			a.getValue("foo");
+		})
+
+} );
 
 REGISTER_EXCEPTION( seq_compiler_error, seq::CompilerError );
 REGISTER_EXCEPTION( seq_internal_error, seq::InternalError );

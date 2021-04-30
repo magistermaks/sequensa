@@ -57,6 +57,7 @@ void help( ArgParse& argp ) {
 		std::cout << "  -v, --verbose    Enable verbose mode." << std::endl;
 		std::cout << "  -f, --force      Force Sequensa to continue." << std::endl;
 		std::cout << "  -xm              Disable multi-error mode." << std::endl;
+		std::cout << "  -xw              Disable warnings." << std::endl;
 		std::cout << "  -e               Print exit stream." << std::endl;
 		std::cout << "  -S               Enable strict math." << std::endl;
 		std::cout << "  -o               Enable compiler optimizations." << std::endl;

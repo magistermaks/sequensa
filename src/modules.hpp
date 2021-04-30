@@ -49,6 +49,7 @@ struct Options {
 	bool strict_math: 1;
 	bool no_multi_error: 1;
 	bool optimize: 1;
+	bool no_warn: 1;
 };
 
 #define USAGE_HELP( error, mode ) std::cout << error << "\nUse '--help " << mode << "' for usage help." << std::endl;
@@ -64,7 +65,8 @@ void shell( ArgParse& argp, Options opt );
 std::map<std::string, std::string> build_header_map( std::vector<std::string>& natives, std::vector<std::string>& strings );
 void unload_native_libs();
 bool load_native_libs( seq::Executor& exe, seq::FileHeader& header, bool verbose );
-bool load_header( seq::FileHeader* header, seq::BufferReader& br );
+bool check_filename( std::string path, std::string expected );
+bool load_header( seq::FileHeader* header, seq::BufferReader& br, bool force );
 std::string posix_time_to_date( time_t rawtime );
 bool validate_version( seq::FileHeader& header, bool force, bool verbose );
 bool file_exist( const char *path );

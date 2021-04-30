@@ -47,6 +47,5 @@
 #define INIT_SUCCESS 0
 #define INIT_ERROR 1
 #define INIT extern "C" __SEQ_DECLSPEC int init
-#define EMPTY seq::Stream()
 
 #endif /* STD_COMMON_HPP_ */

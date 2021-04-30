@@ -48,28 +48,28 @@ void ms_sleep( long miliseconds ) {
 
 }
 
-seq::Stream seq_std_time( seq::Stream& input ) {
-	seq::Stream output;
+seq::Stream* seq_std_time( seq::Stream* input ) {
+	seq::Stream* output = new seq::Stream();
 
-	for( int i = input.size(); i > 0; i -- ) {
+	for( int i = input->size(); i > 0; i -- ) {
 
-		output.push_back( seq::util::newNumber( std::time(0) ) );
+		output->push_back( seq::util::newNumber( std::time(0) ) );
 
 	}
 
 	return output;
 }
 
-seq::Stream seq_std_sleep( seq::Stream& input ) {
-	seq::Stream output;
+seq::Stream* seq_std_sleep( seq::Stream* input ) {
 
-	for( auto& arg : input ) {
+	for( auto& arg : *input ) {
 
 		ms_sleep( (unsigned long) seq::util::numberCast(arg).Number().getLong() );
 
 	}
 
-	return output;
+	input->clear();
+	return nullptr;
 }
 
 INIT( seq::Executor* exe, seq::FileHeader* head ) {

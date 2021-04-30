@@ -32,28 +32,28 @@ import tempfile
 # import utils
 from utils import *
 
+# get temporary workspace
+tmp_path = set_tmp_path( tempfile.gettempdir() + "/seq-tmp" )
+project = "Sequensa"
+
 # parse cl args
-parser = argparse.ArgumentParser( description="Sequensa build system" )
-parser.add_argument( "--test", help="run Sequensa API unit tests", action="store_true" )
+parser = argparse.ArgumentParser( description="C/C++ build system" )
+parser.add_argument( "--test", help=f"run {project} API unit tests", action="store_true" )
 parser.add_argument( "--Xalias", help="don't create 'sq' alias", action="store_true" )
 parser.add_argument( "--Xpath", help="don't attempt to add sequensa to PATH", action="store_true" )
 parser.add_argument( "--compiler", help="specify compiler to use [g++, gcc, clang, msvc]", type=str, default="g++" )
 parser.add_argument( "--workspace", help="preserve workspace", action="store_true" )
-parser.add_argument( "--uninstall", help="uninstall Sequensa", action="store_true" )
+parser.add_argument( "--uninstall", help=f"uninstall {project}", action="store_true" )
 parser.add_argument( "--silent", help="don't ask for confirmations", action="store_true" )
 parser.add_argument( "--force", help="ignore task exit codes", action="store_true" )
-args = parser.parse_args()
-
-# get temporary workspace
-tmp_path = tempfile.gettempdir() + "/seq-tmp"
+args = set_args(parser.parse_args())
 
 # define per-compiler configuration
 compilers_config = {
     "g++": {
-        "alias": "",
-        "compile": "g++ -O3 -g0 -Wall -std=c++11 -c $args -o \"$output\" $input",
-        "link": "g++ -std=c++11 $args -o \"$output\" $input $libs",
-        "ignore_exit_code": False,
+        "inherit": "",
+        "compile": "$bin -O3 -g0 -Wall -Wextra -Wno-unused-parameter -std=c++11 -c $args -o \"$output\" $input",
+        "link": "$bin -std=c++11 $args -o \"$output\" $input $libs",
         "binary": "g++",
         "shared": {
             "compiler": "-fPIC", 
@@ -65,28 +65,17 @@ compilers_config = {
         }
     },
     "gcc": {
-        "alias": "g++"
+        "inherit": "g++",
+        "binary": "gcc"
     },
     "clang": {
-        "alias": "",
-        "compile": "clang -O3 -g0 -Wall -std=c++11 -c $args -o \"$output\" $input",
-        "link": "clang -std=c++11 $args -o \"$output\" $input $libs",
-        "ignore_exit_code": False,
-        "binary": "clang",
-        "shared": {
-            "compiler": "-fPIC", 
-            "linker": "-shared"
-        },
-        "libs": {
-            "posix": "-ldl",
-            "nt": ""
-        }
+        "inherit": "g++",
+        "binary": "clang++"
     },
     "msvc": {
-        "alias": "",
+        "inherit": "",
         "compile": "cl /O2 /c $args $input /Fo\"$output\" /EHsc",
         "link": "link $args $input /OUT:\"$output\" $libs",
-        "ignore_exit_code": False,
         "binary": "cl",
         "shared": {
             "compiler": "", 
@@ -96,9 +85,6 @@ compilers_config = {
             "posix": "",
             "nt": ""
         }
-    },
-    "cl": {
-        "alias": "msvc"
     }
 }
 
@@ -107,7 +93,7 @@ patform_config = {
     "posix": {
         "exe": "",
         "lib": ".so",
-        "path": "##invalid name to replace##",
+        "path": "",
         "sep": "/"
     },
     "nt": {
@@ -118,18 +104,11 @@ patform_config = {
     }
 }
 
-# get correct compiler configuration dict
-def get_compiler_config( key ):
-    if compilers_config[ key ]["alias"] == "":
-        return compilers_config[ key ]
-    else:
-        return get_compiler_config( compilers_config[key]["alias"] )
-
 if os.name == "posix":
     patform_config["posix"]["path"] = os.getenv('HOME') + "/sequensa"
 
-syscfg = patform_config[os.name]
-comcfg = get_compiler_config( args.compiler )
+syscfg = load_system_config(patform_config, os.name)
+comcfg = load_compiler_config(compilers_config, args.compiler)
 
 # check selected compiler
 if args.compiler not in compilers_config:
@@ -138,11 +117,11 @@ if args.compiler not in compilers_config:
     exit()
 
 # print basic info
-print( "Sequensa builder v2.0" )
+print( f"{project} builder v2.0" )
 print( "Platform: " + platform.system() + ", Selected '" + args.compiler + "' compiler." )
 
 if args.uninstall:
-    print( "\nSequensa will be uninstalled from: " + syscfg["path"] )
+    print( f"\n{project} will be uninstalled from: " + syscfg["path"] )
     
     if not args.silent:
         print( "That dir will be deleted with all Sequensa libraries, do you wish to continue? y/n" )
@@ -155,7 +134,7 @@ if args.uninstall:
     # uninstall
     rem_dir( syscfg["path"] )
     
-    print( "\nSequensa uninstalled!" )
+    print( f"\n{project} uninstalled!" )
     exit();
 
 # warn about non-standard compiler
@@ -166,7 +145,6 @@ if comcfg["binary"] != "g++":
 # warn about Microsoft being Microsoft
 if comcfg["binary"] == "cl":
     print("\nWarning: Selected compiler requires special configuration!")
-    print("Warning: MSVC requires a special script to be executed prior to compilation.")
     print("Warning: Learn more here: docs.microsoft.com/en-us/cpp/build/building-on-the-command-line.")
     
 # warn about problems this flag may cause
@@ -185,46 +163,6 @@ if not test_for_command( comcfg["binary"] + syscfg["exe"] ):
 
     print(" * Try selecting different compiler using the '--compiler' flag")
     exit()
-    
-# define exit code checking function
-def check_exit_code( code ):
-    if code != 0 and not comcfg["ignore_exit_code"]:
-        if not args.force:
-            print( "\nError: Task returned non-zero exit code!" )
-            print( " * Try running with `--force` to supress this error" )
-            print( " * Try reporting this to project maintainers" )
-            exit()
-        else:
-            print( "\nWarning: Task returned non-zero exit code!" )
-            print( " * Try reporting this to project maintainers" )
-    
-# define function used to invoke compiler
-def compile( path, cargs = "" ):
-    path = localize_path( path )
-    target = os.path.splitext( path )[0] + ".o"
-    
-    command = comcfg["compile"].replace( "$input", path )
-    command = command.replace( "$output", tmp_path + syscfg["sep"] + target )
-    command = command.replace( "$args", cargs )
-    
-    print( "Compiling '." + syscfg["sep"] + path + "' => '" + tmp_path + syscfg["sep"] + target + "'" )
-    check_exit_code( run_command( command ) )
-
-# define function used to invoke linker
-def link( target, paths, largs = "" ):
-    target = localize_path( target )
-    
-    x = ""
-    for p in paths:
-        x = x + localize_path( tmp_path + p ) + " "
-    
-    command = comcfg["link"].replace( "$input", x )
-    command = command.replace( "$output", target )
-    command = command.replace( "$libs", comcfg["libs"][ os.name ] )
-    command = command.replace( "$args", largs )
-    
-    print( "Linking '" + target + "'" )
-    check_exit_code( run_command( command ) )
 
 # build API unit tests
 if args.test:
@@ -262,7 +200,7 @@ if args.test:
     exit() 
 
 # warn about target directory
-print( "\nSequensa will be installed in: " + syscfg["path"] )
+print( f"\n{project} will be installed in: " + syscfg["path"] )
 
 if not args.silent:
     print( "If that dir already exists it will be deleted, do you wish to continue? y/n" )
@@ -301,9 +239,10 @@ except:
 # print build status
 print( "\nBuilding Targets..." )
 
-# compile all Sequensa files
+# compile all files
 fPIC = comcfg["shared"]["compiler"]
 compile( "src/api/seqapi.cpp", fPIC )
+compile( "src/api/dyncapi.cpp", fPIC )
 compile( "src/main.cpp" )
 compile( "src/help.cpp" )
 compile( "src/build.cpp" )
@@ -328,6 +267,7 @@ print( "\nLinking Targets..." )
 # link targets
 shared = comcfg["shared"]["linker"]
 link( syscfg["path"] + "/sequensa" + syscfg["exe"], ["/src/api/seqapi.o", "/src/lib/whereami.o", "/src/main.o", "/src/help.o", "/src/build.o", "/src/run.o", "/src/utils.o", "/src/info.o", "/src/decompile.o", "/src/shell.o"] )
+link( syscfg["path"] + "/libseqapi" + syscfg["lib"], ["/src/api/seqapi.o", "/src/api/dyncapi.o"], shared )
 link( syscfg["path"] + "/lib/stdio/native" + syscfg["lib"], ["/src/api/seqapi.o", "/src/std/stdio.o"], shared )
 link( syscfg["path"] + "/lib/math/native" + syscfg["lib"], ["/src/api/seqapi.o", "/src/std/math.o"], shared )
 link( syscfg["path"] + "/lib/meta/native" + syscfg["lib"], ["/src/api/seqapi.o", "/src/std/meta.o"], shared )

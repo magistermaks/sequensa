@@ -28,10 +28,10 @@
 
 seq::Executor* executor;
 
-seq::Stream seq_std_eval( seq::Stream& input ) {
-	seq::Stream output;
+seq::Stream* seq_std_eval( seq::Stream* input ) {
+	seq::Stream* output = new seq::Stream();
 
-	for( auto& arg : input ) {
+	for( auto& arg : *input ) {
 
 		try{
 
@@ -42,10 +42,10 @@ seq::Stream seq_std_eval( seq::Stream& input ) {
 			seq::Executor exe;
 			exe.execute( bb );
 
-			output.insert(output.end(), exe.getResults().begin(), exe.getResults().end());
+			output->insert(output->end(), exe.getResults().begin(), exe.getResults().end());
 
 		}catch( std::exception& error ) {
-			output.push_back( seq::util::newNull() );
+			output->push_back( seq::util::newNull() );
 		}
 
 	}
@@ -53,10 +53,10 @@ seq::Stream seq_std_eval( seq::Stream& input ) {
 	return output;
 }
 
-seq::Stream seq_std_mixin( seq::Stream& input ) {
-	seq::Stream output;
+seq::Stream* seq_std_mixin( seq::Stream* input ) {
+	seq::Stream* output = new seq::Stream();
 
-	for( auto& arg : input ) {
+	for( auto& arg : *input ) {
 
 		try{
 
@@ -67,10 +67,10 @@ seq::Stream seq_std_mixin( seq::Stream& input ) {
 			seq::Executor exe(executor);
 			exe.execute( bb );
 
-			output.insert(output.end(), exe.getResults().begin(), exe.getResults().end());
+			output->insert(output->end(), exe.getResults().begin(), exe.getResults().end());
 
 		}catch( std::exception& error ) {
-			output.push_back( seq::util::newNull() );
+			output->push_back( seq::util::newNull() );
 		}
 
 	}

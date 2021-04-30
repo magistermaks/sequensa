@@ -25,85 +25,85 @@
 
 #include "common.hpp"
 
-seq::Stream seq_std_uppercase( seq::Stream& input ) {
+seq::Stream* seq_std_uppercase( seq::Stream* input ) {
 
-	seq::Stream output;
+	seq::Stream* output = new seq::Stream();
 
-	for( auto& arg : input ) {
+	for( auto& arg : *input ) {
 
 		std::string str = (char*) seq::util::stringCast( arg ).String().getString().c_str();
 		std::transform(str.begin(), str.end(), str.begin(), toupper);
-		output.push_back( seq::util::newString( str.c_str() ) );
+		output->push_back( seq::util::newString( str.c_str() ) );
 
 	}
 
 	return output;
 }
 
-seq::Stream seq_std_lowercase( seq::Stream& input ) {
+seq::Stream* seq_std_lowercase( seq::Stream* input ) {
 
-	seq::Stream output;
+	seq::Stream* output = new seq::Stream();
 
-	for( auto& arg : input ) {
+	for( auto& arg : *input ) {
 
 		std::string str = (char*) seq::util::stringCast( arg ).String().getString().c_str();
 		std::transform(str.begin(), str.end(), str.begin(), tolower);
-		output.push_back( seq::util::newString( str.c_str() ) );
+		output->push_back( seq::util::newString( str.c_str() ) );
 
 	}
 
 	return output;
 }
 
-seq::Stream seq_std_concat( seq::Stream& input ) {
+seq::Stream* seq_std_concat( seq::Stream* input ) {
 
 	std::string str;
 
-	for( auto& arg : input ) {
+	for( auto& arg : *input ) {
 
 		str += seq::util::stringCast( arg ).String().getString();
 
 	}
 
-	return { seq::util::newString( str.c_str() ) };
+	return new seq::Stream { seq::util::newString( str.c_str() ) };
 }
 
-seq::Stream seq_std_join( seq::Stream& input ) {
+seq::Stream* seq_std_join( seq::Stream* input ) {
 
 	std::string str;
-	std::string separator = seq::util::stringCast( input[0] ).String().getString();
+	std::string separator = seq::util::stringCast( (*input)[0] ).String().getString();
 
-	for( long i = 1; i < (long) input.size(); i ++ ) {
+	for( long i = 1; i < (long) input->size(); i ++ ) {
 
-		str += seq::util::stringCast( input[i] ).String().getString();
+		str += seq::util::stringCast( (*input)[i] ).String().getString();
 		str += separator;
 
 	}
 
 	str.erase( str.size() - separator.size() );
 
-	return { seq::util::newString( str.c_str() ) };
+	return new seq::Stream { seq::util::newString( str.c_str() ) };
 }
 
-seq::Stream seq_std_split( seq::Stream& input ) {
+seq::Stream* seq_std_split( seq::Stream* input ) {
 
-	seq::Stream output;
-	std::string delim = seq::util::stringCast( input[0] ).String().getString();
+	seq::Stream* output = new seq::Stream();
+	std::string delim = seq::util::stringCast( (*input)[0] ).String().getString();
 
 	if( delim.empty() ) {
 		return input;
 	}
 
-	for( long i = 1; i < (long) input.size(); i ++ ) {
+	for( long i = 1; i < (long) input->size(); i ++ ) {
 
-		std::string str2 = seq::util::stringCast( input[i] ).String().getString();
+		std::string str2 = seq::util::stringCast( (*input)[i] ).String().getString();
 		size_t prev = 0, pos = 0;
 
 		do {
 
 			pos = str2.find(delim, prev);
 			if(pos == std::string::npos) pos = str2.length();
-			output.push_back( seq::util::newString( str2.substr(prev, pos-prev).c_str() ) );
+			output->push_back( seq::util::newString( str2.substr(prev, pos-prev).c_str() ) );
 			prev = pos + delim.length();
 
 		} while( pos < str2.size() && prev < str2.size() );
@@ -113,19 +113,19 @@ seq::Stream seq_std_split( seq::Stream& input ) {
 	return output;
 }
 
-seq::Stream seq_std_explode( seq::Stream& input ) {
+seq::Stream* seq_std_explode( seq::Stream* input ) {
 
-	seq::Stream output;
+	seq::Stream* output = new seq::Stream();
 
-	for( long i = 0; i < (long) input.size(); i ++ ) {
+	for( long i = 0; i < (long) input->size(); i ++ ) {
 
-		std::string str = seq::util::stringCast( input[i] ).String().getString();
+		std::string str = seq::util::stringCast( (*input)[i] ).String().getString();
 
 		for( long j = 0; j < (long) str.size(); j ++ ) {
 
 			std::string chr = "";
 			chr += (seq::byte) str[j];
-			output.push_back( seq::util::newString( chr.c_str() ) );
+			output->push_back( seq::util::newString( chr.c_str() ) );
 
 		}
 
@@ -134,53 +134,53 @@ seq::Stream seq_std_explode( seq::Stream& input ) {
 	return output;
 }
 
-seq::Stream seq_std_from_code( seq::Stream& input ) {
+seq::Stream* seq_std_from_code( seq::Stream* input ) {
 
-	seq::Stream output;
+	seq::Stream* output = new seq::Stream();
 
-	for( long i = 0; i < (long) input.size(); i ++ ) {
+	for( long i = 0; i < (long) input->size(); i ++ ) {
 
-		seq::byte code = (seq::byte) seq::util::numberCast( input[i] ).Number().getLong();
+		seq::byte code = (seq::byte) seq::util::numberCast( (*input)[i] ).Number().getLong();
 		std::string str = "";
 		str += (seq::byte) code;
-		output.push_back( seq::util::newString( str.c_str() ) );
+		output->push_back( seq::util::newString( str.c_str() ) );
 
 	}
 
 	return output;
 }
 
-seq::Stream seq_std_to_code( seq::Stream& input ) {
+seq::Stream* seq_std_to_code( seq::Stream* input ) {
 
-	seq::Stream output;
+	seq::Stream* output = new seq::Stream();
 
-	for( long i = 0; i < (long) input.size(); i ++ ) {
+	for( long i = 0; i < (long) input->size(); i ++ ) {
 
-		seq::byte code = seq::util::stringCast( input[i] ).String().getString()[0];
-		output.push_back( seq::util::newNumber( code ) );
+		seq::byte code = seq::util::stringCast( (*input)[i] ).String().getString()[0];
+		output->push_back( seq::util::newNumber( code ) );
 
 	}
 
 	return output;
 }
 
-seq::Stream seq_std_substr( seq::Stream& input ) {
+seq::Stream* seq_std_substr( seq::Stream* input ) {
 
-	if( input.size() < 2 ) {
-		return { seq::util::newBool(false) };
+	if( input->size() < 2 ) {
+		return new seq::Stream { seq::util::newBool(false) };
 	}
 
-	const int start = seq::util::numberCast( input[0] ).Number().getLong();
-	const int length = seq::util::numberCast( input[1] ).Number().getLong() - start;
+	const int start = seq::util::numberCast( (*input)[0] ).Number().getLong();
+	const int length = seq::util::numberCast( (*input)[1] ).Number().getLong() - start;
 
-	seq::Stream output;
+	seq::Stream* output = new seq::Stream();
 
-	for( long i = 2; i < (long) input.size(); i ++ ) {
+	for( long i = 2; i < (long) input->size(); i ++ ) {
 
 		try{
-			output.push_back( seq::util::newString( seq::util::stringCast( input[i] ).String().getString().substr(start, length).c_str() ) );
+			output->push_back( seq::util::newString( seq::util::stringCast( (*input)[i] ).String().getString().substr(start, length).c_str() ) );
 		}catch(std::exception& err){
-			return { seq::util::newString( "" ) };
+			return new seq::Stream { seq::util::newString( "" ) };
 		}
 
 	}
@@ -188,19 +188,19 @@ seq::Stream seq_std_substr( seq::Stream& input ) {
 	return output;
 }
 
-seq::Stream seq_std_findstr( seq::Stream& input ) {
+seq::Stream* seq_std_findstr( seq::Stream* input ) {
 
-	seq::Stream output;
-	std::string delim = seq::util::stringCast( input[0] ).String().getString();
+	seq::Stream* output = new seq::Stream();
+	std::string delim = seq::util::stringCast( (*input)[0] ).String().getString();
 
 	if( delim.empty() ) {
-		return { seq::util::newNumber(-1) };
+		return new seq::Stream { seq::util::newNumber(-1) };
 	}
 
-	for( long i = 1; i < (long) input.size(); i ++ ) {
+	for( long i = 1; i < (long) input->size(); i ++ ) {
 
-		std::string str2 = seq::util::stringCast( input[i] ).String().getString();
-		output.push_back( seq::util::newNumber( str2.find( delim ) ) );
+		std::string str2 = seq::util::stringCast( (*input)[i] ).String().getString();
+		output->push_back( seq::util::newNumber( str2.find( delim ) ) );
 
 	}
 

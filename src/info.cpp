@@ -36,7 +36,7 @@ void info( std::string input, Options opt ) {
 		seq::BufferReader br = bb.getReader();
 		seq::FileHeader header;
 
-		if( !load_header( &header, br ) ) return;
+		if( !load_header( &header, br, true ) ) return;
 
 		try{
 

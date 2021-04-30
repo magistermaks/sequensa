@@ -31,71 +31,74 @@
 #include "../lib/nbi.hpp"
 #undef NBI_LIB_IMPLEMENTATION
 
-seq::Stream seq_std_out( seq::Stream& input ) {
+seq::Stream* seq_std_out( seq::Stream* input ) {
 
-	for( auto& element : input ) {
+	for( auto& element : *input ) {
 
 		std::cout << (seq::byte*) seq::util::stringCast( element ).String().getString().c_str();
 
 	}
 
-	return EMPTY;
+	input->clear();
+	return nullptr;
 }
 
-seq::Stream seq_std_outln( seq::Stream& input ) {
+seq::Stream* seq_std_outln( seq::Stream* input ) {
 
-	for( auto& element : input ) {
+	for( auto& element : *input ) {
 
 		std::cout << (seq::byte*) seq::util::stringCast( element ).String().getString().c_str() << std::endl;
 
 	}
 
-	return EMPTY;
+	input->clear();
+	return nullptr;
 }
 
-seq::Stream seq_std_in( seq::Stream& input ) {
+seq::Stream* seq_std_in( seq::Stream* input ) {
 
-	seq::Stream output;
+	seq::Stream* output = new seq::Stream();
 
-	for( int i = input.size(); i > 0; i -- ) {
+	for( int i = input->size(); i > 0; i -- ) {
 
 		std::string str;
 		std::cin >> str;
-		output.push_back( seq::util::newString( str.c_str() ) );
+		output->push_back( seq::util::newString( str.c_str() ) );
 
 	}
 
 	return output;
 }
 
-seq::Stream seq_std_flush( seq::Stream& input ) {
+seq::Stream* seq_std_flush( seq::Stream* input ) {
 
 	std::cout << std::flush;
 
-	return EMPTY;
+	input->clear();
+	return nullptr;
 }
 
-seq::Stream seq_std_inchr( seq::Stream& input ) {
+seq::Stream* seq_std_inchr( seq::Stream* input ) {
 
-	seq::Stream output;
+	seq::Stream* output = new seq::Stream();
 
-	for( int i = input.size(); i > 0; i -- ) {
+	for( int i = input->size(); i > 0; i -- ) {
 
 		std::string str;
 		str += nbi_std_input();
 
-		output.push_back( seq::util::newString( str.c_str() ) );
+		output->push_back( seq::util::newString( str.c_str() ) );
 
 	}
 
 	return output;
 }
 
-seq::Stream seq_std_nbinchr( seq::Stream& input ) {
+seq::Stream* seq_std_nbinchr( seq::Stream* input ) {
 
-	seq::Stream output;
+	seq::Stream* output = new seq::Stream();
 
-	for( int i = input.size(); i > 0; i -- ) {
+	for( int i = input->size(); i > 0; i -- ) {
 
 		std::string str;
 		char chr = nbi_get_char();
@@ -103,11 +106,11 @@ seq::Stream seq_std_nbinchr( seq::Stream& input ) {
 		if( chr != -1 ) {
 
 			str += chr;
-			output.push_back( seq::util::newString( str.c_str() ) );
+			output->push_back( seq::util::newString( str.c_str() ) );
 
 		}else{
 
-			output.push_back( seq::util::newNull() );
+			output->push_back( seq::util::newNull() );
 
 		}
 

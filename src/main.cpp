@@ -46,13 +46,14 @@ int main( int argc, char **argv ) {
 	mode |= argp.hasFlag("--info", "-i") ? 8 : 0;
 	mode |= argp.hasFlag("--shell", "-s") ? 16 : 0;
 
-	Options options = {0};
+	Options options = {0, 0, 0, 0, 0, 0, 0};
 	options.verbose = argp.hasFlag("-v", "--verbose");
 	options.force_execution = argp.hasFlag("-f", "--force");
 	options.print_exit = argp.hasFlag("-e");
 	options.strict_math = argp.hasFlag("-S");
 	options.no_multi_error = argp.hasFlag("-xm");
 	options.optimize = argp.hasFlag("-o");
+	options.no_warn = argp.hasFlag("-xw");
 
 	try{
 
