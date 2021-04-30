@@ -2733,7 +2733,7 @@ TEST( ce_empty_result, {
 
 } );
 
-TEST( c_warn_unreachable, {
+TEST( c_warn_unreachable_1, {
 
 	static int counter;
 	counter = 0;
@@ -2745,20 +2745,46 @@ TEST( c_warn_unreachable, {
 		return false;
 	} );
 
-	// single warnings
+	// 1 warn
 	compiler.compile( "#1 << #return << true" );
 	compiler.compile( "#1 << #return << true" );
 	compiler.compile( "#{ #return << 1 } << #return << true" );
 	compiler.compile( "#[1] << #return << true" );
 	compiler.compile( "#null << #exit << true" );
 
-	// two warnings
+	// 2 warn
 	compiler.compile( "#{ 11 << #return << 1 } << #exit << true" );
 	compiler.compile( "#exit << #exit << #exit << 1" );
 
-	if( counter != 9 ) {
-		FAIL( "Warning test failed!" );
-	}
+	// 0 warn
+	compiler.compile( "#return << 1" );
+	compiler.compile( "#exit << true" );
+
+	CHECK( counter, 9 );
+
+} );
+
+TEST( c_warn_unreachable_2, {
+
+	static int counter;
+	counter = 0;
+
+	seq::Compiler compiler;
+
+	compiler.setErrorHandle( [] (seq::CompilerError* err) -> bool {
+		if( err->isWarning() ) counter ++;
+		return false;
+	} );
+
+	// 1 warn
+	compiler.compile( "#1 << #1 << #true" );
+	compiler.compile( "#exit << true << #true" );
+	compiler.compile( "#return << #true" );
+
+	// 0 warn
+	compiler.compile( "#return << #1 << true" );
+
+	CHECK( counter, 3 );
 
 } );
 
@@ -2774,14 +2800,15 @@ TEST( c_warn_dangling, {
 		return false;
 	} );
 
-	// single warnings
+	// 1 warn
 	compiler.compile( "1 << true" );
+	compiler.compile( "1 << #true << 1" );
+
+	// 0 warn
 	compiler.compile( "set test << 123" );
 	compiler.compile( "#name << 456" );
 
-	if( counter != 1 ) {
-		FAIL( "Warning test failed!" );
-	}
+	CHECK( counter, 2 );
 
 } );
 

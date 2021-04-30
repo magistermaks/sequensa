@@ -29,6 +29,8 @@
 bool failed = false;
 bool singular = false;
 bool silent = false;
+int error_count = 0;
+int warning_count = 0;
 
 bool build( std::string input, std::vector<seq::byte>* buffer, std::vector<std::string>* dependencies, std::vector<std::string>* natives, bool verbose, seq::Compiler& compiler ) {
 
@@ -224,27 +226,35 @@ void build( ArgParse& argp, Options opt ) {
 		compiler.setErrorHandle( [] (seq::CompilerError* err) -> bool {
 			if( err->isCritical() ) {
 				std::cout << "Fatal: " << err->what() << std::endl;
+				error_count ++;
 				failed = true;
 				return true;
 			}
 
 			if( err->isError() ) {
 				std::cout << "Error: " << err->what() << std::endl;
+				error_count ++;
 				failed = true;
 				return singular;
 			}
 
 			if( err->isWarning() && !silent ) {
 				std::cout << "Warning: " << err->what() << std::endl;
+				warning_count ++;
 			}
 
 			return false;
 		} );
 
+		if( check_filename( vars.at(0), "sq" ) ) warning_count ++;
+		if( check_filename( vars.at(1), "sqc" ) ) warning_count ++;
+
 		if( !build_tree( vars.at(0), vars.at(1), opt.verbose, compiler, table ) ) {
-
 			std::cout << "Build failed!" << std::endl;
+		}
 
+		if( opt.verbose ) {
+			std::cout << std::endl << "Errors: " << error_count << ", Warnings: " << warning_count << std::endl;
 		}
 
 	}else{

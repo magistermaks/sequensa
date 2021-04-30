@@ -3778,10 +3778,14 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 	int statmentCounter = 0;
 	bool dangling = false;
 
-	// warning
 	if( start <= end && (!tokens[start].getAnchor() && tokens[start].getCategory() != Compiler::Token::Category::Set) ) {
 		warn( seq::CompilerError( "Dangling statement", "stream", tokens[start].getLine() ) );
 		dangling = true;
+	}
+
+	if( tokens[end].getAnchor() ) {
+		warn( seq::CompilerError( "Unreachable stream", "", tokens[end].getLine() ) );
+		// TODO: this stream can be optimized away
 	}
 
 	for( int i = start; i <= end; i ++ ) {
@@ -3810,12 +3814,9 @@ std::vector<byte> seq::Compiler::assembleStream( std::vector<seq::Compiler::Toke
 						if( embedded ) {
 							fail( seq::CompilerError( 1, "Build in native function '" + std::string( (char*) token.getClean().c_str() ) + "'", "", "embedded stream", token.getLine() ) );
 						}else if( !dangling ){
-
-							// warning
 							if( statmentCounter >= 1 ) {
 								warn( seq::CompilerError( "Unreachable statement", "stream", token.getLine() ) );
 							}
-
 						}
 					}
 

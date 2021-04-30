@@ -31,6 +31,8 @@ void run( std::string input, Options opt ) {
 	std::ifstream infile( input, std::ios::binary );
 	if( infile.good() ) {
 
+		if( opt.verbose ) check_filename( input, "sqc" );
+
 		std::vector<seq::byte> buffer( (std::istreambuf_iterator<char>(infile) ), (std::istreambuf_iterator<char>() ));
 		seq::ByteBuffer bb( buffer.data(), buffer.size() );
 		seq::BufferReader br = bb.getReader();

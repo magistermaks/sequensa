@@ -157,6 +157,16 @@ bool load_native_libs( seq::Executor& exe, seq::FileHeader& header, bool verbose
 
 #undef TRY_LOADING
 
+bool check_filename( std::string path, std::string expected ) {
+	std::string found = path.substr(path.find_last_of(".") + 1);
+	if( found != expected ) {
+		std::cout << "Warning: Expected '." + expected + "' extension, but found: '." + found + "'!" << std::endl;
+		return true;
+	}
+
+	return false;
+}
+
 bool load_header( seq::FileHeader* header, seq::BufferReader& br, bool force ) {
 	try {
 		*header = br.getHeader(force);
